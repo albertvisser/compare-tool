@@ -2,10 +2,11 @@
 from configparser import ConfigParser
 from os import getcwd
 import os.path
+import traceback
 import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
-from conf_comp import compare_configs
-from xml_comp import compare_xmldata
+from conf_comp import compare_configs, MissingSectionHeaderError
+from xml_comp import compare_xmldata, ParseError
 
 ID_OPEN = 101
 ID_DOIT = 102
@@ -136,6 +137,8 @@ class ShowComparison(gui.QTreeWidget):
         self.parent = parent
         super().__init__(parent)
         self.setColumnCount(3)
+        self.setHeaderLabels(['Document structure', 'value in "lefthand-side" file',
+            'value in "righthand-side" file'])
         hdr = self.header()
         hdr.resizeSection(0, 100)
         hdr.resizeSection(0, 350)
@@ -408,7 +411,19 @@ class MainWindow(gui.QMainWindow):
             gui.QMessageBox.critical(self, apptitel, fout)
             return False
         compare_func = comparetypes[self.selectiontype][1]
-        self.data = compare_func(self.linkerpad,self.rechterpad)
+        try:
+            self.data = compare_func(self.linkerpad,self.rechterpad)
+        except Exception as err:
+            error, msg, tb = sys.exc_info()
+            fout = ["An error occurred.\n",
+            ## if error == ParseError:
+                ## fout.append("Misschien heb je de verkeerde vergelijkingsmethode "
+                    ## "gekozen.\n")
+            ## elif error == MissingSectionHeaderError:
+                ## fout.append("
+                "\n"] + traceback.format_exception(error, msg, tb)
+            gui.QMessageBox.critical(self, apptitel, ''.join(fout))
+            return False
         return True
 
     def about(self, event=None):

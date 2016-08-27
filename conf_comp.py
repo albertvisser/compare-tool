@@ -50,8 +50,8 @@ def compare_configs(fn1, fn2):
     """compare two ini files
     """
     result = []
-    fn1 = check_inifile(fn1)
-    fn2 = check_inifile(fn2)
+    ## fn1 = check_inifile(fn1)
+    ## fn2 = check_inifile(fn2)
     gen1 = sort_inifile(fn1)
     gen2 = sort_inifile(fn2)
     def gen_next(gen):

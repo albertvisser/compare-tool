@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as et
 import collections
 import pprint
+ParseError = et.ParseError
 
 """
 
