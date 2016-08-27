@@ -15,7 +15,7 @@ apptitel = "Albert's compare-tool voor ini-files"
 rightonly_colour = core.Qt.blue
 leftonly_colour = core.Qt.green
 difference_colour = core.Qt.red
-inversetext_colour = core.Qt.white
+## inversetext_colour = core.Qt.white
 comparetypes = {
     'ini': ('ini files', compare_configs),
     'xml': ('XML files', compare_xmldata),
@@ -36,7 +36,7 @@ class FileBrowseButton(gui.QFrame):
         ## self.input = gui.QLineEdit(text, self)
         self.input = gui.QComboBox(self)
         self.input.setEditable(True)
-        ## self.input.setMinimumWidth(200)
+        self.input.setMaximumWidth(300)
         self.input.addItems(items)
         self.input.setEditText(text)
         lbl = gui.QLabel(caption)
@@ -205,16 +205,12 @@ class ShowComparison(gui.QTreeWidget):
         self.colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_xmlcompare(self):
-        ## for x in self.parent.data:
-            ## print(x)
-        ## return
         self.setHeaderLabels(['Element/Attribute', self.parent.linkerpad,
             self.parent.rechterpad])
         self.clear()
         current_elems = []
         count = 0
         for x in self.parent.data:
-            print(x)
             node, lvalue, rvalue = x
             elems, attr = node
             if elems != current_elems:
@@ -231,62 +227,49 @@ class ShowComparison(gui.QTreeWidget):
                     else:
                         parent = header.parent()
                     header = gui.QTreeWidgetItem()
-                    header.setText(0, elems[-1])
+                    header.setText(0, '<> ' + elems[-1])
                     parent.addChild(header)
                 current_elems = elems
                 rightonly = leftonly = difference = False
             if attr == '':
                 header.setText(1, lvalue)
                 header.setText(2, rvalue)
+                if lvalue == '':
+                    rightonly = True
+                if rvalue == '':
+                    leftonly = True
+                if lvalue and rvalue and lvalue != rvalue:
+                    difference = True
                 continue
             child = gui.QTreeWidgetItem()
             child.setText(0, attr)
             if lvalue is None: lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
-                ## child.setBackgroundColor(0, rightonly_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, rightonly_colour)
-                ## child.setBackgroundColor(2, rightonly_colour)
-                ## child.setTextColor(2, inversetext_colour)
                 child.setTextColor(2, rightonly_colour)
             child.setText(1, lvalue)
             if rvalue is None: rvalue = '(no value)'
             if rvalue == '':
                 leftonly = True
-                ## child.setBackgroundColor(0, leftonly_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, leftonly_colour)
-                ## child.setBackgroundColor(1, leftonly_colour)
-                ## child.setTextColor(1, inversetext_colour)
                 child.setTextColor(1, leftonly_colour)
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
-                ## child.setBackgroundColor(0, difference_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, difference_colour)
-                ## child.setBackgroundColor(1, difference_colour)
-                ## child.setTextColor(1, inversetext_colour)
                 child.setTextColor(1, difference_colour)
-                ## child.setBackgroundColor(2, difference_colour)
-                ## child.setTextColor(2, inversetext_colour)
                 child.setTextColor(2, difference_colour)
             child.setText(2, rvalue)
             header.addChild(child)
         self.colorize_header(header, rightonly, leftonly, difference)
 
     def colorize_header(self, header, rightonly, leftonly, difference):
-        if rightonly:
-            ## header.setBackgroundColor(0, rightonly_colour)
+        if rightonly and not leftonly:
             header.setTextColor(0, rightonly_colour)
-        if leftonly:
-            ## header.setBackgroundColor(0, leftonly_colour)
+        if leftonly and not rightonly:
             header.setTextColor(0, leftonly_colour)
-        if difference:
-            ## header.setBackgroundColor(0, difference_colour)
+        if difference or (leftonly and rightonly):
             header.setTextColor(0, difference_colour)
-        ## if rightonly or leftonly or difference:
-            ## header.setTextColor(0, inversetext_colour)
 
 class MainWindow(gui.QMainWindow):
 
@@ -391,6 +374,7 @@ class MainWindow(gui.QMainWindow):
             self.doit()
 
     def doit(self, event=None):
+        self.sb.clearMessage()
         if self.do_compare():
             if self.linkerpad in self.mru_left:
                 self.mru_left.remove(self.linkerpad)
@@ -404,29 +388,28 @@ class MainWindow(gui.QMainWindow):
             self.win.refresh_tree()
 
     def do_compare(self):
-        doitok = True
+        fout = ''
         if self.linkerpad == "":
             fout ='Geen linkerbestand opgegeven'
-            doitok = False
         else:
             if not os.path.exists(self.linkerpad):
                 fout = ('Bestand %s kon niet gevonden/geopend worden' %
                     self.linkerpad)
-                doitok = False
         if self.rechterpad == "":
             fout ='Geen rechterbestand opgegeven'
-            doitok = False
         else:
             if not os.path.exists(self.rechterpad):
                 fout = ('Bestand %s kon niet gevonden/geopend worden' %
                     self.rechterpad)
-                doitok = False
-        if doitok:
-            compare_func = comparetypes[self.selectiontype][1]
-            self.data = compare_func(self.linkerpad,self.rechterpad)
-        else:
+        if self.selectiontype not in comparetypes:
+            fout = 'Geen vergelijkingsmethode gekozen'
+        if fout:
+            self.sb.showMessage(fout)
             gui.QMessageBox.critical(self, apptitel, fout)
-        return doitok
+            return False
+        compare_func = comparetypes[self.selectiontype][1]
+        self.data = compare_func(self.linkerpad,self.rechterpad)
+        return True
 
     def about(self, event=None):
         dlg = gui.QMessageBox.information(self, apptitel,
