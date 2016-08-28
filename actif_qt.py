@@ -297,9 +297,9 @@ class MainWindow(gui.QMainWindow):
         self.setCentralWidget(self.win)
 
         if self.linkerpad and self.rechterpad:
-            self.about()
             self.doit()
         else:
+            self.about()
             self.open()
         self.show()
 
@@ -415,21 +415,34 @@ class MainWindow(gui.QMainWindow):
             self.data = compare_func(self.linkerpad,self.rechterpad)
         except Exception as err:
             error, msg, tb = sys.exc_info()
-            fout = ["An error occurred.\n",
+            #fout = ["An error occurred.\n",
             ## if error == ParseError:
                 ## fout.append("Misschien heb je de verkeerde vergelijkingsmethode "
                     ## "gekozen.\n")
             ## elif error == MissingSectionHeaderError:
                 ## fout.append("
-                "\n"] + traceback.format_exception(error, msg, tb)
-            gui.QMessageBox.critical(self, apptitel, ''.join(fout))
+            #    "\n"] + traceback.format_exception(error, msg, tb)
+            #text = '<pre>{}</pre>'.format('<br>'.join(fout))
+            #gui.QMessageBox.critical(self, apptitel, text)
+            box = gui.QMessageBox(self)
+            box.setWindowTitle(apptitel)
+            if error == ParseError:
+                info = "bevat geen correcte XML"
+            elif error == MissingSectionHeaderError:
+                info = "begint niet met een header"
+            box.setText("Tenminste één file " + info)
+            box.setInformativeText('<pre>{}</pre>'.format(''.join(
+                traceback.format_exception(error, msg, tb))))
+            box.exec_()
             return False
         return True
 
     def about(self, event=None):
-        dlg = gui.QMessageBox.information(self, apptitel,
-            "Met dit programma kun je twee ini files met elkaar vergelijken, "
-            "maakt niet uit hoe door elkaar de secties en entries ook zitten")
+        dlg = gui.QMessageBox.information(self, apptitel, '\n'.join((
+            "Met dit programma kun je twee ini files met elkaar vergelijken,",
+            "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
+            "",
+            "Het is ook bruikbaar voor XML bestanden.")))
 
     def keyPressEvent(self, evt):
         """Make it possible to use Esc to quit the application
