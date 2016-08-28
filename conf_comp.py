@@ -50,8 +50,6 @@ def compare_configs(fn1, fn2):
     """compare two ini files
     """
     result = []
-    ## fn1 = check_inifile(fn1)
-    ## fn2 = check_inifile(fn2)
     gen1 = sort_inifile(fn1)
     gen2 = sort_inifile(fn2)
     def gen_next(gen):
@@ -96,6 +94,13 @@ def compare_configs(fn1, fn2):
             break
     return result
 
+
+def compare_configs_2(fn1, fn2):
+    """compare two ini files, allowing for missing headers
+    """
+    fn1 = check_inifile(fn1)
+    fn2 = check_inifile(fn2)
+    return compare_configs(fn1, fn2)
 
 if __name__ == "__main__":
     f1 = "actif.ini"

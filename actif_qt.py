@@ -5,7 +5,7 @@ import os.path
 import traceback
 import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
-from conf_comp import compare_configs, MissingSectionHeaderError
+from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from xml_comp import compare_xmldata, ParseError
 
 ID_OPEN = 101
@@ -19,8 +19,26 @@ difference_colour = core.Qt.red
 ## inversetext_colour = core.Qt.white
 comparetypes = {
     'ini': ('ini files', compare_configs),
+    'ini2': ('ini files, allowing for missing first header', compare_configs_2),
     'xml': ('XML files', compare_xmldata),
     }
+
+def check_input(linkerpad, rechterpad, seltype):
+    if linkerpad == "":
+        return 'Geen linkerbestand opgegeven'
+    else:
+        if not os.path.exists(linkerpad):
+            return 'Bestand {} kon niet gevonden/geopend worden'.format(
+                linkerpad)
+    if rechterpad == "":
+        return 'Geen rechterbestand opgegeven'
+    else:
+        if not os.path.exists(rechterpad):
+            return 'Bestand {} kon niet gevonden/geopend worden'.format(
+                rechterpad)
+    if seltype not in comparetypes:
+        return 'Geen vergelijkingsmethode gekozen'
+
 
 class FileBrowseButton(gui.QFrame):
     """Combination widget showing a text field and a button
@@ -97,9 +115,9 @@ class AskOpenFiles(gui.QDialog):
         gsizer = gui.QGridLayout()
         gsizer.addWidget(gui.QLabel('Soort vergelijking:'), 0, 0)
         self.sel = []
-        for ix, type in enumerate(comparetypes.items()):
-            type, text = type
-            rb = gui.QRadioButton(text[0], self)
+        for ix, type in enumerate(sorted(comparetypes)):
+            text = comparetypes[type][0]
+            rb = gui.QRadioButton(text, self)
             gsizer.addWidget(rb, ix, 1)
             if self.parent.selectiontype == type:
                 rb.setChecked(True)
@@ -122,12 +140,20 @@ class AskOpenFiles(gui.QDialog):
         self.setLayout(self.sizer)
 
     def accept(self):
-        self.parent.linkerpad = self.browse1.input.currentText()
-        self.parent.rechterpad = self.browse2.input.currentText()
+        linkerpad = self.browse1.input.currentText()
+        rechterpad = self.browse2.input.currentText()
+        selectiontype = ''
         for ix, sel in enumerate(self.sel):
             if sel[0].isChecked():
-                self.parent.selectiontype = sel[1]
+                selectiontype = sel[1]
                 break
+        mld = check_input(linkerpad, rechterpad, selectiontype)
+        if mld:
+            gui.QMessageBox.critical(self, apptitel, mld)
+            return
+        self.parent.linkerpad = linkerpad
+        self.parent.rechterpad = rechterpad
+        self.parent.selectiontype = selectiontype
         super().accept()
 
 
@@ -150,7 +176,7 @@ class ShowComparison(gui.QTreeWidget):
         self.show()
 
     def refresh_tree(self):
-        if self.parent.selectiontype == 'ini':
+        if self.parent.selectiontype in ('ini', 'ini2'):
             self.refresh_inicompare()
         elif self.parent.selectiontype == 'xml':
             self.refresh_xmlcompare()
@@ -176,32 +202,18 @@ class ShowComparison(gui.QTreeWidget):
             if lvalue is None: lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
-                ## child.setBackgroundColor(0, rightonly_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, rightonly_colour)
-                ## child.setBackgroundColor(2, rightonly_colour)
-                ## child.setTextColor(2, inversetext_colour)
                 child.setTextColor(2, rightonly_colour)
             child.setText(1, lvalue)
             if rvalue is None: rvalue = '(no value)'
             if rvalue == '':
                 leftonly = True
-                ## child.setBackgroundColor(0, leftonly_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, leftonly_colour)
-                ## child.setBackgroundColor(1, leftonly_colour)
-                ## child.setTextColor(1, inversetext_colour)
                 child.setTextColor(1, leftonly_colour)
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
-                ## child.setBackgroundColor(0, difference_colour)
-                ## child.setTextColor(0, inversetext_colour)
                 child.setTextColor(0, difference_colour)
-                ## child.setBackgroundColor(1, difference_colour)
-                ## child.setTextColor(1, inversetext_colour)
                 child.setTextColor(1, difference_colour)
-                ## child.setBackgroundColor(2, difference_colour)
-                ## child.setTextColor(2, inversetext_colour)
                 child.setTextColor(2, difference_colour)
             child.setText(2, rvalue)
             header.addChild(child)
@@ -219,8 +231,9 @@ class ShowComparison(gui.QTreeWidget):
             if elems != current_elems:
                 if not current_elems:
                     header = gui.QTreeWidgetItem()
-                    header.setText(0, elems[-1])
+                    header.setText(0, '<>' + elems[-1][0])
                     self.addTopLevelItem(header)
+                    header.setExpanded(True)
                 else:
                     self.colorize_header(header, rightonly, leftonly, difference)
                     if len(elems) > len(current_elems):
@@ -230,7 +243,7 @@ class ShowComparison(gui.QTreeWidget):
                     else:
                         parent = header.parent()
                     header = gui.QTreeWidgetItem()
-                    header.setText(0, '<> ' + elems[-1])
+                    header.setText(0, '<> ' + elems[-1][0])
                     parent.addChild(header)
                 current_elems = elems
                 rightonly = leftonly = difference = False
@@ -285,6 +298,8 @@ class MainWindow(gui.QMainWindow):
         self.linkerpad ,self.rechterpad = args
         self.data = {}
         self.selected_option = ''
+        self.linkerpad = ''
+        self.rechterpad = ''
         self.selectiontype = ''
         self.menuactions = {}
 
@@ -377,7 +392,11 @@ class MainWindow(gui.QMainWindow):
             self.doit()
 
     def doit(self, event=None):
-        self.sb.clearMessage()
+        mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
+        if mld:
+            gui.QMessageBox.critical(self, apptitel, 'Nog geen bestanden en '
+                'vergelijkingsmethode gekozen')
+            return
         if self.do_compare():
             if self.linkerpad in self.mru_left:
                 self.mru_left.remove(self.linkerpad)
@@ -391,25 +410,6 @@ class MainWindow(gui.QMainWindow):
             self.win.refresh_tree()
 
     def do_compare(self):
-        fout = ''
-        if self.linkerpad == "":
-            fout ='Geen linkerbestand opgegeven'
-        else:
-            if not os.path.exists(self.linkerpad):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' %
-                    self.linkerpad)
-        if self.rechterpad == "":
-            fout ='Geen rechterbestand opgegeven'
-        else:
-            if not os.path.exists(self.rechterpad):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' %
-                    self.rechterpad)
-        if self.selectiontype not in comparetypes:
-            fout = 'Geen vergelijkingsmethode gekozen'
-        if fout:
-            self.sb.showMessage(fout)
-            gui.QMessageBox.critical(self, apptitel, fout)
-            return False
         compare_func = comparetypes[self.selectiontype][1]
         try:
             self.data = compare_func(self.linkerpad,self.rechterpad)
@@ -430,6 +430,8 @@ class MainWindow(gui.QMainWindow):
                 info = "bevat geen correcte XML"
             elif error == MissingSectionHeaderError:
                 info = "begint niet met een header"
+            else:
+                info = "geeft een fout"
             box.setText("Tenminste één file " + info)
             box.setInformativeText('<pre>{}</pre>'.format(''.join(
                 traceback.format_exception(error, msg, tb))))
