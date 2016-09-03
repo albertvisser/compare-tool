@@ -92,6 +92,8 @@ def compare_xmldata(fn1, fn2):
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
+        if eof_gen1 and eof_gen2:
+            break
         get_from_1 = get_from_2 = False
         ## print((sect1, opt1), (sect2, opt2))
         # probleem:dit werkt niet als de elem lijsten ongelijk van lengte zijn want dan
@@ -128,8 +130,6 @@ def compare_xmldata(fn1, fn2):
             eof_gen1, elem1, attr1, val1 = gen_next(gen1)
         if get_from_2:
             eof_gen2, elem2, attr2, val2 = gen_next(gen2)
-        if eof_gen1 and eof_gen2:
-            break
     return result
 
 

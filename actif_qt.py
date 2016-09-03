@@ -7,6 +7,7 @@ import PyQt4.QtGui as gui
 import PyQt4.QtCore as core
 from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from xml_comp import compare_xmldata, ParseError
+from txt_comp import compare_txtdata
 
 ID_OPEN = 101
 ID_DOIT = 102
@@ -21,6 +22,7 @@ comparetypes = {
     'ini': ('ini files', compare_configs),
     'ini2': ('ini files, allowing for missing first header', compare_configs_2),
     'xml': ('XML files', compare_xmldata),
+    'txt': ('Simple text comparison', compare_txtdata),
     }
 
 def check_input(linkerpad, rechterpad, seltype):
@@ -180,6 +182,8 @@ class ShowComparison(gui.QTreeWidget):
             self.refresh_inicompare()
         elif self.parent.selectiontype == 'xml':
             self.refresh_xmlcompare()
+        elif self.parent.selectiontype == 'txt':
+            self.refresh_txtcompare()
 
     def refresh_inicompare(self):
         self.setHeaderLabels(['Section/Option', self.parent.linkerpad,
@@ -278,6 +282,23 @@ class ShowComparison(gui.QTreeWidget):
             child.setText(2, rvalue)
             header.addChild(child)
         self.colorize_header(header, rightonly, leftonly, difference)
+
+    def refresh_txtcompare(self):
+        self.setHeaderLabels(['Text in both files', self.parent.linkerpad,
+            self.parent.rechterpad])
+        self.clear()
+        current_section = ''
+        for x in self.parent.data:
+            bvalue, lvalue, rvalue = x
+            node = gui.QTreeWidgetItem()
+            node.setText(0, bvalue)
+            node.setText(1, lvalue)
+            node.setText(2, rvalue)
+            if lvalue:
+                node.setTextColor(1, leftonly_colour)
+            if rvalue:
+                node.setTextColor(2, rightonly_colour)
+            self.addTopLevelItem(node)
 
     def colorize_header(self, header, rightonly, leftonly, difference):
         if rightonly and not leftonly:
@@ -441,7 +462,7 @@ class MainWindow(gui.QMainWindow):
 
     def about(self, event=None):
         dlg = gui.QMessageBox.information(self, apptitel, '\n'.join((
-            "Met dit programma kun je twee ini files met elkaar vergelijken,",
+            "Met dit programma kun je twee (ini) files met elkaar vergelijken,",
             "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
             "",
             "Het is ook bruikbaar voor XML bestanden.")))

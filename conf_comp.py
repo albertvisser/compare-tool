@@ -65,6 +65,8 @@ def compare_configs(fn1, fn2):
     eof_gen2, sect2, opt2, val2 = gen_next(gen2)
     # nog leuke trucjes met itertools mogelijk?
     while True:
+        if eof_gen1 and eof_gen2:
+            break
         get_from_1 = get_from_2 = False
         ## print((sect1, opt1), (sect2, opt2))
         if (eof_gen1, sect1) < (eof_gen2, sect2):
@@ -90,8 +92,6 @@ def compare_configs(fn1, fn2):
             eof_gen1, sect1, opt1, val1 = gen_next(gen1)
         if get_from_2:
             eof_gen2, sect2, opt2, val2 = gen_next(gen2)
-        if eof_gen1 and eof_gen2:
-            break
     return result
 
 
