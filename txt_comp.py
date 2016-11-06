@@ -1,3 +1,5 @@
+import os.path
+
 """out-of-sequence tekst vergelijking
 
 eenvoudigweg sorteren en daarna vergelijken
@@ -27,10 +29,10 @@ def compare_txtdata(fn1, fn2):
         if eof1 and eof2:
             break
         get_from_1 = get_from_2 = False
-        if line1 < line2:
+        if (eof1, line1) < (eof2, line2):
             result.append(['', line1, ''])
             get_from_1 = True
-        elif line1 > line2:
+        elif (eof1, line1) > (eof2, line2):
             result.append(['', '', line2])
             get_from_2 = True
         else:
