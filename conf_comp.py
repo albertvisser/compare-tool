@@ -10,7 +10,10 @@ def sort_inifile(fn):
     """define a generator that yields the sorted options
     """
     test = ConfigParser(allow_no_value=True, interpolation=None)
-    test.read(fn)
+    try:
+        test.read(fn)
+    except UnicodeDecodeError:
+        test.read(fn, encoding='latin-1') # fallback for MS Windows
     for sect in sorted(test.sections()):
     ## for sect in test.sections():
         for opt in sorted(test.options(sect)):

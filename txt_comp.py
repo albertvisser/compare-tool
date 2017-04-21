@@ -5,13 +5,21 @@ import os.path
 eenvoudigweg sorteren en daarna vergelijken
 geen diff-logica als whitespace negeren e.d. (voor nu)
 """
+def get_file(fn):
+    data = []
+    f_in = open(fn)
+    try:
+        with f_in:
+            data = sorted(f_in.readlines())
+    except UnicodeDecodeError:
+        f_in = open(fn, encoding='latin-1')
+        with f_in:
+            data = sorted(f_in.readlines())
+    return data
 
 def compare_txtdata(fn1, fn2):
-    left_data, right_data = [], []
-    with open(fn1) as f_in:
-        left_data = sorted(f_in.readlines())
-    with open(fn2) as f_in:
-        right_data = sorted(f_in.readlines())
+    left_data = get_file(fn1)
+    right_data = get_file(fn2)
     result = []
     gen1 = (x.rstrip() for x in left_data)
     gen2 = (x.rstrip() for x in right_data)
