@@ -320,11 +320,9 @@ class MainWindow(qtw.QMainWindow):
         super().__init__(parent)
         ## gui.QMainWindow.__init__(self, parent)
         f = self.readini()
-        self.linkerpad ,self.rechterpad = args
+        self.linkerpad, self.rechterpad = args
         self.data = {}
         self.selected_option = ''
-        self.linkerpad = ''
-        self.rechterpad = ''
         self.selectiontype = ''
         self.menuactions = {}
 
@@ -337,7 +335,12 @@ class MainWindow(qtw.QMainWindow):
         self.setCentralWidget(self.win)
 
         if self.linkerpad and self.rechterpad:
-            self.doit()
+            extl = os.path.splitext(self.linkerpad)[1][1:]
+            extr = os.path.splitext(self.rechterpad)[1][1:]
+            if extl == extr and extl.lower() in comparetypes:
+                self.selectiontype = extl.lower()
+                self.doit(first_time=True)
+            self.doit(first_time=True)
         else:
             self.about()
             self.open()
@@ -410,11 +413,16 @@ class MainWindow(qtw.QMainWindow):
         if dlg == qtw.QDialog.Accepted:
             self.doit()
 
-    def doit(self, event=None):
+    def doit(self, event=None, first_time=False):
         mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
         if mld:
-            qtw.QMessageBox.critical(self, apptitel, 'Nog geen bestanden en '
-                'vergelijkingsmethode gekozen')
+            if first_time:
+                qtw.QMessageBox.critical(self, apptitel, 'Kies s.v.p.een '
+                    'vergelijkingsmethode')
+                self.open()
+            else:
+                qtw.QMessageBox.critical(self, apptitel, 'Nog geen bestanden en '
+                    'vergelijkingsmethode gekozen')
             return
         if self.do_compare():
             if self.linkerpad in self.mru_left:
@@ -477,10 +485,10 @@ class MainWindow(qtw.QMainWindow):
         self.close()
 
 
-def main(a1=None, a2=None):
+def main(a1="", a2=""):
     #~ print a1, a2
     app = qtw.QApplication(sys.argv)
-    appargs = (a1,a2)
+    appargs = (a1, a2)
     frame = MainWindow(None, appargs)
     sys.exit(app.exec_())
 
