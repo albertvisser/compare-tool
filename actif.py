@@ -1,3 +1,4 @@
+#! /usr/bin/env python3
 import sys
 ## from actif_qt4 import main
 from actif_qt import main
