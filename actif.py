@@ -1,4 +1,6 @@
 #! /usr/bin/env python3
+"""starter for Compare Tool
+"""
 import sys
 ## from actif_qt4 import main
 from actif_qt import main

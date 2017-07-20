@@ -1,10 +1,12 @@
-import sys
-import os
-import collections
-import pprint
-# vergelijk entries in config file
+"""Compare logic for ini files
 
+sort sections and options before comparing
+"""
+import os
+## import collections
+import pprint
 from configparser import ConfigParser, MissingSectionHeaderError
+
 
 def sort_inifile(fn):
     """define a generator that yields the sorted options
@@ -13,13 +15,11 @@ def sort_inifile(fn):
     try:
         test.read(fn)
     except UnicodeDecodeError:
-        test.read(fn, encoding='latin-1') # fallback for MS Windows
+        test.read(fn, encoding='latin-1')  # fallback for MS Windows
     for sect in sorted(test.sections()):
-    ## for sect in test.sections():
         for opt in sorted(test.options(sect)):
-        ## for opt in test.options(sect):
-            ## print(sect, opt, test[sect][opt])
             yield sect, opt, test[sect][opt]
+
 
 def check_inifile(fn):
     """copy to a temporary file, making sure first line contains a section header
@@ -27,7 +27,7 @@ def check_inifile(fn):
     returns the name of the temporary file
     """
     hlpfn = os.path.join('/tmp', os.path.basename(fn))
-    with open(fn,encoding='latin-1') as f_in, open(hlpfn, 'w') as f_out:
+    with open(fn, encoding='latin-1') as f_in, open(hlpfn, 'w') as f_out:
         first = True
         for line in f_in:
             if first:
@@ -36,6 +36,7 @@ def check_inifile(fn):
                 first = False
             f_out.write(line)
     return hlpfn
+
 
 def build_options_list(fn):
     """return a sorted list of options
@@ -49,13 +50,16 @@ def build_options_list(fn):
             break
     return result
 
+
 def compare_configs(fn1, fn2):
     """compare two ini files
     """
     result = []
     gen1 = sort_inifile(fn1)
     gen2 = sort_inifile(fn2)
+
     def gen_next(gen):
+        "generator to get next item from file"
         eof = False
         try:
             sect, opt, val = next(gen)
@@ -63,7 +67,6 @@ def compare_configs(fn1, fn2):
             eof = True
             sect = opt = val = ''
         return eof, sect, opt, val
-    current_sect = current_opt = ''
     eof_gen1, sect1, opt1, val1 = gen_next(gen1)
     eof_gen2, sect2, opt2, val2 = gen_next(gen2)
     # nog leuke trucjes met itertools mogelijk?
@@ -71,7 +74,6 @@ def compare_configs(fn1, fn2):
         if eof_gen1 and eof_gen2:
             break
         get_from_1 = get_from_2 = False
-        ## print((sect1, opt1), (sect2, opt2))
         if (eof_gen1, sect1) < (eof_gen2, sect2):
             result.append(((sect1, opt1), val1, ''))
             if not eof_gen1:

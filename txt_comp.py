@@ -1,11 +1,13 @@
-import os.path
-
 """out-of-sequence tekst vergelijking
 
 eenvoudigweg sorteren en daarna vergelijken
 geen diff-logica als whitespace negeren e.d. (voor nu)
 """
+
+
 def get_file(fn):
+    """return a sorted list of lines from the file
+    """
     data = []
     f_in = open(fn)
     try:
@@ -17,13 +19,18 @@ def get_file(fn):
             data = sorted(f_in.readlines())
     return data
 
+
 def compare_txtdata(fn1, fn2):
+    """compare two text files
+    """
     left_data = get_file(fn1)
     right_data = get_file(fn2)
     result = []
     gen1 = (x.rstrip() for x in left_data)
     gen2 = (x.rstrip() for x in right_data)
+
     def gen_next(gen):
+        "generator to get next item from file"
         eof = False
         try:
             nextline = next(gen)

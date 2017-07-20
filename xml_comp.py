@@ -1,9 +1,4 @@
-import xml.etree.ElementTree as et
-import collections
-import pprint
-ParseError = et.ParseError
-
-"""
+"""Compare logic for xml files
 
 1e kolom: tree position
 2e kolom: value left
@@ -16,12 +11,19 @@ bij <x><y1 a1='1' a2='2'></y1><y2><z1>gragl</z1></y2></x>
 (((x, y1), a2),'2', '')
 (((x, y2, z1), ),'gargl', '')
 """
+import xml.etree.ElementTree as et
+## import collections
+import pprint
+ParseError = et.ParseError
+
 
 def sort_xmldata(fn):
     """sorteert op elementnaam en daarbinnen op waarde van het eerste element
     (instelbaar maken zodat je kunt kiezen op welk attribuut geordend wordt)
     """
     def getattrval(element):
+        """return value for "identifying" attribute
+        """
         default = retval = ''
         for attr, val in element.items():
             if not default:
@@ -33,7 +35,10 @@ def sort_xmldata(fn):
         if not retval:
             retval = default
         return retval
+
     def process_subelements():
+        """recursive routine to walk through the XML DOM tree
+        """
         nonlocal result, current_element_list
         current_element = current_element_list[-1]
         subelements = sorted(set(x.tag for x in list(current_element[0])))
@@ -57,7 +62,7 @@ def sort_xmldata(fn):
                     attr_name, datavalue = attr
                     result.append((nodevalue, attr_name, datavalue))
                 current_element_list.append((element, ix))
-                retlist = process_subelements()
+                process_subelements()
                 current_element_list.pop()
     result = []
     tree = et.parse(fn)
@@ -70,9 +75,10 @@ def sort_xmldata(fn):
         attr_name = datavalue = ''
     result.append((nodevalue, attr_name, datavalue))
     # get a sorted list of the subelement names
-    current_element_list = [(root, 0),]
+    current_element_list = [(root, 0), ]
     process_subelements()
     return result
+
 
 def compare_xmldata(fn1, fn2):
     """compare two similar xml documents
@@ -80,7 +86,9 @@ def compare_xmldata(fn1, fn2):
     result = []
     gen1 = (x for x in sort_xmldata(fn1))
     gen2 = (x for x in sort_xmldata(fn2))
+
     def gen_next(gen):
+        "generator to get next values from data collection"
         eof = False
         try:
             elem, attr, val = next(gen)
@@ -88,7 +96,6 @@ def compare_xmldata(fn1, fn2):
             eof = True
             elem = attr = val = ''
         return eof, elem, attr, val
-    current_elem = current_attr = ''
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
@@ -107,7 +114,7 @@ def compare_xmldata(fn1, fn2):
             if not eof_gen2:
                 get_from_2 = True
         else:
-            if (eof_gen1, elem1)  < (eof_gen2, elem2):
+            if (eof_gen1, elem1) < (eof_gen2, elem2):
                 result.append(((elem1, attr1), val1, ''))
                 if not eof_gen1:
                     get_from_1 = True
@@ -134,18 +141,23 @@ def compare_xmldata(fn1, fn2):
 
 
 def main():
+    "function to test/demonstrate what's in this module"
     ## pprint.pprint(compare_xmldata('.lmmsrc.xml', '.lmmsrc_o.xml'))
     ## pprint.pprint(sort_xmldata('.lmmsrc.xml'))
     with open('bezettingen_current', 'w') as _o:
         pprint.pprint(sort_xmldata('/home/albert/magiokis/data/songs/'
-            'magiokis_songs_xmldata/Bezettingen.xml'), stream=_o)
+                                   'magiokis_songs_xmldata/Bezettingen.xml'),
+                      stream=_o)
     with open('bezettingen_backup', 'w') as _o:
         pprint.pprint(sort_xmldata('/home/albert/magiokis/data/songs/'
-            'magiokis_songs_xmldata/Bezettingen.xml.bak'), stream=_o)
+                                   'magiokis_songs_xmldata/Bezettingen.xml.bak'),
+                      stream=_o)
     with open('bezettingen_compare', 'w') as _o:
         pprint.pprint(compare_xmldata('/home/albert/magiokis/data/songs/'
-            'magiokis_songs_xmldata/Bezettingen.xml', '/home/albert/magiokis/'
-            'data/songs/magiokis_songs_xmldata/Bezettingen.xml.bak'), stream=_o)
+                                      'magiokis_songs_xmldata/Bezettingen.xml',
+                                      '/home/albert/magiokis/data/songs/'
+                                      'magiokis_songs_xmldata/Bezettingen.xml.bak'),
+                      stream=_o)
 
 if __name__ == '__main__':
     main()

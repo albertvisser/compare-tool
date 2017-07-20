@@ -1,4 +1,5 @@
-#! -*- coding: utf-8 -*-
+"""Presentation logic for Compare Tool - PyQT5 version
+"""
 # ik laat het "synchronized scrollen" even zitten en daarmee ook de keuze verticaal / horizontaal
 import wx
 import  wx.lib.filebrowsebutton as filebrowse

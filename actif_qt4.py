@@ -1,7 +1,7 @@
-#! -*- coding: utf-8 -*-
+"""Presentation logic for Compare Tool - PyQT4 version - currently unmaintained
+"""
 import sys
 from configparser import ConfigParser
-from os import getcwd
 import os.path
 import traceback
 import PyQt4.QtGui as gui
@@ -23,10 +23,12 @@ comparetypes = {
     'ini': ('ini files', compare_configs),
     'ini2': ('ini files, allowing for missing first header', compare_configs_2),
     'xml': ('XML files', compare_xmldata),
-    'txt': ('Simple text comparison', compare_txtdata),
-    }
+    'txt': ('Simple text comparison', compare_txtdata)}
+
 
 def check_input(linkerpad, rechterpad, seltype):
+    """parse input
+    """
     if linkerpad == "":
         return 'Geen linkerbestand opgegeven'
     else:
@@ -50,9 +52,10 @@ class FileBrowseButton(gui.QFrame):
     """
     def __init__(self, parent, caption="", text="", items=None):
         self.parent = parent
-        if items is None: items = []
+        if items is None:
+            items = []
         super().__init__(parent)
-        self.setFrameStyle(gui.QFrame.Panel | gui.QFrame.Raised);
+        self.setFrameStyle(gui.QFrame.Panel | gui.QFrame.Raised)
         vbox = gui.QVBoxLayout()
         box = gui.QHBoxLayout()
         ## self.input = gui.QLineEdit(text, self)
@@ -73,6 +76,8 @@ class FileBrowseButton(gui.QFrame):
         self.setLayout(vbox)
 
     def browse(self):
+        """callback for the "Browse" button
+        """
         startdir = str(self.input.currentText()) or os.getcwd()
         path = gui.QFileDialog.getOpenFileName(self, 'Kies een bestand', startdir)
         if path:
@@ -95,8 +100,8 @@ class AskOpenFiles(gui.QDialog):
 
         hsizer = gui.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Linker bestand:  ',
-            text=self.parent.linkerpad,
-            items=self.parent.mru_left)
+                                  text=self.parent.linkerpad,
+                                  items=self.parent.mru_left)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
@@ -105,8 +110,8 @@ class AskOpenFiles(gui.QDialog):
 
         hsizer = gui.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Rechter bestand: ',
-            text=self.parent.rechterpad,
-            items=self.parent.mru_right)
+                                  text=self.parent.rechterpad,
+                                  items=self.parent.mru_right)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
@@ -129,10 +134,9 @@ class AskOpenFiles(gui.QDialog):
         hsizer.addStretch()
         self.sizer.addLayout(hsizer)
 
-
         buttonbox = gui.QDialogButtonBox()
-        btn = buttonbox.addButton(gui.QDialogButtonBox.Ok)
-        btn = buttonbox.addButton(gui.QDialogButtonBox.Cancel)
+        buttonbox.addButton(gui.QDialogButtonBox.Ok)
+        buttonbox.addButton(gui.QDialogButtonBox.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
         hsizer = gui.QHBoxLayout()
@@ -143,6 +147,8 @@ class AskOpenFiles(gui.QDialog):
         self.setLayout(self.sizer)
 
     def accept(self):
+        """transmit the chosen data
+        """
         linkerpad = self.browse1.input.currentText()
         rechterpad = self.browse2.input.currentText()
         selectiontype = ''
@@ -161,13 +167,14 @@ class AskOpenFiles(gui.QDialog):
 
 
 class ShowComparison(gui.QTreeWidget):
-
+    """Part of the main window showing the comparison as a tree
+    """
     def __init__(self, parent):
         self.parent = parent
         super().__init__(parent)
         self.setColumnCount(3)
         self.setHeaderLabels(['Document structure', 'value in "lefthand-side" file',
-            'value in "righthand-side" file'])
+                              'value in "righthand-side" file'])
         hdr = self.header()
         hdr.resizeSection(0, 100)
         hdr.resizeSection(0, 350)
@@ -179,6 +186,8 @@ class ShowComparison(gui.QTreeWidget):
         self.show()
 
     def refresh_tree(self):
+        """(re)do the comparison
+        """
         if self.parent.selectiontype in ('ini', 'ini2'):
             self.refresh_inicompare()
         elif self.parent.selectiontype == 'xml':
@@ -187,8 +196,10 @@ class ShowComparison(gui.QTreeWidget):
             self.refresh_txtcompare()
 
     def refresh_inicompare(self):
+        """(re)do comparing the ini files
+        """
         self.setHeaderLabels(['Section/Option', self.parent.linkerpad,
-            self.parent.rechterpad])
+                              self.parent.rechterpad])
         self.clear()
         current_section = ''
         for x in self.parent.data:
@@ -204,13 +215,15 @@ class ShowComparison(gui.QTreeWidget):
                 rightonly = leftonly = difference = False
             child = gui.QTreeWidgetItem()
             child.setText(0, option)
-            if lvalue is None: lvalue = '(no value)'
+            if lvalue is None:
+                lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
                 child.setTextColor(0, rightonly_colour)
                 child.setTextColor(2, rightonly_colour)
             child.setText(1, lvalue)
-            if rvalue is None: rvalue = '(no value)'
+            if rvalue is None:
+                rvalue = '(no value)'
             if rvalue == '':
                 leftonly = True
                 child.setTextColor(0, leftonly_colour)
@@ -226,11 +239,12 @@ class ShowComparison(gui.QTreeWidget):
             self.colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_xmlcompare(self):
+        """(re)do the XML compare
+        """
         self.setHeaderLabels(['Element/Attribute', self.parent.linkerpad,
-            self.parent.rechterpad])
+                              self.parent.rechterpad])
         self.clear()
         current_elems = []
-        count = 0
         for x in self.parent.data:
             node, lvalue, rvalue = x
             elems, attr = node
@@ -265,13 +279,15 @@ class ShowComparison(gui.QTreeWidget):
                 continue
             child = gui.QTreeWidgetItem()
             child.setText(0, attr)
-            if lvalue is None: lvalue = '(no value)'
+            if lvalue is None:
+                lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
                 child.setTextColor(0, rightonly_colour)
                 child.setTextColor(2, rightonly_colour)
             child.setText(1, lvalue)
-            if rvalue is None: rvalue = '(no value)'
+            if rvalue is None:
+                rvalue = '(no value)'
             if rvalue == '':
                 leftonly = True
                 child.setTextColor(0, leftonly_colour)
@@ -287,10 +303,11 @@ class ShowComparison(gui.QTreeWidget):
             self.colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_txtcompare(self):
+        """(re)do the text compare
+        """
         self.setHeaderLabels(['Text in both files', self.parent.linkerpad,
-            self.parent.rechterpad])
+                              self.parent.rechterpad])
         self.clear()
-        current_section = ''
         for x in self.parent.data:
             bvalue, lvalue, rvalue = x
             node = gui.QTreeWidgetItem()
@@ -304,6 +321,8 @@ class ShowComparison(gui.QTreeWidget):
             self.addTopLevelItem(node)
 
     def colorize_header(self, header, rightonly, leftonly, difference):
+        """visualize the difference by coloring the header
+        """
         if rightonly and not leftonly:
             header.setTextColor(0, rightonly_colour)
         if leftonly and not rightonly:
@@ -311,15 +330,17 @@ class ShowComparison(gui.QTreeWidget):
         if difference or (leftonly and rightonly):
             header.setTextColor(0, difference_colour)
 
-class MainWindow(gui.QMainWindow):
 
+class MainWindow(gui.QMainWindow):
+    """Application screen
+    """
     def __init__(self, parent, args):
         self.inifile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-            "actif.ini")
+                                    "actif.ini")
         super().__init__(parent)
         ## gui.QMainWindow.__init__(self, parent)
-        f = self.readini()
-        self.linkerpad ,self.rechterpad = args
+        self.readini()
+        self.linkerpad, self.rechterpad = args
         self.data = {}
         self.selected_option = ''
         self.linkerpad = ''
@@ -327,7 +348,7 @@ class MainWindow(gui.QMainWindow):
         self.selectiontype = ''
         self.menuactions = {}
 
-        self.resize(1024,600)
+        self.resize(1024, 600)
         self.setWindowTitle('Vergelijken van ini files')
         self.setWindowIcon(gui.QIcon('inicomp.ico'))
         self.sb = self.statusBar()
@@ -343,7 +364,8 @@ class MainWindow(gui.QMainWindow):
         self.show()
 
     def setup_menu(self):
-        # Setting up the menu.
+        """Setting up the menu
+        """
         self.menu_bar = self.menuBar()
         menu = self.menu_bar.addMenu("&File")
         act = gui.QAction("&Open", self)
@@ -374,7 +396,8 @@ class MainWindow(gui.QMainWindow):
         self.menuactions[ID_ABOUT] = act
 
     def readini(self):
-        # inlezen mru-gegevens
+        """inlezen mru-gegevens
+        """
         self.mru_left = []
         self.mru_right = []
         self.horizontal = True
@@ -383,71 +406,64 @@ class MainWindow(gui.QMainWindow):
         s.read(self.inifile)
         if s.has_section("leftpane"):
             for i in range(len(s.options("leftpane"))):
-                ky = ("file%i"  % (i+1))
-                self.mru_left.append(s.get("leftpane",ky))
+                ky = ("file%i" % (i + 1))
+                self.mru_left.append(s.get("leftpane", ky))
         if s.has_section("rightpane"):
             for i in range(len(s.options("rightpane"))):
-                ky = ("file%i"  % (i+1))
-                self.mru_right.append(s.get("rightpane",ky))
-        ## if s.has_section("options"):
-            ## if s.has_option("options","LeftRight"):
-                ## if s.getboolean("options","LeftRight"):
-                    ## self.horizontal = False
+                ky = ("file%i" % (i + 1))
+                self.mru_right.append(s.get("rightpane", ky))
 
     def schrijfini(self):
+        """save parameters
+        """
         s = ConfigParser()
         if len(self.mru_left) > 0:
             s.add_section("leftpane")
             for x in enumerate(self.mru_left):
-                i = x[0]+1
-                s.set("leftpane",("file%i" % i),x[1])
+                i = x[0] + 1
+                s.set("leftpane", "file%i" % i, x[1])
         if len(self.mru_right) > 0:
             s.add_section("rightpane")
             for x in enumerate(self.mru_right):
-                s.set("rightpane",("file%i" % (x[0]+1)),x[1])
-        ## s.add_section("options")
-        ## s.set("options","LeftRight",str(self.LeftRight))
-        with open(self.inifile,"w") as _out:
+                s.set("rightpane", "file%i" % (x[0] + 1), x[1])
+        with open(self.inifile, "w") as _out:
             s.write(_out)
 
     def open(self, event=None):
+        """ask for files to compare
+        """
         dlg = AskOpenFiles(self).exec_()
         if dlg == gui.QDialog.Accepted:
             self.doit()
 
     def doit(self, event=None):
+        """perform action
+        """
         mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
         if mld:
             gui.QMessageBox.critical(self, apptitel, 'Nog geen bestanden en '
-                'vergelijkingsmethode gekozen')
+                                     'vergelijkingsmethode gekozen')
             return
         if self.do_compare():
             if self.linkerpad in self.mru_left:
                 self.mru_left.remove(self.linkerpad)
-            self.mru_left.insert(0,self.linkerpad)
+            self.mru_left.insert(0, self.linkerpad)
             if self.rechterpad in self.mru_right:
                 self.mru_right.remove(self.rechterpad)
-            self.mru_right.insert(0,self.rechterpad)
+            self.mru_right.insert(0, self.rechterpad)
             self.schrijfini()
             if self.data:
                 self.selected_option = self.data[0]
             self.win.refresh_tree()
 
     def do_compare(self):
+        """do the actual comparison
+        """
         compare_func = comparetypes[self.selectiontype][1]
         try:
-            self.data = compare_func(self.linkerpad,self.rechterpad)
+            self.data = compare_func(self.linkerpad, self.rechterpad)
         except Exception as err:
             error, msg, tb = sys.exc_info()
-            #fout = ["An error occurred.\n",
-            ## if error == ParseError:
-                ## fout.append("Misschien heb je de verkeerde vergelijkingsmethode "
-                    ## "gekozen.\n")
-            ## elif error == MissingSectionHeaderError:
-                ## fout.append("
-            #    "\n"] + traceback.format_exception(error, msg, tb)
-            #text = '<pre>{}</pre>'.format('<br>'.join(fout))
-            #gui.QMessageBox.critical(self, apptitel, text)
             box = gui.QMessageBox(self)
             box.setWindowTitle(apptitel)
             if error == ParseError:
@@ -464,7 +480,9 @@ class MainWindow(gui.QMainWindow):
         return True
 
     def about(self, event=None):
-        dlg = gui.QMessageBox.information(self, apptitel, '\n'.join((
+        """opening blurb
+        """
+        gui.QMessageBox.information(self, apptitel, '\n'.join((
             "Met dit programma kun je twee (ini) files met elkaar vergelijken,",
             "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
             "",
@@ -479,13 +497,13 @@ class MainWindow(gui.QMainWindow):
             super().keyPressEvent(evt)
 
     def exit(self, event):
+        "quit"
         self.close()
 
 
 def main(a1=None, a2=None):
-    #~ print a1, a2
+    "main function"
     app = gui.QApplication(sys.argv)
-    appargs = (a1,a2)
-    frame = MainWindow(None, appargs)
+    appargs = (a1, a2)
+    MainWindow(None, appargs)
     sys.exit(app.exec_())
-
