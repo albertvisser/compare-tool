@@ -364,7 +364,6 @@ class MainWindow(qtw.QMainWindow):
         else:
             self.about()
             self.open()
-        self.show()
 
     def add_action_to_menu(self, name, callback, shortcut, statustext, menu):
         """build a menu line
@@ -509,5 +508,6 @@ def main(a1="", a2=""):
     "main function"
     app = qtw.QApplication(sys.argv)
     appargs = (a1, a2)
-    MainWindow(None, appargs)
+    win = MainWindow(None, appargs)
+    win.show()
     sys.exit(app.exec_())
