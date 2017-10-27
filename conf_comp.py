@@ -2,7 +2,7 @@
 
 sort sections and options before comparing
 """
-import os
+import pathlib
 ## import collections
 import pprint
 from configparser import ConfigParser, MissingSectionHeaderError
@@ -26,16 +26,30 @@ def check_inifile(fn):
 
     returns the name of the temporary file
     """
-    hlpfn = os.path.join('/tmp', os.path.basename(fn))
-    with open(fn, encoding='latin-1') as f_in, open(hlpfn, 'w') as f_out:
-        first = True
-        for line in f_in:
-            if first:
-                if not line.startswith('['):
-                    f_out.write('[  --- generated first header ---  ]\n')
-                first = False
-            f_out.write(line)
-    return hlpfn
+    fn = pathlib.Path(fn)
+    hlpfn = pathlib.Path('/tmp') / fn.name
+    try_again = False
+    with fn.open() as f_in, hlpfn.open('w') as f_out:
+        try:
+            first = True
+            for line in f_in:
+                if first:
+                    if not line.startswith('['):
+                        f_out.write('[  --- generated first header ---  ]\n')
+                    first = False
+                f_out.write(line)
+        except UnicodeDecodeError:  # fallback for Windows
+            try_again = True
+    if try_again:
+        with fn.open(encoding='latin-1') as f_in, hlpfn.open('w') as f_out:
+            first = True
+            for line in f_in:
+                if first:
+                    if not line.startswith('['):
+                        f_out.write('[  --- generated first header ---  ]\n')
+                    first = False
+                f_out.write(line)
+    return str(hlpfn)
 
 
 def build_options_list(fn):

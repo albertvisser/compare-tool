@@ -3,6 +3,7 @@
 import sys
 from configparser import ConfigParser
 import os.path
+import pathlib
 import traceback
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
@@ -33,13 +34,13 @@ def check_input(linkerpad, rechterpad, seltype):
     if linkerpad == "":
         return 'Geen linkerbestand opgegeven'
     else:
-        if not os.path.exists(linkerpad):
+        if not pathlib.Path(linkerpad).exists():
             return 'Bestand {} kon niet gevonden/geopend worden'.format(
                 linkerpad)
     if rechterpad == "":
         return 'Geen rechterbestand opgegeven'
     else:
-        if not os.path.exists(rechterpad):
+        if not pathlib.Path(rechterpad).exists():
             return 'Bestand {} kon niet gevonden/geopend worden'.format(
                 rechterpad)
     if seltype not in comparetypes:
@@ -336,8 +337,7 @@ class MainWindow(qtw.QMainWindow):
     """Application screen
     """
     def __init__(self, parent, args):
-        self.inifile = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                    "actif.ini")
+        self.inifile = str(pathlib.Path(__file__).parent.resolve() / "actif.ini")
         super().__init__(parent)
         self.readini()
         self.linkerpad, self.rechterpad = args
@@ -355,11 +355,11 @@ class MainWindow(qtw.QMainWindow):
         self.setCentralWidget(self.win)
 
         if self.linkerpad and self.rechterpad:
-            extl = os.path.splitext(self.linkerpad)[1][1:]
-            extr = os.path.splitext(self.rechterpad)[1][1:]
+            extl = pathlib.Path(self.linkerpad).suffix[1:]
+            extr = pathlib.Path(self.rechterpad).suffix[1:]
             if extl == extr and extl.lower() in comparetypes:
                 self.selectiontype = extl.lower()
-                self.doit(first_time=True)
+                ## self.doit(first_time=True)
             self.doit(first_time=True)
         else:
             self.about()
