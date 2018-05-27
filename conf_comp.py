@@ -3,7 +3,6 @@
 sort sections and options before comparing
 """
 import pathlib
-## import collections
 import pprint
 from configparser import ConfigParser, MissingSectionHeaderError
 

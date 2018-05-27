@@ -47,6 +47,17 @@ def check_input(linkerpad, rechterpad, seltype):
         return 'Geen vergelijkingsmethode gekozen'
 
 
+def colorize_header(header, rightonly, leftonly, difference):
+    """visualize the difference by coloring the header
+    """
+    if rightonly and not leftonly:
+        header.setForeground(0, rightonly_colour)
+    if leftonly and not rightonly:
+        header.setForeground(0, leftonly_colour)
+    if difference or (leftonly and rightonly):
+        header.setForeground(0, difference_colour)
+
+
 class FileBrowseButton(qtw.QFrame):
     """Combination widget showing a text field and a button
     making it possible to either manually enter a filename or select
@@ -257,7 +268,7 @@ class ShowComparison(qtw.QTreeWidget):
                     self.addTopLevelItem(header)
                     header.setExpanded(True)
                 else:
-                    self.colorize_header(header, rightonly, leftonly, difference)
+                    colorize_header(header, rightonly, leftonly, difference)
                     if len(elems) > len(current_elems):
                         parent = header
                     elif len(elems) < len(current_elems):
@@ -302,7 +313,7 @@ class ShowComparison(qtw.QTreeWidget):
             child.setText(2, rvalue)
             header.addChild(child)
         if self.parent.data:
-            self.colorize_header(header, rightonly, leftonly, difference)
+            colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_txtcompare(self):
         """(re)do the text compare
@@ -321,16 +332,6 @@ class ShowComparison(qtw.QTreeWidget):
             if rvalue:
                 node.setForeground(2, rightonly_colour)
             self.addTopLevelItem(node)
-
-    def colorize_header(self, header, rightonly, leftonly, difference):
-        """visualize the difference by coloring the header
-        """
-        if rightonly and not leftonly:
-            header.setForeground(0, rightonly_colour)
-        if leftonly and not rightonly:
-            header.setForeground(0, leftonly_colour)
-        if difference or (leftonly and rightonly):
-            header.setForeground(0, difference_colour)
 
 
 class MainWindow(qtw.QMainWindow):
