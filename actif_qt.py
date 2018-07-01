@@ -58,6 +58,13 @@ def colorize_header(header, rightonly, leftonly, difference):
         header.setForeground(0, difference_colour)
 
 
+def set_text(node, column, value):
+    """set tooltip as well as text so that truncated text can be viewed in full
+    """
+    node.setText(column, value)
+    node.setToolTip(column, value)
+
+
 class FileBrowseButton(qtw.QFrame):
     """Combination widget showing a text field and a button
     making it possible to either manually enter a filename or select
@@ -220,21 +227,21 @@ class ShowComparison(qtw.QTreeWidget):
             section, option = node
             if section != current_section:
                 if current_section:
-                    self.colorize_header(header, rightonly, leftonly, difference)
+                    colorize_header(header, rightonly, leftonly, difference)
                 header = qtw.QTreeWidgetItem()
-                header.setText(0, section)
+                set_text(header, 0, section)
                 self.addTopLevelItem(header)
                 current_section = section
                 rightonly = leftonly = difference = False
             child = qtw.QTreeWidgetItem()
-            child.setText(0, option)
+            set_text(child, 0, option)
             if lvalue is None:
                 lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
                 child.setForeground(0, rightonly_colour)
                 child.setForeground(2, rightonly_colour)
-            child.setText(1, lvalue)
+            set_text(child, 1, lvalue)
             if rvalue is None:
                 rvalue = '(no value)'
             if rvalue == '':
@@ -246,10 +253,10 @@ class ShowComparison(qtw.QTreeWidget):
                 child.setForeground(0, difference_colour)
                 child.setForeground(1, difference_colour)
                 child.setForeground(2, difference_colour)
-            child.setText(2, rvalue)
+            set_text(child, 2, rvalue)
             header.addChild(child)
         if self.parent.data:
-            self.colorize_header(header, rightonly, leftonly, difference)
+            colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_xmlcompare(self):
         """(re)do the XML compare
@@ -264,7 +271,7 @@ class ShowComparison(qtw.QTreeWidget):
             if elems != current_elems:
                 if not current_elems:
                     header = qtw.QTreeWidgetItem()
-                    header.setText(0, '<>' + elems[-1][0])
+                    set_text(header, 0, '<>' + elems[-1][0])
                     self.addTopLevelItem(header)
                     header.setExpanded(True)
                 else:
@@ -276,13 +283,13 @@ class ShowComparison(qtw.QTreeWidget):
                     else:
                         parent = header.parent()
                     header = qtw.QTreeWidgetItem()
-                    header.setText(0, '<> ' + elems[-1][0])
+                    set_text(header, 0, '<> ' + elems[-1][0])
                     parent.addChild(header)
                 current_elems = elems
                 rightonly = leftonly = difference = False
             if attr == '':
-                header.setText(1, lvalue)
-                header.setText(2, rvalue)
+                set_text(header, 1, lvalue)
+                set_text(header, 2, rvalue)
                 if lvalue == '':
                     rightonly = True
                 if rvalue == '':
@@ -291,14 +298,14 @@ class ShowComparison(qtw.QTreeWidget):
                     difference = True
                 continue
             child = qtw.QTreeWidgetItem()
-            child.setText(0, attr)
+            set_text(child, 0, attr)
             if lvalue is None:
                 lvalue = '(no value)'
             if lvalue == '':
                 rightonly = True
                 child.setForeground(0, rightonly_colour)
                 child.setForeground(2, rightonly_colour)
-            child.setText(1, lvalue)
+            set_text(child, 1, lvalue)
             if rvalue is None:
                 rvalue = '(no value)'
             if rvalue == '':
@@ -310,7 +317,7 @@ class ShowComparison(qtw.QTreeWidget):
                 child.setForeground(0, difference_colour)
                 child.setForeground(1, difference_colour)
                 child.setForeground(2, difference_colour)
-            child.setText(2, rvalue)
+            set_text(child, 2, rvalue)
             header.addChild(child)
         if self.parent.data:
             colorize_header(header, rightonly, leftonly, difference)
@@ -324,9 +331,9 @@ class ShowComparison(qtw.QTreeWidget):
         for x in self.parent.data:
             bvalue, lvalue, rvalue = x
             node = qtw.QTreeWidgetItem()
-            node.setText(0, bvalue)
-            node.setText(1, lvalue)
-            node.setText(2, rvalue)
+            set_text(node, 0, bvalue)
+            set_text(node, 1, lvalue)
+            set_text(node, 2, rvalue)
             if lvalue:
                 node.setForeground(1, leftonly_colour)
             if rvalue:
