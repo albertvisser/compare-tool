@@ -43,6 +43,8 @@ def check_input(linkerpad, rechterpad, seltype):
         if not pathlib.Path(rechterpad).exists():
             return 'Bestand {} kon niet gevonden/geopend worden'.format(
                 rechterpad)
+    if rechterpad == linkerpad:
+        return "Bestandsnamen zijn gelijk"
     if seltype not in comparetypes:
         return 'Geen vergelijkingsmethode gekozen'
 
@@ -344,7 +346,7 @@ class ShowComparison(qtw.QTreeWidget):
 class MainWindow(qtw.QMainWindow):
     """Application screen
     """
-    def __init__(self, parent, args):
+    def __init__(self, parent, args, method=None):
         self.inifile = str(pathlib.Path(__file__).parent.resolve() / "actif.ini")
         super().__init__(parent)
         self.readini()
@@ -362,12 +364,14 @@ class MainWindow(qtw.QMainWindow):
         self.win = ShowComparison(self)
         self.setCentralWidget(self.win)
 
+        if method and method in comparetypes:
+            self.selectiontype = method
         if self.linkerpad and self.rechterpad:
-            extl = pathlib.Path(self.linkerpad).suffix[1:]
-            extr = pathlib.Path(self.rechterpad).suffix[1:]
-            if extl == extr and extl.lower() in comparetypes:
-                self.selectiontype = extl.lower()
-                ## self.doit(first_time=True)
+            if not self.selectiontype:
+                extl = pathlib.Path(self.linkerpad).suffix[1:]
+                extr = pathlib.Path(self.rechterpad).suffix[1:]
+                if extl == extr and extl.lower() in comparetypes:
+                    self.selectiontype = extl.lower()
             self.doit(first_time=True)
         else:
             self.about()
@@ -447,13 +451,9 @@ class MainWindow(qtw.QMainWindow):
         """
         mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
         if mld:
+            qtw.QMessageBox.critical(self, apptitel, mld)
             if first_time:
-                qtw.QMessageBox.critical(self, apptitel, 'Kies s.v.p.een '
-                                         'vergelijkingsmethode')
                 self.open()
-            else:
-                qtw.QMessageBox.critical(self, apptitel, 'Nog geen bestanden en '
-                                         'vergelijkingsmethode gekozen')
             return
         if self.do_compare():
             if self.linkerpad in self.mru_left:
@@ -507,15 +507,14 @@ class MainWindow(qtw.QMainWindow):
         else:
             super().keyPressEvent(evt)
 
-    def exit(self, event):
+    def exit(self):
         "quit"
         self.close()
 
 
-def main(a1="", a2=""):
+def main(args):  # left="", right="", method=""):
     "main function"
     app = qtw.QApplication(sys.argv)
-    appargs = (a1, a2)
-    win = MainWindow(None, appargs)
+    win = MainWindow(None, (args.input), method=args.method)
     win.show()
     sys.exit(app.exec_())
