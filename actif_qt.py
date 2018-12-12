@@ -199,7 +199,7 @@ class ShowComparison(qtw.QTreeWidget):
                               'value in "righthand-side" file'])
         hdr = self.header()
         hdr.resizeSection(0, 100)
-        hdr.resizeSection(0, 350)
+        ## hdr.resizeSection(0, 350)
         hdr.resizeSection(1, 350)
         root = qtw.QTreeWidgetItem()
         root.setText(1, 'nothing to show')
@@ -500,7 +500,7 @@ class MainWindow(qtw.QMainWindow):
             "Het is ook bruikbaar voor XML bestanden.")))
 
     def keyPressEvent(self, evt):
-        """Make it possible to use Esc to quit the application
+        """reimplemented standard event handler: Make it possible to use Esc to quit the application
         """
         if evt.key() == core.Qt.Key_Escape:
             self.close()
