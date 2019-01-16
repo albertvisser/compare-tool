@@ -19,8 +19,8 @@ apptitel = "Albert's compare-tool voor ini-files"
 class MainWindow(wx.Frame):
     """Application screen
     """
-    def __init__(self, parent, id, title, appargs=None):
-        if appargs is None: appargs = ()
+    def __init__(self, parent, fileargs, method=None):
+        # voor nu doen we even verder niks met method argument
         self.hier = getcwd()
         self.inifile = self.hier + "/actif.ini"
         self.readini()
@@ -29,6 +29,7 @@ class MainWindow(wx.Frame):
         self.data = {}
         self.selectedOption = ''
 
+        title = "Albert's Compare Tool for Ini Files"
         wx.Frame.__init__(self, parent, wx.ID_ANY, title, size=(1080, 600),
                           style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
         self.CreateStatusBar()
@@ -63,9 +64,9 @@ class MainWindow(wx.Frame):
         self.Show(True)
         ## self.toon_scherm()
         ## print appargs
-        if len(appargs) == 2 and appargs[0] is not None and appargs[1] is not None:
-            self.lhs_path = appargs[0]
-            self.rhs_path = appargs[1]
+        if len(fileargs) == 2 and fileargs[0] is not None and fileargs[1] is not None:
+            self.lhs_path = fileargs[0]
+            self.rhs_path = fileargs[1]
             self.doit(None)
         else:
             self.open()
@@ -531,10 +532,9 @@ class OptionsWindow(wx.Dialog):
             self.Destroy()
 
 
-def main(a1=None, a2=None):
+def main(args):
     """main function"""
     ## print a1, a2
     app = wx.App()
-    appargs = (a1, a2)
-    frame = MainWindow(None, -1, apptitel, appargs)
+    frame = MainWindow(None, (args.input), method=args.method)
     app.MainLoop()
