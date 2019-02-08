@@ -8,7 +8,6 @@ import wx
 import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.gizmos.treelistctrl as TLC
 import actif_shared as shared
-from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 
 
 class AskOpenFiles(wx.Dialog):
@@ -302,9 +301,10 @@ class OptionsWindow(wx.Dialog):
 class MainWindow(wx.Frame):
     """Application screen
     """
-    def __init__(self, parent, fileargs, method=None):
+    def __init__(self, parent, fileargs, method='ini'):
         self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
-        # voor nu doen we even verder niks met method argument
+        # voor nu gebruiken we een vaste default voor het method argument
+        self.comparetype = method
         self.hier = getcwd()
         self.ini = shared.IniFile(self.hier + "/actif.ini")
         self.ini.read()
@@ -357,38 +357,48 @@ class MainWindow(wx.Frame):
         """
         x, y = self.GetPosition()
         with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
-            result = dlg.ShowModal()
-            if result == dlg.GetAffirmativeId():
-                mld = shared.check_input(dlg.path_left, dlg.path_right, dlg.selectiontype)
-                if mld:
-                    wx.MessageBox(mld, shared.apptitel)
-                    return
-                self.lhs_path = dlg.path_left
-                self.rhs_path = dlg.path_right
-                self.doit()
+            retry = True
+            while retry:
+                result = dlg.ShowModal()
+                if result == dlg.GetAffirmativeId():
+                    self.lhs_path = dlg.path_left
+                    self.rhs_path = dlg.path_right
+                    self.comparetype = dlg.selectiontype
+                    retry = self.doit()
+                else:
+                    retry = False
+
 
     def doit(self, event=None):
         """perform action
         """
-        # TODO: implement this
-        ## mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
-        ## if mld:
-            ## qtw.QMessageBox.critical(self, apptitel, mld)
-            ## if first_time:
-                ## self.open()
-            ## return
-        if self.do_compare():
-            if self.lhs_path in self.ini.mru_left:
-                self.ini.mru_left.remove(self.lhs_path)
-            self.ini.mru_left.insert(0, self.lhs_path)
-            if self.rhs_path in self.ini.mru_right:
-                self.ini.mru_right.remove(self.rhs_path)
-            self.ini.mru_right.insert(0, self.rhs_path)
-            self.ini.write()
-            if self.data:
-                self.selectedOption = self.data[0]
-            # panel opnieuw opbouwen in plaats van een refresh doen
-            self.toon_scherm()
+        mld = shared.check_input(self.lhs_path, self.rhs_path, self.comparetype)
+        if mld:
+            # x, y = self.GetPositionTuple()
+            # with wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
+            #         style=wx.OK | wx.ICON_INFORMATION) as dlg:
+            #     dlg.ShowModal()
+            wx.MessageBox(mld, shared.apptitel)
+            return True
+        # for now comparetype is alway ini
+        compare_func = shared.compare_configs
+        try:
+            self.data = compare_func(self.lhs_path, self.rhs_path)
+        except shared.MissingSectionHeaderError:
+            compare_func = shared.compare_configs_2
+            self.data = compare_func(self.lhs_path, self.rhs_path)
+        if self.lhs_path in self.ini.mru_left:
+            self.ini.mru_left.remove(self.lhs_path)
+        self.ini.mru_left.insert(0, self.lhs_path)
+        if self.rhs_path in self.ini.mru_right:
+            self.ini.mru_right.remove(self.rhs_path)
+        self.ini.mru_right.insert(0, self.rhs_path)
+        self.ini.write()
+        if self.data:
+            self.selectedOption = self.data[0]
+        # panel opnieuw opbouwen in plaats van een refresh doen
+        self.toon_scherm()
+        return False
 
     def do_compare(self):
         """do the actual comparison
@@ -414,11 +424,11 @@ class MainWindow(wx.Frame):
                     style=wx.OK | wx.ICON_INFORMATION) as dlg:
                 dlg.ShowModal()
         else:
-            compare_func = compare_configs
+            compare_func = shared.compare_configs
             try:
                 self.data = compare_func(self.lhs_path, self.rhs_path)
-            except MissingSectionHeaderError:
-                compare_func = compare_configs_2
+            except shared.MissingSectionHeaderError:
+                compare_func = shared.compare_configs_2
                 self.data = compare_func(self.lhs_path, self.rhs_path)
             ## if h.ft != "":
                 ## doitok = False
