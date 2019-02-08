@@ -8,8 +8,6 @@ import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
 import actif_shared as shared
-from conf_comp import MissingSectionHeaderError
-from xml_comp import ParseError
 
 rightonly_colour = gui.QBrush(core.Qt.blue)
 leftonly_colour = gui.QBrush(core.Qt.green)
@@ -411,9 +409,9 @@ class MainWindow(qtw.QMainWindow):
             error, msg, tb = sys.exc_info()
             box = qtw.QMessageBox(self)
             box.setWindowTitle(shared.apptitel)
-            if error == ParseError:
+            if error == shared.ParseError:
                 info = "bevat geen correcte XML"
-            elif error == MissingSectionHeaderError:
+            elif error == shared.MissingSectionHeaderError:
                 info = "begint niet met een header"
             else:
                 info = "geeft een fout"

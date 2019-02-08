@@ -2,8 +2,8 @@
 """
 import pathlib
 from configparser import ConfigParser
-from conf_comp import compare_configs, compare_configs_2
-from xml_comp import compare_xmldata
+from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
+from xml_comp import compare_xmldata, ParseError
 from txt_comp import compare_txtdata
 ID_OPEN = 101
 ID_DOIT = 102
