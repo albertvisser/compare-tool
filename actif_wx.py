@@ -98,14 +98,16 @@ class ShowComparison(wx.Panel):
     """Part of the main window showing the comparison as a tree
     """
     def __init__(self, parent):
-        wx.Panel.__init__(self, parent)  # , -1 ,size=(1080, 960))
+        # wx.Panel.__init__(self, parent)  # , -1 ,size=(1080, 960))
+        super().__init__(parent)
         self.parent = parent
 
-        self.Bind(wx.EVT_SIZE, self.on_size)
+        # als ik deze uitzet vult deze initieel het hele hoofdscherm
+        # self.Bind(wx.EVT_SIZE, self.on_size)
 
-        self.tree = TLC.TreeListCtrl(self, -1, size=(1080, 600),
+        self.tree = TLC.TreeListCtrl(self, -1,  size=(1080, 600),
                                      # style=TLC.TR_DEFAULT_STYLE | TLC.TR_FULL_ROW_HIGHLIGHT)
-                                     style=wx.TR_DEFAULT_STYLE | wx.TR_FULL_ROW_HIGHLIGHT)
+                                     agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_FULL_ROW_HIGHLIGHT)
 
         # create columns
         self.tree.AddColumn("Sectie / Optie:")
@@ -161,7 +163,6 @@ class ShowComparison(wx.Panel):
         # vsizer.SetSizeHints(self)
         vsizer.Fit(self)
         self.Show(True)
-        ## self.tree.SetSize(self.tree.GetMainWindow().GetSize())
 
     def on_right_up(self, evt):
         """ zou context menuutje moeten openen met keuze voor
@@ -301,29 +302,28 @@ class OptionsWindow(wx.Dialog):
 class MainWindow(wx.Frame):
     """Application screen
     """
-    def __init__(self, parent, fileargs, method='ini'):
+    def __init__(self, parent, fileargs, method):
         self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
         # voor nu gebruiken we een vaste default voor het method argument
-        self.comparetype = method
+        self.comparetype = 'ini'
         self.hier = getcwd()
         self.ini = shared.IniFile(self.hier + "/actif.ini")
         self.ini.read()
-        self.lhs_path = self.rhs_path = ''
         self.data = {}
         self.selectedOption = ''
 
         title = "Albert's Compare Tool for Ini Files"
         wx.Frame.__init__(self, parent, wx.ID_ANY, title, size=(1080, 600),
                           style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-        self.CreateStatusBar()
+        # self.CreateStatusBar()
 
         filemenu = wx.Menu()
-        filemenu.Append(shared.ID_OPEN, "&Open/kies", " Kies de te vergelijken ini files")
-        filemenu.Append(shared.ID_DOIT, "&Vergelijk", " Orden en vergelijk de ini files")
+        filemenu.Append(shared.ID_OPEN, "&Open/kies\tCtrl+O", " Kies de te vergelijken ini files")
+        filemenu.Append(shared.ID_DOIT, "&Vergelijk\tF5", " Orden en vergelijk de ini files")
         filemenu.AppendSeparator()
-        filemenu.Append(shared.ID_EXIT, "E&xit", " Terminate the program")
+        filemenu.Append(shared.ID_EXIT, "E&xit\tCtrl+Q", " Terminate the program")
         helpmenu = wx.Menu()
-        helpmenu.Append(shared.ID_ABOUT, "&About", " Information about this program")
+        helpmenu.Append(shared.ID_ABOUT, "&About\tF1", " Information about this program")
 
         menuBar = wx.MenuBar()
         menuBar.Append(filemenu, "&File")
@@ -336,7 +336,7 @@ class MainWindow(wx.Frame):
         self.win = ShowComparison(self)
         vsizer = wx.BoxSizer(wx.VERTICAL)
         # hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        vsizer.Add(self.win, 1, wx.EXPAND | wx.ALL)
+        vsizer.Add(self.win, 1, wx.EXPAND)  # | wx.ALL)
         # vsizer.Add(hsizer, 0, wx.EXPAND | wx.ALL)
         self.SetAutoLayout(True)
         ## self.SetSizer(sizer)
@@ -400,52 +400,6 @@ class MainWindow(wx.Frame):
         self.toon_scherm()
         return False
 
-    def do_compare(self):
-        """do the actual comparison
-        """
-        doitok = True
-        if self.lhs_path != "":
-            if not exists(self.lhs_path):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.lhs_path)
-                doitok = False
-        else:
-            fout = 'Geen linkerbestand opgegeven'
-            doitok = False
-        if self.rhs_path != "":
-            if not exists(self.rhs_path):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.rhs_path)
-                doitok = False
-        else:
-            fout = 'Geen rechterbestand opgegeven'
-            doitok = False
-        if not doitok:
-            x, y = self.GetPositionTuple()
-            with wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
-                    style=wx.OK | wx.ICON_INFORMATION) as dlg:
-                dlg.ShowModal()
-        else:
-            compare_func = shared.compare_configs
-            try:
-                self.data = compare_func(self.lhs_path, self.rhs_path)
-            except shared.MissingSectionHeaderError:
-                compare_func = shared.compare_configs_2
-                self.data = compare_func(self.lhs_path, self.rhs_path)
-            ## if h.ft != "":
-                ## doitok = False
-                ## x,y = self.GetPositionTuple()
-                ## dlg = wx.MessageDialog(self,'Fout: '+ h.ft , apptitel,pos=(x+50,y+50), style=wx.OK | wx.ICON_INFORMATION)
-                ## dlg.ShowModal()
-                ## dlg.Destroy()
-            ## else:
-                ## self.data = {}
-                ## for i in range(len(h.olist)):
-                    ## if h.olist[i][0] == "[":
-                        ## k = h.olist[i][1:-1]
-                        ## self.data[k] = []
-                    ## else:
-                        ## self.data[k].append((h.olist[i],h.llist[i],h.rlist[i]))
-        return doitok
-
     def on_hori(self, event):
         "currently not used: change orientation to horizontal (b under a)"
         self.orient_vert = False
@@ -462,7 +416,7 @@ class MainWindow(wx.Frame):
         dlg = wx.MessageDialog(self,
                                ("Hulpmiddel om twee ini files te vergelijken, "
                                 "maakt niet uit hoe door elkaar de secties en entries ook zitten"),
-                               apptitel, wx.OK | wx.ICON_INFORMATION)
+                               shared.apptitel, wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
