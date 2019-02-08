@@ -2,7 +2,7 @@
 """
 # ik laat het "synchronized scrollen" even zitten en daarmee ook de keuze verticaal / horizontaal
 # import images
-from configparser import ConfigParser
+import actif_shared as shared
 from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from os import getcwd
 from os.path import exists
@@ -14,217 +14,6 @@ ID_DOIT = 102
 ID_EXIT = 109
 ID_ABOUT = 120
 apptitel = "Albert's compare-tool voor ini-files"
-
-
-class MainWindow(wx.Frame):
-    """Application screen
-    """
-    def __init__(self, parent, fileargs, method=None):
-        # voor nu doen we even verder niks met method argument
-        self.hier = getcwd()
-        self.inifile = self.hier + "/actif.ini"
-        self.readini()
-        self.lhs_path = 'linkerbestand'
-        self.rhs_path = 'rechterbestand'
-        self.data = {}
-        self.selectedOption = ''
-
-        title = "Albert's Compare Tool for Ini Files"
-        wx.Frame.__init__(self, parent, wx.ID_ANY, title, size=(1080, 600),
-                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-        self.CreateStatusBar()
-
-        filemenu = wx.Menu()
-        filemenu.Append(ID_OPEN, "&Open/kies", " Kies de te vergelijken ini files")
-        filemenu.Append(ID_DOIT, "&Vergelijk", " Orden en vergelijk de ini files")
-        filemenu.AppendSeparator()
-        filemenu.Append(ID_EXIT, "E&xit", " Terminate the program")
-        helpmenu = wx.Menu()
-        helpmenu.Append(ID_ABOUT, "&About", " Information about this program")
-
-        menuBar = wx.MenuBar()
-        menuBar.Append(filemenu, "&File")
-        menuBar.Append(helpmenu, "&Help")
-        self.SetMenuBar(menuBar)
-        self.Connect(ID_OPEN, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.open)
-        self.Connect(ID_DOIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.doit)
-        self.Connect(ID_EXIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.exit)
-        self.Connect(ID_ABOUT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.about)
-        self.win = ShowComparison(self)
-        vsizer = wx.BoxSizer(wx.VERTICAL)
-        # hsizer = wx.BoxSizer(wx.HORIZONTAL)
-        vsizer.Add(self.win, 1, wx.EXPAND | wx.ALL)
-        # vsizer.Add(hsizer, 0, wx.EXPAND | wx.ALL)
-        self.SetAutoLayout(True)
-        ## self.SetSizer(sizer)
-        self.SetSizer(vsizer)
-        # sizer.Fit(self)
-        # vsizer.SetSizeHints(self)
-        vsizer.Fit(self)
-        self.Show(True)
-        ## self.toon_scherm()
-        ## print appargs
-        if len(fileargs) == 2 and fileargs[0] is not None and fileargs[1] is not None:
-            self.lhs_path = fileargs[0]
-            self.rhs_path = fileargs[1]
-            self.doit(None)
-        else:
-            self.open()
-
-    def readini(self):
-        """inlezen mru-gegevens
-        """
-        self.mru_left = []
-        self.mru_right = []
-        self.orient_vert = True
-        ## self.matchCase = False
-        s = ConfigParser()
-        s.read(self.inifile)
-        if s.has_section("leftpane"):
-            ## for i in range(len(s.options("leftpane"))):
-            for subscript, _ in enumerate(s.options("leftpane")):
-                ky = "file%i" % (subscript + 1)
-                self.mru_left.append(s.get("leftpane", ky))
-        if s.has_section("rightpane"):
-            ## for i in range(len(s.options("rightpane"))):
-            for subscript, _ in enumerate(s.options("rightpane")):
-                ky = "file%i" % (subscript + 1)
-                self.mru_right.append(s.get("rightpane", ky))
-        ## if s.has_section("options"):
-            ## if s.has_option("options","orient_vert"):
-                ## if s.getboolean("options","orient_vert"):
-                    ## self.orient_vert = True
-
-    def schrijfini(self):
-        """save parameters
-        """
-        s = ConfigParser()
-        if len(self.mru_left) > 0:
-            s.add_section("leftpane")
-            for x in enumerate(self.mru_left):
-                i = x[0] + 1
-                s.set("leftpane", ("file%i" % i), x[1])
-        if len(self.mru_right) > 0:
-            s.add_section("rightpane")
-            for x in enumerate(self.mru_right):
-                s.set("rightpane", ("file%i" % (x[0] + 1)), x[1])
-        ## s.add_section("options")
-        ## s.set("options","orient_vert",str(self.orient_vert))
-        with open(self.inifile, "w") as _out:
-            s.write(_out)
-
-    def open(self, event=None):
-        """ask for files to compare
-        """
-        x, y = self.GetPosition()
-        dlg = AskOpenFiles(self, -1, apptitel, pos=(x + 50, y + 50))
-        dlg.ShowModal()
-        if self.go:
-            self.doit(event)
-
-    def doit(self, event):
-        """perform action
-        """
-        # TODO: implement this
-        ## mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
-        ## if mld:
-            ## qtw.QMessageBox.critical(self, apptitel, mld)
-            ## if first_time:
-                ## self.open()
-            ## return
-        if self.do_compare():
-            if self.lhs_path in self.mru_left:
-                self.mru_left.remove(self.lhs_path)
-            self.mru_left.insert(0, self.lhs_path)
-            if self.rhs_path in self.mru_right:
-                self.mru_right.remove(self.rhs_path)
-            self.mru_right.insert(0, self.rhs_path)
-            self.schrijfini()
-            if self.data:
-                self.selectedOption = self.data[0]
-            # panel opnieuw opbouwen in plaats van een refresh doen
-            self.toon_scherm()
-
-    def do_compare(self):
-        """do the actual comparison
-        """
-        doitok = True
-        if self.lhs_path != "":
-            if not exists(self.lhs_path):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.lhs_path)
-                doitok = False
-        else:
-            fout = 'Geen linkerbestand opgegeven'
-            doitok = False
-        if self.rhs_path != "":
-            if not exists(self.rhs_path):
-                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.rhs_path)
-                doitok = False
-        else:
-            fout = 'Geen rechterbestand opgegeven'
-            doitok = False
-        if not doitok:
-            x, y = self.GetPositionTuple()
-            dlg = wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
-                                   style=wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
-        else:
-            compare_func = compare_configs
-            try:
-                self.data = compare_func(self.lhs_path, self.rhs_path)
-            except MissingSectionHeaderError:
-                compare_func = compare_configs_2
-                self.data = compare_func(self.lhs_path, self.rhs_path)
-            ## if h.ft != "":
-                ## doitok = False
-                ## x,y = self.GetPositionTuple()
-                ## dlg = wx.MessageDialog(self,'Fout: '+ h.ft , apptitel,pos=(x+50,y+50), style=wx.OK | wx.ICON_INFORMATION)
-                ## dlg.ShowModal()
-                ## dlg.Destroy()
-            ## else:
-                ## self.data = {}
-                ## for i in range(len(h.olist)):
-                    ## if h.olist[i][0] == "[":
-                        ## k = h.olist[i][1:-1]
-                        ## self.data[k] = []
-                    ## else:
-                        ## self.data[k].append((h.olist[i],h.llist[i],h.rlist[i]))
-        return doitok
-
-    def on_hori(self, event):
-        "currently not used: change orientation to horizontal (b under a)"
-        self.orient_vert = False
-        self.ToonScherm()
-
-    def on_vert(self, event):
-        "currently not used: change orientation to vertical (b next to a)"
-        self.orient_vert = True
-        self.ToonScherm()
-
-    def about(self, event):
-        """opening blurb
-        """
-        dlg = wx.MessageDialog(self,
-                               ("Hulpmiddel om twee ini files te vergelijken, "
-                                "maakt niet uit hoe door elkaar de secties en entries ook zitten"),
-                               apptitel, wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal()
-        dlg.Destroy()
-
-    def exit(self, event):
-        "quit"
-        self.Close(True)
-
-    def toon_scherm(self):
-        "(re)show comparison screen"
-        self.win.Destroy()
-        if self.orient_vert:
-            self.win = ShowComparison(self)
-            ## self.win.tree.SetSize(self.win.GetSize())
-        ## else:
-            ## self.win = ToonHori(self)
-            ## self.Fit()
 
 
 class AskOpenFiles(wx.Dialog):
@@ -249,7 +38,7 @@ class AskOpenFiles(wx.Dialog):
                                                             toolTip=tooltip.format('eerste'),
                                                             dialogTitle=title.format("eerste"),
                                                             changeCallback=self.fbbh1_callback)
-        self.fbbh1.SetHistory(self.parent.mru_left)
+        self.fbbh1.SetHistory(self.parent.ini.mru_left)
 
         self.fbbh2 = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
                                                             labelText="Met:       ",
@@ -257,7 +46,7 @@ class AskOpenFiles(wx.Dialog):
                                                             toolTip=tooltip.format('tweede'),
                                                             dialogTitle=title.format('tweede'),
                                                             changeCallback=self.fbbh2_callback)
-        self.fbbh2.SetHistory(self.parent.mru_right)
+        self.fbbh2.SetHistory(self.parent.ini.mru_right)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -330,7 +119,6 @@ class AskOpenFiles(wx.Dialog):
 class ShowComparison(wx.Panel):
     """Part of the main window showing the comparison as a tree
     """
-    """ gebruikt wx.lib.gizmos.treelistctrl """
     def __init__(self, parent):
         wx.Panel.__init__(self, parent)  # , -1 ,size=(1080, 960))
         self.parent = parent
@@ -354,7 +142,7 @@ class ShowComparison(wx.Panel):
 
         self.root = self.tree.AddRoot("")
 
-        if len(self.parent.data) == 0:
+        if not self.parent.data:
             first = self.tree.AppendItem(self.root, 'geen bestanden geladen')
             self.tree.SetItemText(first, "niks om te laten zien", 1)
             self.tree.SetItemText(first, "hier ook niet", 2)
@@ -530,6 +318,175 @@ class OptionsWindow(wx.Dialog):
         elif e == 404:
             self.parent.go = False
             self.Destroy()
+
+
+class MainWindow(wx.Frame):
+    """Application screen
+    """
+    def __init__(self, parent, fileargs, method=None):
+        # voor nu doen we even verder niks met method argument
+        self.hier = getcwd()
+        self.ini = shared.IniFile(self.hier + "/actif.ini")
+        self.ini.read()
+        self.lhs_path = 'linkerbestand'
+        self.rhs_path = 'rechterbestand'
+        self.data = {}
+        self.selectedOption = ''
+
+        title = "Albert's Compare Tool for Ini Files"
+        wx.Frame.__init__(self, parent, wx.ID_ANY, title, size=(1080, 600),
+                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
+        self.CreateStatusBar()
+
+        filemenu = wx.Menu()
+        filemenu.Append(ID_OPEN, "&Open/kies", " Kies de te vergelijken ini files")
+        filemenu.Append(ID_DOIT, "&Vergelijk", " Orden en vergelijk de ini files")
+        filemenu.AppendSeparator()
+        filemenu.Append(ID_EXIT, "E&xit", " Terminate the program")
+        helpmenu = wx.Menu()
+        helpmenu.Append(ID_ABOUT, "&About", " Information about this program")
+
+        menuBar = wx.MenuBar()
+        menuBar.Append(filemenu, "&File")
+        menuBar.Append(helpmenu, "&Help")
+        self.SetMenuBar(menuBar)
+        self.Connect(ID_OPEN, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.open)
+        self.Connect(ID_DOIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.doit)
+        self.Connect(ID_EXIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.exit)
+        self.Connect(ID_ABOUT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.about)
+        self.win = ShowComparison(self)
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+        # hsizer = wx.BoxSizer(wx.HORIZONTAL)
+        vsizer.Add(self.win, 1, wx.EXPAND | wx.ALL)
+        # vsizer.Add(hsizer, 0, wx.EXPAND | wx.ALL)
+        self.SetAutoLayout(True)
+        ## self.SetSizer(sizer)
+        self.SetSizer(vsizer)
+        # sizer.Fit(self)
+        # vsizer.SetSizeHints(self)
+        vsizer.Fit(self)
+        self.Show(True)
+        ## self.toon_scherm()
+        ## print appargs
+        if len(fileargs) == 2 and fileargs[0] is not None and fileargs[1] is not None:
+            self.lhs_path = fileargs[0]
+            self.rhs_path = fileargs[1]
+            self.doit(None)
+        else:
+            self.open()
+
+    def open(self, event=None):
+        """ask for files to compare
+        """
+        x, y = self.GetPosition()
+        dlg = AskOpenFiles(self, -1, apptitel, pos=(x + 50, y + 50))
+        dlg.ShowModal()
+        if self.go:
+            self.doit(event)
+
+    def doit(self, event):
+        """perform action
+        """
+        # TODO: implement this
+        ## mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
+        ## if mld:
+            ## qtw.QMessageBox.critical(self, apptitel, mld)
+            ## if first_time:
+                ## self.open()
+            ## return
+        if self.do_compare():
+            if self.lhs_path in self.ini.mru_left:
+                self.ini.mru_left.remove(self.lhs_path)
+            self.ini.mru_left.insert(0, self.lhs_path)
+            if self.rhs_path in self.ini.mru_right:
+                self.ini.mru_right.remove(self.rhs_path)
+            self.ini.mru_right.insert(0, self.rhs_path)
+            self.ini.write()
+            if self.data:
+                self.selectedOption = self.data[0]
+            # panel opnieuw opbouwen in plaats van een refresh doen
+            self.toon_scherm()
+
+    def do_compare(self):
+        """do the actual comparison
+        """
+        doitok = True
+        if self.lhs_path != "":
+            if not exists(self.lhs_path):
+                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.lhs_path)
+                doitok = False
+        else:
+            fout = 'Geen linkerbestand opgegeven'
+            doitok = False
+        if self.rhs_path != "":
+            if not exists(self.rhs_path):
+                fout = ('Bestand %s kon niet gevonden/geopend worden' % self.rhs_path)
+                doitok = False
+        else:
+            fout = 'Geen rechterbestand opgegeven'
+            doitok = False
+        if not doitok:
+            x, y = self.GetPositionTuple()
+            dlg = wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
+                                   style=wx.OK | wx.ICON_INFORMATION)
+            dlg.ShowModal()
+            dlg.Destroy()
+        else:
+            compare_func = compare_configs
+            try:
+                self.data = compare_func(self.lhs_path, self.rhs_path)
+            except MissingSectionHeaderError:
+                compare_func = compare_configs_2
+                self.data = compare_func(self.lhs_path, self.rhs_path)
+            ## if h.ft != "":
+                ## doitok = False
+                ## x,y = self.GetPositionTuple()
+                ## dlg = wx.MessageDialog(self,'Fout: '+ h.ft , apptitel,pos=(x+50,y+50), style=wx.OK | wx.ICON_INFORMATION)
+                ## dlg.ShowModal()
+                ## dlg.Destroy()
+            ## else:
+                ## self.data = {}
+                ## for i in range(len(h.olist)):
+                    ## if h.olist[i][0] == "[":
+                        ## k = h.olist[i][1:-1]
+                        ## self.data[k] = []
+                    ## else:
+                        ## self.data[k].append((h.olist[i],h.llist[i],h.rlist[i]))
+        return doitok
+
+    def on_hori(self, event):
+        "currently not used: change orientation to horizontal (b under a)"
+        self.orient_vert = False
+        self.ToonScherm()
+
+    def on_vert(self, event):
+        "currently not used: change orientation to vertical (b next to a)"
+        self.orient_vert = True
+        self.ToonScherm()
+
+    def about(self, event):
+        """opening blurb
+        """
+        dlg = wx.MessageDialog(self,
+                               ("Hulpmiddel om twee ini files te vergelijken, "
+                                "maakt niet uit hoe door elkaar de secties en entries ook zitten"),
+                               apptitel, wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def exit(self, event):
+        "quit"
+        self.Close(True)
+
+    def toon_scherm(self):
+        "(re)show comparison screen"
+        self.win.Destroy()
+        ## if self.orient_vert:
+        self.win = ShowComparison(self)
+            ## self.win.tree.SetSize(self.win.GetSize())
+        ## else:
+            ## self.win = ToonHori(self)
+            ## self.Fit()
 
 
 def main(args):

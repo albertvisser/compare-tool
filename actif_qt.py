@@ -1,13 +1,13 @@
 """Presentation logic for Compare Tool - PyQT5 version
 """
 import sys
-from configparser import ConfigParser
 import os.path
 import pathlib
 import traceback
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
+import actif_shared as shared
 from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from xml_comp import compare_xmldata, ParseError
 from txt_comp import compare_txtdata
@@ -47,6 +47,7 @@ def check_input(linkerpad, rechterpad, seltype):
         return "Bestandsnamen zijn gelijk"
     if seltype not in comparetypes:
         return 'Geen vergelijkingsmethode gekozen'
+    return ''
 
 
 def colorize_header(header, rightonly, leftonly, difference):
@@ -123,7 +124,7 @@ class AskOpenFiles(qtw.QDialog):
         hsizer = qtw.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Linker bestand:  ',
                                   text=self.parent.linkerpad,
-                                  items=self.parent.mru_left)
+                                  items=self.parent.ini.mru_left)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
@@ -133,7 +134,7 @@ class AskOpenFiles(qtw.QDialog):
         hsizer = qtw.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Rechter bestand: ',
                                   text=self.parent.rechterpad,
-                                  items=self.parent.mru_right)
+                                  items=self.parent.ini.mru_right)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
@@ -347,9 +348,9 @@ class MainWindow(qtw.QMainWindow):
     """Application screen
     """
     def __init__(self, parent, args, method=None):
-        self.inifile = str(pathlib.Path(__file__).parent.resolve() / "actif.ini")
+        self.ini = shared.IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
         super().__init__(parent)
-        self.readini()
+        self.ini.read()
         self.linkerpad, self.rechterpad = args
         self.data = {}
         self.selected_option = ''
@@ -405,40 +406,6 @@ class MainWindow(qtw.QMainWindow):
         self.menuactions[ID_ABOUT] = self.add_action_to_menu(
             "&About", self.about, 'F1', " Information about this program", menu)
 
-    def readini(self):
-        """inlezen mru-gegevens
-        """
-        self.mru_left = []
-        self.mru_right = []
-        self.horizontal = True
-
-        s = ConfigParser()
-        s.read(self.inifile)
-        if s.has_section("leftpane"):
-            for i in range(len(s.options("leftpane"))):
-                ky = ("file%i" % (i + 1))
-                self.mru_left.append(s.get("leftpane", ky))
-        if s.has_section("rightpane"):
-            for i in range(len(s.options("rightpane"))):
-                ky = ("file%i" % (i + 1))
-                self.mru_right.append(s.get("rightpane", ky))
-
-    def schrijfini(self):
-        """save parameters
-        """
-        s = ConfigParser()
-        if len(self.mru_left) > 0:
-            s.add_section("leftpane")
-            for x in enumerate(self.mru_left):
-                i = x[0] + 1
-                s.set("leftpane", "file%i" % i, x[1])
-        if len(self.mru_right) > 0:
-            s.add_section("rightpane")
-            for x in enumerate(self.mru_right):
-                s.set("rightpane", "file%i" % (x[0] + 1), x[1])
-        with open(self.inifile, "w") as _out:
-            s.write(_out)
-
     def open(self, event=None):
         """ask for files to compare
         """
@@ -456,13 +423,13 @@ class MainWindow(qtw.QMainWindow):
                 self.open()
             return
         if self.do_compare():
-            if self.linkerpad in self.mru_left:
-                self.mru_left.remove(self.linkerpad)
-            self.mru_left.insert(0, self.linkerpad)
-            if self.rechterpad in self.mru_right:
-                self.mru_right.remove(self.rechterpad)
-            self.mru_right.insert(0, self.rechterpad)
-            self.schrijfini()
+            if self.linkerpad in self.ini.mru_left:
+                self.ini.mru_left.remove(self.linkerpad)
+            self.ini.mru_left.insert(0, self.linkerpad)
+            if self.rechterpad in self.ini.mru_right:
+                self.ini.mru_right.remove(self.rechterpad)
+            self.ini.mru_right.insert(0, self.rechterpad)
+            self.ini.write()
             if self.data:
                 self.selected_option = self.data[0]
             self.win.refresh_tree()
