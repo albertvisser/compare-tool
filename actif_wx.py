@@ -45,6 +45,8 @@ class AskOpenFiles(wx.Dialog):
         self.fbbh2.SetHistory(self.parent.ini.mru_right)
         self.fbbh2.SetValue(self.parent.rhs_path)
 
+        self.selectiontype = 'ini'  # voorlopig even alleen deze mogelijk
+
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         box = wx.BoxSizer(wx.VERTICAL)
@@ -353,11 +355,14 @@ class MainWindow(wx.Frame):
     def open(self, event=None):
         """ask for files to compare
         """
-        print('in open()')
         x, y = self.GetPosition()
         with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
             result = dlg.ShowModal()
             if result == dlg.GetAffirmativeId():
+                mld = shared.check_input(dlg.path_left, dlg.path_right, dlg.selectiontype)
+                if mld:
+                    wx.MessageBox(mld, shared.apptitel)
+                    return
                 self.lhs_path = dlg.path_left
                 self.rhs_path = dlg.path_right
                 self.doit()

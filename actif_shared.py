@@ -1,11 +1,20 @@
 """Compare-tool GUI-independent code
 """
+import pathlib
 from configparser import ConfigParser
+from conf_comp import compare_configs, compare_configs_2
+from xml_comp import compare_xmldata
+from txt_comp import compare_txtdata
 ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
 ID_ABOUT = 120
 apptitel = "Albert's compare-tool voor ini-files"
+comparetypes = {
+    'ini': ('ini files', compare_configs),
+    'ini2': ('ini files, allowing for missing first header', compare_configs_2),
+    'xml': ('XML files', compare_xmldata),
+    'txt': ('Simple text comparison', compare_txtdata)}
 
 
 def get_input_paths(fileargs):
@@ -17,6 +26,28 @@ def get_input_paths(fileargs):
         if len(fileargs) > 2:
             print('excessive filename arguments truncated')
     return leftpath, rightpath
+
+
+def check_input(linkerpad, rechterpad, seltype):
+    """parse input
+    """
+    if linkerpad == "":
+        return 'Geen linkerbestand opgegeven'
+    else:
+        if not pathlib.Path(linkerpad).exists():
+            return 'Bestand {} kon niet gevonden/geopend worden'.format(
+                linkerpad)
+    if rechterpad == "":
+        return 'Geen rechterbestand opgegeven'
+    else:
+        if not pathlib.Path(rechterpad).exists():
+            return 'Bestand {} kon niet gevonden/geopend worden'.format(
+                rechterpad)
+    if rechterpad == linkerpad:
+        return "Bestandsnamen zijn gelijk"
+    if seltype not in comparetypes:
+        return 'Geen vergelijkingsmethode gekozen'
+    return ''
 
 
 class IniFile:

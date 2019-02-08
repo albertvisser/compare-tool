@@ -8,41 +8,13 @@ import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
 import actif_shared as shared
-from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
-from xml_comp import compare_xmldata, ParseError
-from txt_comp import compare_txtdata
+from conf_comp import MissingSectionHeaderError
+from xml_comp import ParseError
 
 rightonly_colour = gui.QBrush(core.Qt.blue)
 leftonly_colour = gui.QBrush(core.Qt.green)
 difference_colour = gui.QBrush(core.Qt.red)
 ## inversetext_colour = core.Qt.white
-comparetypes = {
-    'ini': ('ini files', compare_configs),
-    'ini2': ('ini files, allowing for missing first header', compare_configs_2),
-    'xml': ('XML files', compare_xmldata),
-    'txt': ('Simple text comparison', compare_txtdata)}
-
-
-def check_input(linkerpad, rechterpad, seltype):
-    """parse input
-    """
-    if linkerpad == "":
-        return 'Geen linkerbestand opgegeven'
-    else:
-        if not pathlib.Path(linkerpad).exists():
-            return 'Bestand {} kon niet gevonden/geopend worden'.format(
-                linkerpad)
-    if rechterpad == "":
-        return 'Geen rechterbestand opgegeven'
-    else:
-        if not pathlib.Path(rechterpad).exists():
-            return 'Bestand {} kon niet gevonden/geopend worden'.format(
-                rechterpad)
-    if rechterpad == linkerpad:
-        return "Bestandsnamen zijn gelijk"
-    if seltype not in comparetypes:
-        return 'Geen vergelijkingsmethode gekozen'
-    return ''
 
 
 def colorize_header(header, rightonly, leftonly, difference):
@@ -141,8 +113,8 @@ class AskOpenFiles(qtw.QDialog):
         gsizer = qtw.QGridLayout()
         gsizer.addWidget(qtw.QLabel('Soort vergelijking:'), 0, 0)
         self.sel = []
-        for ix, type in enumerate(sorted(comparetypes)):
-            text = comparetypes[type][0]
+        for ix, type in enumerate(sorted(shared.comparetypes)):
+            text = shared.comparetypes[type][0]
             rb = qtw.QRadioButton(text, self)
             gsizer.addWidget(rb, ix, 1)
             if self.parent.selectiontype == type:
@@ -174,9 +146,9 @@ class AskOpenFiles(qtw.QDialog):
             if sel[0].isChecked():
                 selectiontype = sel[1]
                 break
-        mld = check_input(linkerpad, rechterpad, selectiontype)
+        mld = shared.check_input(linkerpad, rechterpad, selectiontype)
         if mld:
-            qtw.QMessageBox.critical(self, apptitel, mld)
+            qtw.QMessageBox.critical(self, shared.apptitel, mld)
             return
         self.parent.linkerpad = linkerpad
         self.parent.rechterpad = rechterpad
@@ -360,13 +332,13 @@ class MainWindow(qtw.QMainWindow):
         self.win = ShowComparison(self)
         self.setCentralWidget(self.win)
 
-        if method and method in comparetypes:
+        if method and method in shared.comparetypes:
             self.selectiontype = method
         if self.linkerpad and self.rechterpad:
             if not self.selectiontype:
                 extl = pathlib.Path(self.linkerpad).suffix[1:]
                 extr = pathlib.Path(self.rechterpad).suffix[1:]
-                if extl == extr and extl.lower() in comparetypes:
+                if extl == extr and extl.lower() in shared.comparetypes:
                     self.selectiontype = extl.lower()
             self.doit(first_time=True)
         else:
@@ -411,7 +383,7 @@ class MainWindow(qtw.QMainWindow):
     def doit(self, event=None, first_time=False):
         """perform action
         """
-        mld = check_input(self.linkerpad, self.rechterpad, self.selectiontype)
+        mld = shared.check_input(self.linkerpad, self.rechterpad, self.selectiontype)
         if mld:
             qtw.QMessageBox.critical(self, apptitel, mld)
             if first_time:
@@ -432,7 +404,7 @@ class MainWindow(qtw.QMainWindow):
     def do_compare(self):
         """do the actual comparison
         """
-        compare_func = comparetypes[self.selectiontype][1]
+        compare_func = shared.comparetypes[self.selectiontype][1]
         try:
             self.data = compare_func(self.linkerpad, self.rechterpad)
         except Exception:  # as err:
