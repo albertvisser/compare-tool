@@ -9,7 +9,7 @@ ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
 ID_ABOUT = 120
-apptitel = "Albert's compare-tool voor ini-files"
+apptitel = "Albert's Compare Tool voor Ini Files"
 comparetypes = {
     'ini': ('ini files', compare_configs),
     'ini2': ('ini files, allowing for missing first header', compare_configs_2),
