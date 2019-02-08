@@ -15,62 +15,6 @@ difference_colour = gui.QBrush(core.Qt.red)
 ## inversetext_colour = core.Qt.white
 
 
-def colorize_header(header, rightonly, leftonly, difference):
-    """visualize the difference by coloring the header
-    """
-    if rightonly and not leftonly:
-        header.setForeground(0, rightonly_colour)
-    if leftonly and not rightonly:
-        header.setForeground(0, leftonly_colour)
-    if difference or (leftonly and rightonly):
-        header.setForeground(0, difference_colour)
-
-
-def set_text(node, column, value):
-    """set tooltip as well as text so that truncated text can be viewed in full
-    """
-    node.setText(column, value)
-    node.setToolTip(column, value)
-
-
-class FileBrowseButton(qtw.QFrame):
-    """Combination widget showing a text field and a button
-    making it possible to either manually enter a filename or select
-    one using a FileDialog
-    """
-    def __init__(self, parent, caption="", text="", items=None):
-        self.parent = parent
-        if items is None:
-            items = []
-        super().__init__(parent)
-        self.setFrameStyle(qtw.QFrame.Panel | qtw.QFrame.Raised)
-        vbox = qtw.QVBoxLayout()
-        box = qtw.QHBoxLayout()
-        ## self.input = gui.QLineEdit(text, self)
-        self.input = qtw.QComboBox(self)
-        self.input.setEditable(True)
-        self.input.setMaximumWidth(300)
-        self.input.addItems(items)
-        self.input.setEditText(text)
-        lbl = qtw.QLabel(caption)
-        lbl.setMinimumWidth(100)
-        lbl.setMaximumWidth(100)
-        box.addWidget(lbl)
-        box.addWidget(self.input)
-        self.button = qtw.QPushButton('Browse', self, clicked=self.browse)
-        self.button.setMaximumWidth(68)
-        box.addWidget(self.button)
-        vbox.addLayout(box)
-        self.setLayout(vbox)
-
-    def browse(self):
-        """callback for the "Browse" button
-        """
-        startdir = str(self.input.currentText()) or os.getcwd()
-        path = qtw.QFileDialog.getOpenFileName(self, 'Kies een bestand', startdir)
-        if path[0]:
-            self.input.setEditText(path[0])
-
 
 class AskOpenFiles(qtw.QDialog):
     """dialog om de te vergelijken bestanden op te geven
@@ -195,7 +139,7 @@ class ShowComparison(qtw.QTreeWidget):
             section, option = node
             if section != current_section:
                 if current_section:
-                    colorize_header(header, rightonly, leftonly, difference)
+                    self.colorize_header(header, rightonly, leftonly, difference)
                 header = qtw.QTreeWidgetItem()
                 set_text(header, 0, section)
                 self.addTopLevelItem(header)
@@ -224,13 +168,12 @@ class ShowComparison(qtw.QTreeWidget):
             set_text(child, 2, rvalue)
             header.addChild(child)
         if self.parent.data:
-            colorize_header(header, rightonly, leftonly, difference)
+            self.colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_xmlcompare(self):
         """(re)do the XML compare
         """
-        self.setHeaderLabels(['Element/Attribute', self.parent.linkerpad,
-                              self.parent.rechterpad])
+        self.setHeaderLabels(['Element/Attribute', self.parent.linkerpad, self.parent.rechterpad])
         self.clear()
         current_elems = []
         for x in self.parent.data:
@@ -243,7 +186,7 @@ class ShowComparison(qtw.QTreeWidget):
                     self.addTopLevelItem(header)
                     header.setExpanded(True)
                 else:
-                    colorize_header(header, rightonly, leftonly, difference)
+                    self.colorize_header(header, rightonly, leftonly, difference)
                     if len(elems) > len(current_elems):
                         parent = header
                     elif len(elems) < len(current_elems):
@@ -288,13 +231,12 @@ class ShowComparison(qtw.QTreeWidget):
             set_text(child, 2, rvalue)
             header.addChild(child)
         if self.parent.data:
-            colorize_header(header, rightonly, leftonly, difference)
+            self.colorize_header(header, rightonly, leftonly, difference)
 
     def refresh_txtcompare(self):
         """(re)do the text compare
         """
-        self.setHeaderLabels(['Text in both files', self.parent.linkerpad,
-                              self.parent.rechterpad])
+        self.setHeaderLabels(['Text in both files', self.parent.linkerpad, self.parent.rechterpad])
         self.clear()
         for x in self.parent.data:
             bvalue, lvalue, rvalue = x
@@ -307,6 +249,62 @@ class ShowComparison(qtw.QTreeWidget):
             if rvalue:
                 node.setForeground(2, rightonly_colour)
             self.addTopLevelItem(node)
+
+    def colorize_header(self, header, rightonly, leftonly, difference):
+        """visualize the difference by coloring the header
+        """
+        if rightonly and not leftonly:
+            header.setForeground(0, rightonly_colour)
+        if leftonly and not rightonly:
+            header.setForeground(0, leftonly_colour)
+        if difference or (leftonly and rightonly):
+            header.setForeground(0, difference_colour)
+
+
+def set_text(node, column, value):
+    """set tooltip as well as text so that truncated text can be viewed in full
+    """
+    node.setText(column, value)
+    node.setToolTip(column, value)
+
+
+class FileBrowseButton(qtw.QFrame):
+    """Combination widget showing a text field and a button
+    making it possible to either manually enter a filename or select
+    one using a FileDialog
+    """
+    def __init__(self, parent, caption="", text="", items=None):
+        self.parent = parent
+        if items is None:
+            items = []
+        super().__init__(parent)
+        self.setFrameStyle(qtw.QFrame.Panel | qtw.QFrame.Raised)
+        vbox = qtw.QVBoxLayout()
+        box = qtw.QHBoxLayout()
+        ## self.input = gui.QLineEdit(text, self)
+        self.input = qtw.QComboBox(self)
+        self.input.setEditable(True)
+        self.input.setMaximumWidth(300)
+        self.input.addItems(items)
+        self.input.setEditText(text)
+        lbl = qtw.QLabel(caption)
+        lbl.setMinimumWidth(100)
+        lbl.setMaximumWidth(100)
+        box.addWidget(lbl)
+        box.addWidget(self.input)
+        self.button = qtw.QPushButton('Browse', self, clicked=self.browse)
+        self.button.setMaximumWidth(68)
+        box.addWidget(self.button)
+        vbox.addLayout(box)
+        self.setLayout(vbox)
+
+    def browse(self):
+        """callback for the "Browse" button
+        """
+        startdir = str(self.input.currentText()) or os.getcwd()
+        path = qtw.QFileDialog.getOpenFileName(self, 'Kies een bestand', startdir)
+        if path[0]:
+            self.input.setEditText(path[0])
 
 
 class MainWindow(qtw.QMainWindow):
@@ -323,7 +321,7 @@ class MainWindow(qtw.QMainWindow):
         self.menuactions = {}
 
         self.resize(1024, 600)
-        self.setWindowTitle('Vergelijken van ini files')
+        self.setWindowTitle(shared.apptitel)  # 'Vergelijken van ini files')
         self.setWindowIcon(gui.QIcon('inicomp.ico'))
         self.sb = self.statusBar()
         self.setup_menu()
