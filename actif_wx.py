@@ -2,18 +2,13 @@
 """
 # ik laat het "synchronized scrollen" even zitten en daarmee ook de keuze verticaal / horizontaal
 # import images
-import actif_shared as shared
-from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from os import getcwd
 from os.path import exists
 import wx
 import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.gizmos.treelistctrl as TLC
-ID_OPEN = 101
-ID_DOIT = 102
-ID_EXIT = 109
-ID_ABOUT = 120
-apptitel = "Albert's compare-tool voor ini-files"
+import actif_shared as shared
+from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 
 
 class AskOpenFiles(wx.Dialog):
@@ -39,6 +34,7 @@ class AskOpenFiles(wx.Dialog):
                                                             dialogTitle=title.format("eerste"),
                                                             changeCallback=self.fbbh1_callback)
         self.fbbh1.SetHistory(self.parent.ini.mru_left)
+        self.fbbh1.SetValue(self.parent.lhs_path)
 
         self.fbbh2 = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
                                                             labelText="Met:       ",
@@ -47,6 +43,7 @@ class AskOpenFiles(wx.Dialog):
                                                             dialogTitle=title.format('tweede'),
                                                             changeCallback=self.fbbh2_callback)
         self.fbbh2.SetHistory(self.parent.ini.mru_right)
+        self.fbbh2.SetValue(self.parent.rhs_path)
 
         sizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -58,24 +55,22 @@ class AskOpenFiles(wx.Dialog):
         box = wx.BoxSizer(wx.HORIZONTAL)
         label = wx.StaticText(self, -1, "", size=(155, -1))
         box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        pbDoIt = wx.Button(self, 402, "Gebruiken")
-        self.Bind(wx.EVT_BUTTON, self.OnClick, pbDoIt)
-        pbDoIt.SetDefault()
-        pbDoIt.SetSize(pbDoIt.GetBestSize())
-        box.Add(pbDoIt, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        pbCancel = wx.Button(self, 403, "Afbreken")
-        self.Bind(wx.EVT_BUTTON, self.OnClick, pbCancel)
-        pbCancel.SetDefault()
-        pbCancel.SetSize(pbCancel.GetBestSize())
-        pbCancel.SetHelpText("Klik hier om zonder wijzigingen terug te gaan naar het hoofdscherm")
-        box.Add(pbCancel, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
+        btn = wx.Button(self, label="Gebruiken")
+        self.SetAffirmativeId(btn.GetId())
+        # pbDoIt.SetDefault()
+        # pbDoIt.SetSize(pbDoIt.GetBestSize())
+        box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
+        btn = wx.Button(self, 403, "Afbreken")
+        self.SetEscapeId(btn.GetId())
+        # pbCancel.SetDefault()
+        # pbCancel.SetSize(pbCancel.GetBestSize())
+        btn.SetHelpText("Klik hier om zonder wijzigingen terug te gaan naar het hoofdscherm")
+        box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
         sizer.Add(box, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
         sizer.Fit(self)
-
-        ## self.Bind(wx.EVT_CHAR, self.OnChar)
 
     def fbbh1_callback(self, evt):
         "callback voor bovenste/linker/source file selector"
@@ -96,24 +91,6 @@ class AskOpenFiles(wx.Dialog):
                 history.append(self.path_right)
                 self.fbbh2.SetHistory(history)
                 self.fbbh2.GetHistoryControl().SetStringSelection(self.path_right)
-
-    def OnClick(self, event):
-        "reimplement standard event handler"
-        e = event.GetId()
-        if e == 402:
-            self.parent.lhs_path = self.path_left
-            self.parent.rhs_path = self.path_right
-            self.parent.go = True
-            self.Destroy()
-        elif e == 403:
-            self.parent.go = False
-            self.Destroy()
-
-    ## def OnChar(self, evt):
-        ## if evt.GetKeyCode() == wx.WXK_ESCAPE:
-            ## self.parent.go = False
-            ## self.Destroy()
-        ## evt.Skip()
 
 
 class ShowComparison(wx.Panel):
@@ -324,12 +301,12 @@ class MainWindow(wx.Frame):
     """Application screen
     """
     def __init__(self, parent, fileargs, method=None):
+        self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
         # voor nu doen we even verder niks met method argument
         self.hier = getcwd()
         self.ini = shared.IniFile(self.hier + "/actif.ini")
         self.ini.read()
-        self.lhs_path = 'linkerbestand'
-        self.rhs_path = 'rechterbestand'
+        self.lhs_path = self.rhs_path = ''
         self.data = {}
         self.selectedOption = ''
 
@@ -339,21 +316,21 @@ class MainWindow(wx.Frame):
         self.CreateStatusBar()
 
         filemenu = wx.Menu()
-        filemenu.Append(ID_OPEN, "&Open/kies", " Kies de te vergelijken ini files")
-        filemenu.Append(ID_DOIT, "&Vergelijk", " Orden en vergelijk de ini files")
+        filemenu.Append(shared.ID_OPEN, "&Open/kies", " Kies de te vergelijken ini files")
+        filemenu.Append(shared.ID_DOIT, "&Vergelijk", " Orden en vergelijk de ini files")
         filemenu.AppendSeparator()
-        filemenu.Append(ID_EXIT, "E&xit", " Terminate the program")
+        filemenu.Append(shared.ID_EXIT, "E&xit", " Terminate the program")
         helpmenu = wx.Menu()
-        helpmenu.Append(ID_ABOUT, "&About", " Information about this program")
+        helpmenu.Append(shared.ID_ABOUT, "&About", " Information about this program")
 
         menuBar = wx.MenuBar()
         menuBar.Append(filemenu, "&File")
         menuBar.Append(helpmenu, "&Help")
         self.SetMenuBar(menuBar)
-        self.Connect(ID_OPEN, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.open)
-        self.Connect(ID_DOIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.doit)
-        self.Connect(ID_EXIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.exit)
-        self.Connect(ID_ABOUT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.about)
+        self.Connect(shared.ID_OPEN, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.open)
+        self.Connect(shared.ID_DOIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.doit)
+        self.Connect(shared.ID_EXIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.exit)
+        self.Connect(shared.ID_ABOUT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.about)
         self.win = ShowComparison(self)
         vsizer = wx.BoxSizer(wx.VERTICAL)
         # hsizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -368,23 +345,24 @@ class MainWindow(wx.Frame):
         self.Show(True)
         ## self.toon_scherm()
         ## print appargs
-        if len(fileargs) == 2 and fileargs[0] is not None and fileargs[1] is not None:
-            self.lhs_path = fileargs[0]
-            self.rhs_path = fileargs[1]
-            self.doit(None)
+        if self.lhs_path and self.rhs_path:
+            self.doit()
         else:
             self.open()
 
     def open(self, event=None):
         """ask for files to compare
         """
+        print('in open()')
         x, y = self.GetPosition()
-        dlg = AskOpenFiles(self, -1, apptitel, pos=(x + 50, y + 50))
-        dlg.ShowModal()
-        if self.go:
-            self.doit(event)
+        with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
+            result = dlg.ShowModal()
+            if result == dlg.GetAffirmativeId():
+                self.lhs_path = dlg.path_left
+                self.rhs_path = dlg.path_right
+                self.doit()
 
-    def doit(self, event):
+    def doit(self, event=None):
         """perform action
         """
         # TODO: implement this
@@ -427,10 +405,9 @@ class MainWindow(wx.Frame):
             doitok = False
         if not doitok:
             x, y = self.GetPositionTuple()
-            dlg = wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
-                                   style=wx.OK | wx.ICON_INFORMATION)
-            dlg.ShowModal()
-            dlg.Destroy()
+            with wx.MessageDialog(self, 'Fout: ' + fout, apptitel, pos=(x + 50, y + 50),
+                    style=wx.OK | wx.ICON_INFORMATION) as dlg:
+                dlg.ShowModal()
         else:
             compare_func = compare_configs
             try:

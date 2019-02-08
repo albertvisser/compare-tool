@@ -1,6 +1,22 @@
 """Compare-tool GUI-independent code
 """
 from configparser import ConfigParser
+ID_OPEN = 101
+ID_DOIT = 102
+ID_EXIT = 109
+ID_ABOUT = 120
+apptitel = "Albert's compare-tool voor ini-files"
+
+
+def get_input_paths(fileargs):
+    leftpath = rightpath = ''
+    if len(fileargs) > 0:
+        leftpath = fileargs[0]
+    if len(fileargs) > 1:
+        rightpath = fileargs[1]
+        if len(fileargs) > 2:
+            print('excessive filename arguments truncated')
+    return leftpath, rightpath
 
 
 class IniFile:

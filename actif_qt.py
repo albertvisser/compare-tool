@@ -12,11 +12,6 @@ from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderEr
 from xml_comp import compare_xmldata, ParseError
 from txt_comp import compare_txtdata
 
-ID_OPEN = 101
-ID_DOIT = 102
-ID_EXIT = 109
-ID_ABOUT = 120
-apptitel = "Albert's compare-tool voor ini-files"
 rightonly_colour = gui.QBrush(core.Qt.blue)
 leftonly_colour = gui.QBrush(core.Qt.green)
 difference_colour = gui.QBrush(core.Qt.red)
@@ -348,10 +343,10 @@ class MainWindow(qtw.QMainWindow):
     """Application screen
     """
     def __init__(self, parent, args, method=None):
+        self.linkerpad, self.rechterpad = shared.get_input_paths(args)
         self.ini = shared.IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
         super().__init__(parent)
         self.ini.read()
-        self.linkerpad, self.rechterpad = args
         self.data = {}
         self.selected_option = ''
         self.selectiontype = ''
@@ -394,16 +389,16 @@ class MainWindow(qtw.QMainWindow):
         self.menu_bar = self.menuBar()
         menu = self.menu_bar.addMenu("&File")
 
-        self.menuactions[ID_OPEN] = self.add_action_to_menu(
+        self.menuactions[shared.ID_OPEN] = self.add_action_to_menu(
             "&Open", self.open, 'Ctrl+O', " Bepaal de te vergelijken ini files", menu)
-        self.menuactions[ID_DOIT] = self.add_action_to_menu(
+        self.menuactions[shared.ID_DOIT] = self.add_action_to_menu(
             "&Vergelijk", self.doit, 'F5', " Orden en vergelijk de ini files", menu)
         menu.addSeparator()
-        self.menuactions[ID_EXIT] = self.add_action_to_menu(
+        self.menuactions[shared.ID_EXIT] = self.add_action_to_menu(
             "E&xit", self.exit, 'Ctrl+Q', "Terminate the program", menu)
 
         menu = self.menu_bar.addMenu("&Help")
-        self.menuactions[ID_ABOUT] = self.add_action_to_menu(
+        self.menuactions[shared.ID_ABOUT] = self.add_action_to_menu(
             "&About", self.about, 'F1', " Information about this program", menu)
 
     def open(self, event=None):
@@ -443,7 +438,7 @@ class MainWindow(qtw.QMainWindow):
         except Exception:  # as err:
             error, msg, tb = sys.exc_info()
             box = qtw.QMessageBox(self)
-            box.setWindowTitle(apptitel)
+            box.setWindowTitle(shared.apptitel)
             if error == ParseError:
                 info = "bevat geen correcte XML"
             elif error == MissingSectionHeaderError:
@@ -460,7 +455,7 @@ class MainWindow(qtw.QMainWindow):
     def about(self, event=None):
         """opening blurb
         """
-        qtw.QMessageBox.information(self, apptitel, '\n'.join((
+        qtw.QMessageBox.information(self, shared.apptitel, '\n'.join((
             "Met dit programma kun je twee (ini) files met elkaar vergelijken,",
             "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
             "",
