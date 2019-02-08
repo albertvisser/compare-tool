@@ -108,6 +108,10 @@ class ShowComparison(wx.Panel):
         self.tree = TLC.TreeListCtrl(self, -1,  size=(1080, 600),
                                      # style=TLC.TR_DEFAULT_STYLE | TLC.TR_FULL_ROW_HIGHLIGHT)
                                      agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_FULL_ROW_HIGHLIGHT)
+        self.rightonly_colour = wx.Colour(wx.BLUE)
+        self.leftonly_colour = wx.Colour(wx.GREEN)
+        self.difference_colour = wx.Colour(wx.RED)
+        ## self.inversetext_colour = wx.Colour(Qt.WHITE)
 
         # create columns
         self.tree.AddColumn("Sectie / Optie:")
@@ -127,25 +131,7 @@ class ShowComparison(wx.Panel):
             self.tree.SetItemText(first, "niks om te laten zien", 1)
             self.tree.SetItemText(first, "hier ook niet", 2)
 
-        current_section = ''
-        for node, lvalue, rvalue in self.parent.data:
-
-            section, option = node
-            if section != current_section:
-                header = self.tree.AppendItem(self.root, section)
-                current_section = section
-
-            child = self.tree.AppendItem(header, option)
-            text = lvalue
-            if text is None:
-                text = '(no value)'
-            self.tree.SetItemText(child, text, 1)
-            text = rvalue
-            if text is None:
-                text = '(no value)'
-            self.tree.SetItemText(child, text, 2)
-
-        self.tree.ExpandAllChildren(self.root)
+        self.refresh_tree()
 
         ## self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.on_right_up)
         ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self.on_left_up)
@@ -163,6 +149,72 @@ class ShowComparison(wx.Panel):
         # vsizer.SetSizeHints(self)
         vsizer.Fit(self)
         self.Show(True)
+
+    def refresh_tree(self):
+        """(re)do the comparison
+        """
+        if self.parent.comparetype in ('ini', 'ini2'):
+            self.refresh_inicompare()
+        elif self.parent.comparetype == 'xml':
+            self.refresh_xmlcompare()
+        elif self.parent.comparetype == 'txt':
+            self.refresh_txtcompare()
+
+    def refresh_inicompare(self):
+        """(re)do comparing the ini files
+        """
+        current_section = ''
+        diff = 0  # 0 = no diff, 1 = right missing, 2 = left missing, 3 = both
+        header = None
+        for node, lvalue, rvalue in self.parent.data:
+
+            section, option = node
+            if section != current_section:
+                if header:
+                    self.colorize_header(header, diff)
+                    diff = 0
+                header = self.tree.AppendItem(self.root, section)
+                current_section = section
+
+            child = self.tree.AppendItem(header, option)
+            text = lvalue
+            if text is None:
+                text = '(no value)'
+            self.tree.SetItemText(child, text, 1)
+            text = rvalue
+            if text is None:
+                text = '(no value)'
+            self.tree.SetItemText(child, text, 2)
+            if lvalue and not rvalue:
+                self.tree.SetItemTextColour(child, self.leftonly_colour)
+                diff = diff | 1
+            elif rvalue and not lvalue:
+                self.tree.SetItemTextColour(child, self.rightonly_colour)
+                diff = diff | 2
+            elif lvalue != rvalue:
+                self.tree.SetItemTextColour(child, self.difference_colour)
+                diff = diff | 3
+
+        self.colorize_header(header, diff)
+        self.tree.ExpandAllChildren(self.root)
+
+    def refresh_xmlcompare(self):
+        """(re)do the XML compare
+        """
+
+    def refresh_txtcompare(self):
+        """(re)do the text compare
+        """
+
+    def colorize_header(self, item, flags):
+        """visualize the difference by coloring the header
+        """
+        if flags == 1:
+            self.tree.SetItemTextColour(item, self.leftonly_colour)
+        elif flags == 2:
+            self.tree.SetItemTextColour(item, self.rightonly_colour)
+        elif flags == 3:
+            self.tree.SetItemTextColour(item, self.difference_colour)
 
     def on_right_up(self, evt):
         """ zou context menuutje moeten openen met keuze voor
@@ -312,8 +364,7 @@ class MainWindow(wx.Frame):
         self.data = {}
         self.selectedOption = ''
 
-        title = "Albert's Compare Tool for Ini Files"
-        wx.Frame.__init__(self, parent, wx.ID_ANY, title, size=(1080, 600),
+        wx.Frame.__init__(self, parent, wx.ID_ANY, shared.apptitel, size=(1080, 600),
                           style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
         # self.CreateStatusBar()
 
