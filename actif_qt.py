@@ -15,7 +15,6 @@ difference_colour = gui.QBrush(core.Qt.red)
 ## inversetext_colour = core.Qt.white
 
 
-
 class AskOpenFiles(qtw.QDialog):
     """dialog om de te vergelijken bestanden op te geven
 
@@ -121,151 +120,66 @@ class ShowComparison(qtw.QTreeWidget):
         """(re)do the comparison
         """
         if self.parent.selectiontype in ('ini', 'ini2'):
-            self.refresh_inicompare()
+            shared.refresh_inicompare(self)
         elif self.parent.selectiontype == 'xml':
-            self.refresh_xmlcompare()
+            shared.refresh_xmlcompare(self)
         elif self.parent.selectiontype == 'txt':
-            self.refresh_txtcompare()
+            shared.refresh_txtcompare(self)
 
-    def refresh_inicompare(self):
-        """(re)do comparing the ini files
-        """
-        self.setHeaderLabels(['Section/Option', self.parent.linkerpad,
-                              self.parent.rechterpad])
+    # API methods to be called from the specific refresh functions
+    def init_tree(self, caption, left_title, right_title):
+        "setup empty tree with given titles"
         self.clear()
-        current_section = ''
-        for x in self.parent.data:
-            node, lvalue, rvalue = x
-            section, option = node
-            if section != current_section:
-                if current_section:
-                    self.colorize_header(header, rightonly, leftonly, difference)
-                header = qtw.QTreeWidgetItem()
-                set_text(header, 0, section)
-                self.addTopLevelItem(header)
-                current_section = section
-                rightonly = leftonly = difference = False
-            child = qtw.QTreeWidgetItem()
-            set_text(child, 0, option)
-            if lvalue is None:
-                lvalue = '(no value)'
-            if lvalue == '':
-                rightonly = True
-                child.setForeground(0, rightonly_colour)
-                child.setForeground(2, rightonly_colour)
-            set_text(child, 1, lvalue)
-            if rvalue is None:
-                rvalue = '(no value)'
-            if rvalue == '':
-                leftonly = True
-                child.setForeground(0, leftonly_colour)
-                child.setForeground(1, leftonly_colour)
-            if lvalue and rvalue and lvalue != rvalue:
-                difference = True
-                child.setForeground(0, difference_colour)
-                child.setForeground(1, difference_colour)
-                child.setForeground(2, difference_colour)
-            set_text(child, 2, rvalue)
-            header.addChild(child)
-        if self.parent.data:
-            self.colorize_header(header, rightonly, leftonly, difference)
+        self.setHeaderLabels([caption, left_title, right_title])
 
-    def refresh_xmlcompare(self):
-        """(re)do the XML compare
+    def build_header(self, section):
+        """create a header item
         """
-        self.setHeaderLabels(['Element/Attribute', self.parent.linkerpad, self.parent.rechterpad])
-        self.clear()
-        current_elems = []
-        for x in self.parent.data:
-            node, lvalue, rvalue = x
-            elems, attr = node
-            if elems != current_elems:
-                if not current_elems:
-                    header = qtw.QTreeWidgetItem()
-                    set_text(header, 0, '<>' + elems[-1][0])
-                    self.addTopLevelItem(header)
-                    header.setExpanded(True)
-                else:
-                    self.colorize_header(header, rightonly, leftonly, difference)
-                    if len(elems) > len(current_elems):
-                        parent = header
-                    elif len(elems) < len(current_elems):
-                        parent = header.parent().parent()
-                    else:
-                        parent = header.parent()
-                    header = qtw.QTreeWidgetItem()
-                    set_text(header, 0, '<> ' + elems[-1][0])
-                    parent.addChild(header)
-                current_elems = elems
-                rightonly = leftonly = difference = False
-            if attr == '':
-                set_text(header, 1, lvalue)
-                set_text(header, 2, rvalue)
-                if lvalue == '':
-                    rightonly = True
-                if rvalue == '':
-                    leftonly = True
-                if lvalue and rvalue and lvalue != rvalue:
-                    difference = True
-                continue
-            child = qtw.QTreeWidgetItem()
-            set_text(child, 0, attr)
-            if lvalue is None:
-                lvalue = '(no value)'
-            if lvalue == '':
-                rightonly = True
-                child.setForeground(0, rightonly_colour)
-                child.setForeground(2, rightonly_colour)
-            set_text(child, 1, lvalue)
-            if rvalue is None:
-                rvalue = '(no value)'
-            if rvalue == '':
-                leftonly = True
-                child.setForeground(0, leftonly_colour)
-                child.setForeground(1, leftonly_colour)
-            if lvalue and rvalue and lvalue != rvalue:
-                difference = True
-                child.setForeground(0, difference_colour)
-                child.setForeground(1, difference_colour)
-                child.setForeground(2, difference_colour)
-            set_text(child, 2, rvalue)
-            header.addChild(child)
-        if self.parent.data:
-            self.colorize_header(header, rightonly, leftonly, difference)
+        header = qtw.QTreeWidgetItem()
+        self.set_node_text(header, 0, section)
+        self.addTopLevelItem(header)
+        return header
 
-    def refresh_txtcompare(self):
-        """(re)do the text compare
-        """
-        self.setHeaderLabels(['Text in both files', self.parent.linkerpad, self.parent.rechterpad])
-        self.clear()
-        for x in self.parent.data:
-            bvalue, lvalue, rvalue = x
-            node = qtw.QTreeWidgetItem()
-            set_text(node, 0, bvalue)
-            set_text(node, 1, lvalue)
-            set_text(node, 2, rvalue)
-            if lvalue:
-                node.setForeground(1, leftonly_colour)
-            if rvalue:
-                node.setForeground(2, rightonly_colour)
-            self.addTopLevelItem(node)
-
-    def colorize_header(self, header, rightonly, leftonly, difference):
+    def colorize_header(self, node, rightonly, leftonly, difference):
         """visualize the difference by coloring the header
         """
         if rightonly and not leftonly:
-            header.setForeground(0, rightonly_colour)
+            node.setForeground(0, rightonly_colour)
         if leftonly and not rightonly:
-            header.setForeground(0, leftonly_colour)
+            node.setForeground(0, leftonly_colour)
         if difference or (leftonly and rightonly):
-            header.setForeground(0, difference_colour)
+            node.setForeground(0, difference_colour)
 
+    def build_child(self, header, option):
+        """create a child under this header
+        """
+        child = qtw.QTreeWidgetItem()
+        self.set_node_text(child, 0, option)
+        header.addChild(child)
+        return child
 
-def set_text(node, column, value):
-    """set tooltip as well as text so that truncated text can be viewed in full
-    """
-    node.setText(column, value)
-    node.setToolTip(column, value)
+    def colorize_child(self, node, rightonly, leftonly, difference):
+        """visualize the difference by coloring the child texts
+        self is only used for API's sake
+        """
+        if leftonly:  # and not rightonly:
+            columns = (0, 1)
+            colour = leftonly_colour
+        elif rightonly:  # and not leftonly:
+            columns = (0, 2)
+            colour = rightonly_colour
+        elif difference:  # or (leftonly and rightonly):
+            columns = (0, 1, 2)
+            colour = difference_colour
+        for colno in columns:
+            node.setForeground(colno, colour)
+
+    def set_node_text(self, node, column, value):
+        """set tooltip as well as text so that truncated text can be viewed in full
+        self is only used for API's sake
+        """
+        node.setText(column, value)
+        node.setToolTip(column, value)
 
 
 class FileBrowseButton(qtw.QFrame):
@@ -311,7 +225,7 @@ class MainWindow(qtw.QMainWindow):
     """Application screen
     """
     def __init__(self, parent, args, method=None):
-        self.linkerpad, self.rechterpad = shared.get_input_paths(args)
+        self.lhs_path, self.rhs_path = shared.get_input_paths(args)
         self.ini = shared.IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
         super().__init__(parent)
         self.ini.read()
@@ -330,10 +244,10 @@ class MainWindow(qtw.QMainWindow):
 
         if method and method in shared.comparetypes:
             self.selectiontype = method
-        if self.linkerpad and self.rechterpad:
+        if self.lhs_path and self.rhs_path:
             if not self.selectiontype:
-                extl = pathlib.Path(self.linkerpad).suffix[1:]
-                extr = pathlib.Path(self.rechterpad).suffix[1:]
+                extl = pathlib.Path(self.lhs_path).suffix[1:]
+                extr = pathlib.Path(self.rhs_path).suffix[1:]
                 if extl == extr and extl.lower() in shared.comparetypes:
                     self.selectiontype = extl.lower()
             self.doit(first_time=True)
@@ -379,19 +293,19 @@ class MainWindow(qtw.QMainWindow):
     def doit(self, event=None, first_time=False):
         """perform action
         """
-        mld = shared.check_input(self.linkerpad, self.rechterpad, self.selectiontype)
+        mld = shared.check_input(self.lhs_path, self.rhs_path, self.selectiontype)
         if mld:
-            qtw.QMessageBox.critical(self, apptitel, mld)
+            qtw.QMessageBox.critical(self, shared.apptitel, mld)
             if first_time:
                 self.open()
             return
         if self.do_compare():
-            if self.linkerpad in self.ini.mru_left:
-                self.ini.mru_left.remove(self.linkerpad)
-            self.ini.mru_left.insert(0, self.linkerpad)
-            if self.rechterpad in self.ini.mru_right:
-                self.ini.mru_right.remove(self.rechterpad)
-            self.ini.mru_right.insert(0, self.rechterpad)
+            if self.lhs_path in self.ini.mru_left:
+                self.ini.mru_left.remove(self.lhs_path)
+            self.ini.mru_left.insert(0, self.lhs_path)
+            if self.rhs_path in self.ini.mru_right:
+                self.ini.mru_right.remove(self.rhs_path)
+            self.ini.mru_right.insert(0, self.rhs_path)
             self.ini.write()
             if self.data:
                 self.selected_option = self.data[0]
@@ -402,7 +316,7 @@ class MainWindow(qtw.QMainWindow):
         """
         compare_func = shared.comparetypes[self.selectiontype][1]
         try:
-            self.data = compare_func(self.linkerpad, self.rechterpad)
+            self.data = compare_func(self.lhs_path, self.rhs_path)
         except Exception:  # as err:
             error, msg, tb = sys.exc_info()
             box = qtw.QMessageBox(self)

@@ -2,6 +2,7 @@
 """
 import pathlib
 from configparser import ConfigParser
+# import exception types so they can be caught in calling modules
 from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from xml_comp import compare_xmldata, ParseError
 from txt_comp import compare_txtdata
@@ -18,6 +19,7 @@ comparetypes = {
 
 
 def get_input_paths(fileargs):
+    "split up incoming file arguments"
     leftpath = rightpath = ''
     if len(fileargs) > 0:
         leftpath = fileargs[0]
@@ -48,6 +50,121 @@ def check_input(linkerpad, rechterpad, seltype):
     if seltype not in comparetypes:
         return 'Geen vergelijkingsmethode gekozen'
     return ''
+
+
+def refresh_inicompare(self):
+    """(re)do comparing the ini files
+    """
+    self.init_tree('Section/Option', self.parent.lhs_path, self.parent.rhs_path)
+    current_section = ''
+    for x in self.parent.data:
+        node, lvalue, rvalue = x
+        section, option = node
+        if section != current_section:
+            if current_section:
+                self.colorize_header(header, rightonly, leftonly, difference)
+            header = self.build_header(section)
+            current_section = section
+            rightonly = leftonly = difference = False
+        child = self.build_child(header, option)
+        if lvalue is None:
+            lvalue = '(no value)'
+        if lvalue == '':
+            rightonly = True
+            self.colorize_child(child, rightonly, leftonly, difference)
+        self.set_node_text(child, 1, lvalue)
+        if rvalue is None:
+            rvalue = '(no value)'
+        if rvalue == '':
+            leftonly = True
+            self.colorize_child(child, rightonly, leftonly, difference)
+        if lvalue and rvalue and lvalue != rvalue:
+            difference = True
+            self.colorize_child(child, rightonly, leftonly, difference)
+        self.set_node_text(child, 2, rvalue)
+    if self.parent.data:
+        self.colorize_header(header, rightonly, leftonly, difference)
+
+
+def refresh_xmlcompare(self):
+    """(re)do the XML compare
+     """
+    self.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
+    self.clear()
+    current_elems = []
+    for x in self.parent.data:
+        node, lvalue, rvalue = x
+        elems, attr = node
+        if elems != current_elems:
+            if not current_elems:
+                header = qtw.QTreeWidgetItem()
+                set_text(header, 0, '<>' + elems[-1][0])
+                self.addTopLevelItem(header)
+                header.setExpanded(True)
+            else:
+                self.colorize_header(header, rightonly, leftonly, difference)
+                if len(elems) > len(current_elems):
+                    parent = header
+                elif len(elems) < len(current_elems):
+                    parent = header.parent().parent()
+                else:
+                    parent = header.parent()
+                header = qtw.QTreeWidgetItem()
+                set_text(header, 0, '<> ' + elems[-1][0])
+                parent.addChild(header)
+            current_elems = elems
+            rightonly = leftonly = difference = False
+        if attr == '':
+            set_text(header, 1, lvalue)
+            set_text(header, 2, rvalue)
+            if lvalue == '':
+                rightonly = True
+            if rvalue == '':
+                leftonly = True
+            if lvalue and rvalue and lvalue != rvalue:
+                difference = True
+            continue
+        child = qtw.QTreeWidgetItem()
+        set_text(child, 0, attr)
+        if lvalue is None:
+            lvalue = '(no value)'
+        if lvalue == '':
+            rightonly = True
+            child.setForeground(0, rightonly_colour)
+            child.setForeground(2, rightonly_colour)
+        set_text(child, 1, lvalue)
+        if rvalue is None:
+            rvalue = '(no value)'
+        if rvalue == '':
+            leftonly = True
+            child.setForeground(0, leftonly_colour)
+            child.setForeground(1, leftonly_colour)
+        if lvalue and rvalue and lvalue != rvalue:
+            difference = True
+            child.setForeground(0, difference_colour)
+            child.setForeground(1, difference_colour)
+            child.setForeground(2, difference_colour)
+        set_text(child, 2, rvalue)
+        header.addChild(child)
+    if self.parent.data:
+        self.colorize_header(header, rightonly, leftonly, difference)
+
+
+def refresh_txtcompare(self):
+    """(re)do the text compare
+    """
+    self.init_tree('Text in both files', self.parent.lhs_path, self.parent.rhs_path)
+    for x in self.parent.data:
+        bvalue, lvalue, rvalue = x
+        node = qtw.QTreeWidgetItem()
+        set_text(node, 0, bvalue)
+        set_text(node, 1, lvalue)
+        set_text(node, 2, rvalue)
+        if lvalue:
+            node.setForeground(1, leftonly_colour)
+        if rvalue:
+            node.setForeground(2, rightonly_colour)
+        self.addTopLevelItem(node)
 
 
 class IniFile:

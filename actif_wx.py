@@ -3,10 +3,12 @@
 # ik laat het "synchronized scrollen" even zitten en daarmee ook de keuze verticaal / horizontaal
 # import images
 from os import getcwd
-from os.path import exists
+# from os.path import exists
 import wx
 import wx.lib.filebrowsebutton as filebrowse
-import wx.lib.gizmos.treelistctrl as TLC
+import wx.lib.gizmos as gizmos
+import wx.lib.agw.customtreectrl as CTC
+import wx.lib.agw.hypertreelist as HTL
 import actif_shared as shared
 
 
@@ -105,26 +107,19 @@ class ShowComparison(wx.Panel):
         # als ik deze uitzet vult deze initieel het hele hoofdscherm
         # self.Bind(wx.EVT_SIZE, self.on_size)
 
-        self.tree = TLC.TreeListCtrl(self, -1,  size=(1080, 600),
-                                     # style=TLC.TR_DEFAULT_STYLE | TLC.TR_FULL_ROW_HIGHLIGHT)
-                                     agwStyle=wx.TR_DEFAULT_STYLE | wx.TR_FULL_ROW_HIGHLIGHT)
+        # die show_tooltip switch zorgt ervoor dat de teksten onleesbaar worden
+        self.tree = gizmos.TreeListCtrl(self, -1, size=(1080, 600),
+                                        agwStyle=gizmos.TR_DEFAULT_STYLE |
+                                                 gizmos.TR_FULL_ROW_HIGHLIGHT)  # |
+                                                 # CTC.TR_TOOLTIP_ON_LONG_ITEMS |
+                                                 # HTL.TR_ELLIPSIZE_LONG_ITEMS)
         self.rightonly_colour = wx.Colour(wx.BLUE)
         self.leftonly_colour = wx.Colour(wx.GREEN)
         self.difference_colour = wx.Colour(wx.RED)
         ## self.inversetext_colour = wx.Colour(Qt.WHITE)
 
-        # create columns
-        self.tree.AddColumn("Sectie / Optie:")
-        self.tree.AddColumn("waarde in %s" % self.parent.lhs_path)
-        self.tree.AddColumn("waarde in %s" % self.parent.rhs_path)
-        ## self.tree.AddColumn("")
-        self.tree.SetMainColumn(0)  # the one with the tree in it...
-        self.tree.SetColumnWidth(0, 280)
-        self.tree.SetColumnWidth(1, 400)
-        self.tree.SetColumnWidth(2, 400)
-        ## self.tree.SetColumnWidth(3, 20)
-
-        self.root = self.tree.AddRoot("")
+        self.init_tree("Sectie / Optie:", "waarde in %s" % self.parent.lhs_path,
+                       "waarde in %s" % self.parent.rhs_path)
 
         if not self.parent.data:
             first = self.tree.AppendItem(self.root, 'geen bestanden geladen')
@@ -154,121 +149,65 @@ class ShowComparison(wx.Panel):
         """(re)do the comparison
         """
         if self.parent.comparetype in ('ini', 'ini2'):
-            self.refresh_inicompare()
+            shared.refresh_inicompare(self)
         elif self.parent.comparetype == 'xml':
-            self.refresh_xmlcompare()
+            shared.refresh_xmlcompare(self)
         elif self.parent.comparetype == 'txt':
-            self.refresh_txtcompare()
+            shared.refresh_txtcompare(self)
+        self.tree.Expand(self.root)
+        # self.tree.ExpandAllChildren(self.root)
 
-    def refresh_inicompare(self):
-        """(re)do comparing the ini files
+    # API methods to be called from the specific refresh functions
+    def init_tree(self, caption, left_title, right_title):
+        "setup empty tree with given titles"
+        self.tree.DeleteAllItems()
+        # self.tree.ClearColumns()
+        self.tree.AddColumn(caption)
+        self.tree.AddColumn(left_title)
+        self.tree.AddColumn(right_title)
+        self.tree.SetMainColumn(0)  # the one with the tree in it
+        self.tree.SetColumnWidth(0, 280)
+        self.tree.SetColumnWidth(1, 400)
+        self.tree.SetColumnWidth(2, 400)
+        self.root = self.tree.AddRoot("")
+
+    def build_header(self, section):
+        """create a header item
         """
-        current_section = ''
-        diff = 0  # 0 = no diff, 1 = right missing, 2 = left missing, 3 = both
-        header = None
-        for node, lvalue, rvalue in self.parent.data:
+        return self.tree.AppendItem(self.root, section)
 
-            section, option = node
-            if section != current_section:
-                if header:
-                    self.colorize_header(header, diff)
-                    diff = 0
-                header = self.tree.AppendItem(self.root, section)
-                current_section = section
-
-            child = self.tree.AppendItem(header, option)
-            text = lvalue
-            if text is None:
-                text = '(no value)'
-            self.tree.SetItemText(child, text, 1)
-            text = rvalue
-            if text is None:
-                text = '(no value)'
-            self.tree.SetItemText(child, text, 2)
-            if lvalue and not rvalue:
-                self.tree.SetItemTextColour(child, self.leftonly_colour)
-                diff = diff | 1
-            elif rvalue and not lvalue:
-                self.tree.SetItemTextColour(child, self.rightonly_colour)
-                diff = diff | 2
-            elif lvalue != rvalue:
-                self.tree.SetItemTextColour(child, self.difference_colour)
-                diff = diff | 3
-
-        self.colorize_header(header, diff)
-        self.tree.ExpandAllChildren(self.root)
-
-    def refresh_xmlcompare(self):
-        """(re)do the XML compare
-        """
-
-    def refresh_txtcompare(self):
-        """(re)do the text compare
-        """
-
-    def colorize_header(self, item, flags):
+    # def colorize_header(self, item, flags):
+    def colorize_header(self, node, rightonly, leftonly, difference):
         """visualize the difference by coloring the header
         """
-        if flags == 1:
-            self.tree.SetItemTextColour(item, self.leftonly_colour)
-        elif flags == 2:
-            self.tree.SetItemTextColour(item, self.rightonly_colour)
-        elif flags == 3:
-            self.tree.SetItemTextColour(item, self.difference_colour)
+        if rightonly and not leftonly:
+            self.tree.SetItemTextColour(node, self.rightonly_colour)
+        if leftonly and not rightonly:
+            self.tree.SetItemTextColour(node, self.leftonly_colour)
+        if difference or (leftonly and rightonly):
+            self.tree.SetItemTextColour(node, self.difference_colour)
 
-    def on_right_up(self, evt):
-        """ zou context menuutje moeten openen met keuze voor
-        `wijzig oriëntatie` en `toon waarden links-rechts`
-        deze laatste keuze opent het `OptionsWindow'
+    def build_child(self, header, option):
+        """create a child under this header
         """
-        pos = evt.GetPosition()
-        ## print self.tree.HitTest(pos)
-        item, flags, col = self.tree.HitTest(pos)
-        ## if item:
-            ## print ('Flags: %s, Col:%s, Text: %s' % (flags, col, self.tree.GetItemText(item, col)))
-        print('Show context menu for line')
+        return self.tree.AppendItem(header, option)
 
-    def on_left_up(self, evt):
-        """bij links klikken op de geselecteerde regel de default keuze
-        `toon waarden links-rechts` uitvoeren
+    def colorize_child(self, node, rightonly, leftonly, difference):
+        """visualize the difference by coloring the child texts
         """
-        pos = evt.GetPosition()
-        item, flags, col = self.tree.HitTest(pos)
-        ## if item:
-            ## print ('Flags: %s, Col:%s, Text: %s' % (flags, col, self.tree.GetItemText(item, col)))
-        print('Show details screen for line')
+        if leftonly:  # and not rightonly:
+            self.tree.SetItemTextColour(node, self.leftonly_colour)
+        elif rightonly:  # and not leftonly:
+            self.tree.SetItemTextColour(node, self.rightonly_colour)
+        elif difference:  # or (leftonly and rightonly):
+            self.tree.SetItemTextColour(node, self.difference_colour)
 
-    def on_doubleclick(self, evt):
-        """de default keuze `toon waarden links-rechts` uitvoeren voor de regel
-        waarop geklikt is of de node collapsem dan wel expanden
+    def set_node_text(self, node, column, value):
+        """set tooltip as well as text so that truncated text can be viewed in full
+        self is only used for API's sake
         """
-        pos = evt.GetPosition()
-        item, flags, col = self.tree.HitTest(pos)
-        print('Also show details screen for line')
-        if item:
-            if self.tree.GetItemText(item, 1):
-                ## print ('Flags: %s, Col:%s, Text: %s' % (flags, col, self.tree.GetItemText(item, col)))
-                x, y = self.GetPosition()
-                self.data = (self.tree.GetItemText(item, 0),
-                             self.tree.GetItemText(item, 1),
-                             self.tree.GetItemText(item, 2))
-                dlg = OptionsWindow(self, -1, apptitel, pos=(x + 50, y + 50))
-                dlg.ShowModal()
-                ## if self.go:
-                    ## self.doit(event)
-            elif self.tree.GetItemText(item, 0):
-                if self.tree.IsExpanded(item):
-                    self.tree.Collapse(item)
-                else:
-                    self.tree.Expand(item)
-
-    def doit(self, evt):
-        "per abuis gedefinieerd denk ik"
-        pass
-
-    def on_size(self, evt):
-        "grootte aanpassen"
-        self.tree.SetSize(self.tree.GetMainWindow().GetSize())
+        self.tree.SetItemText(node, value, column)
+        #  node.setToolTip(column, value)
 
 
 class OptionsWindow(wx.Dialog):
@@ -418,7 +357,6 @@ class MainWindow(wx.Frame):
                     retry = self.doit()
                 else:
                     retry = False
-
 
     def doit(self, event=None):
         """perform action
