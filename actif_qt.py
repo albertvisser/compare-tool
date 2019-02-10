@@ -57,7 +57,7 @@ class AskOpenFiles(qtw.QDialog):
             text = shared.comparetypes[type][0]
             rb = qtw.QRadioButton(text, self)
             gsizer.addWidget(rb, ix, 1)
-            if self.parent.selectiontype == type:
+            if self.parent.comparetype == type:
                 rb.setChecked(True)
             self.sel.append((rb, type))
         hsizer.addLayout(gsizer)
@@ -92,7 +92,7 @@ class AskOpenFiles(qtw.QDialog):
             return
         self.parent.lhs_path = linkerpad
         self.parent.rhs_path = rechterpad
-        self.parent.selectiontype = selectiontype
+        self.parent.comparetype = selectiontype
         super().accept()
 
 
@@ -232,7 +232,7 @@ class MainWindow(qtw.QMainWindow):
         self.ini.read()
         self.data = {}
         self.selected_option = ''
-        self.selectiontype = ''
+        self.comparetype = ''
         self.menuactions = {}
 
         self.resize(1024, 600)
@@ -244,13 +244,13 @@ class MainWindow(qtw.QMainWindow):
         self.setCentralWidget(self.win)
 
         if method and method in shared.comparetypes:
-            self.selectiontype = method
+            self.comparetype = method
         if self.lhs_path and self.rhs_path:
-            if not self.selectiontype:
+            if not self.comparetype:
                 extl = pathlib.Path(self.lhs_path).suffix[1:]
                 extr = pathlib.Path(self.rhs_path).suffix[1:]
                 if extl == extr and extl.lower() in shared.comparetypes:
-                    self.selectiontype = extl.lower()
+                    self.comparetype = extl.lower()
             self.doit(first_time=True)
         else:
             self.about()
@@ -295,13 +295,13 @@ class MainWindow(qtw.QMainWindow):
     def doit(self, event=None, first_time=False):
         """perform action
         """
-        mld = shared.check_input(self.lhs_path, self.rhs_path, self.selectiontype)
+        mld = shared.check_input(self.lhs_path, self.rhs_path, self.comparetype)
         if mld:
             qtw.QMessageBox.critical(self, shared.apptitel, mld)
             if first_time:
                 self.open()
             return True
-        ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.selectiontype)
+        ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.comparetype)
         if not ok:
             box = qtw.QMessageBox(self)
             box.setWindowTitle(shared.apptitel)
