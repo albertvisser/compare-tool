@@ -51,7 +51,7 @@ def compare_txtdata(fn1, fn2):
             result.append(['', '', line2])
             get_from_2 = True
         else:
-            result.append([line1, '.', '.'])
+            result.append([line1, '', ''])
             get_from_1 = True
             get_from_2 = True
         if get_from_1:
