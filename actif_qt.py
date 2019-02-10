@@ -3,7 +3,6 @@
 import sys
 import os.path
 import pathlib
-import traceback
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
@@ -31,7 +30,7 @@ class AskOpenFiles(qtw.QDialog):
 
         hsizer = qtw.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Linker bestand:  ',
-                                  text=self.parent.linkerpad,
+                                  text=self.parent.lhs_path,
                                   items=self.parent.ini.mru_left)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
@@ -41,7 +40,7 @@ class AskOpenFiles(qtw.QDialog):
 
         hsizer = qtw.QHBoxLayout()
         browse = FileBrowseButton(self, caption='Rechter bestand: ',
-                                  text=self.parent.rechterpad,
+                                  text=self.parent.rhs_path,
                                   items=self.parent.ini.mru_right)
         hsizer.addWidget(browse)
         ## self.paths.append((name, browse))
@@ -91,8 +90,8 @@ class AskOpenFiles(qtw.QDialog):
         if mld:
             qtw.QMessageBox.critical(self, shared.apptitel, mld)
             return
-        self.parent.linkerpad = linkerpad
-        self.parent.rechterpad = rechterpad
+        self.parent.lhs_path = linkerpad
+        self.parent.rhs_path = rechterpad
         self.parent.selectiontype = selectiontype
         super().accept()
 
@@ -119,12 +118,7 @@ class ShowComparison(qtw.QTreeWidget):
     def refresh_tree(self):
         """(re)do the comparison
         """
-        if self.parent.selectiontype in ('ini', 'ini2'):
-            shared.refresh_inicompare(self)
-        elif self.parent.selectiontype == 'xml':
-            shared.refresh_xmlcompare(self)
-        elif self.parent.selectiontype == 'txt':
-            shared.refresh_txtcompare(self)
+        shared.refresh_tree(self)
 
     # API methods to be called from the specific refresh functions
     def init_tree(self, caption, left_title, right_title):
@@ -171,6 +165,8 @@ class ShowComparison(qtw.QTreeWidget):
         elif difference:  # or (leftonly and rightonly):
             columns = (0, 1, 2)
             colour = difference_colour
+        else:
+            columns = ()
         for colno in columns:
             node.setForeground(colno, colour)
 
@@ -180,6 +176,11 @@ class ShowComparison(qtw.QTreeWidget):
         """
         node.setText(column, value)
         node.setToolTip(column, value)
+
+    def get_parent(self, node):
+        """retrieve parent of current node
+        """
+        return node.parent()
 
 
 class FileBrowseButton(qtw.QFrame):
@@ -255,33 +256,34 @@ class MainWindow(qtw.QMainWindow):
             self.about()
             self.open()
 
-    def add_action_to_menu(self, name, callback, shortcut, statustext, menu):
-        """build a menu line
-        """
-        act = qtw.QAction(name, self)
-        act.triggered.connect(callback)
-        act.setShortcut(shortcut)
-        act.setStatusTip(statustext)
-        menu.addAction(act)
-        return act
-
     def setup_menu(self):
         """Setting up the menu
         """
+        def add_action_to_menu(name, callback, shortcut, statustext, menu):
+            """build a menu line
+            """
+            act = qtw.QAction(name, self)
+            act.triggered.connect(callback)
+            act.setShortcut(shortcut)
+            act.setStatusTip(statustext)
+            menu.addAction(act)
+            return act
         self.menu_bar = self.menuBar()
         menu = self.menu_bar.addMenu("&File")
-
-        self.menuactions[shared.ID_OPEN] = self.add_action_to_menu(
-            "&Open", self.open, 'Ctrl+O', " Bepaal de te vergelijken ini files", menu)
-        self.menuactions[shared.ID_DOIT] = self.add_action_to_menu(
-            "&Vergelijk", self.doit, 'F5', " Orden en vergelijk de ini files", menu)
+        self.menuactions[shared.ID_OPEN] = add_action_to_menu("&Open", self.open, 'Ctrl+O',
+                                                              "Bepaal de te vergelijken ini files",
+                                                              menu)
+        self.menuactions[shared.ID_DOIT] = add_action_to_menu("&Vergelijk", self.doit, 'F5',
+                                                              "Orden en vergelijk de ini files",
+                                                              menu)
         menu.addSeparator()
-        self.menuactions[shared.ID_EXIT] = self.add_action_to_menu(
-            "E&xit", self.exit, 'Ctrl+Q', "Terminate the program", menu)
+        self.menuactions[shared.ID_EXIT] = add_action_to_menu("E&xit", self.exit, 'Ctrl+Q',
+                                                              "Terminate the program", menu)
 
         menu = self.menu_bar.addMenu("&Help")
-        self.menuactions[shared.ID_ABOUT] = self.add_action_to_menu(
-            "&About", self.about, 'F1', " Information about this program", menu)
+        self.menuactions[shared.ID_ABOUT] = add_action_to_menu("&About", self.about, 'F1',
+                                                               "Information about this program",
+                                                               menu)
 
     def open(self, event=None):
         """ask for files to compare
@@ -298,41 +300,27 @@ class MainWindow(qtw.QMainWindow):
             qtw.QMessageBox.critical(self, shared.apptitel, mld)
             if first_time:
                 self.open()
-            return
-        if self.do_compare():
-            if self.lhs_path in self.ini.mru_left:
-                self.ini.mru_left.remove(self.lhs_path)
-            self.ini.mru_left.insert(0, self.lhs_path)
-            if self.rhs_path in self.ini.mru_right:
-                self.ini.mru_right.remove(self.rhs_path)
-            self.ini.mru_right.insert(0, self.rhs_path)
-            self.ini.write()
-            if self.data:
-                self.selected_option = self.data[0]
-            self.win.refresh_tree()
-
-    def do_compare(self):
-        """do the actual comparison
-        """
-        compare_func = shared.comparetypes[self.selectiontype][1]
-        try:
-            self.data = compare_func(self.lhs_path, self.rhs_path)
-        except Exception:  # as err:
-            error, msg, tb = sys.exc_info()
+            return True
+        ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.selectiontype)
+        if not ok:
             box = qtw.QMessageBox(self)
             box.setWindowTitle(shared.apptitel)
-            if error == shared.ParseError:
-                info = "bevat geen correcte XML"
-            elif error == shared.MissingSectionHeaderError:
-                info = "begint niet met een header"
-            else:
-                info = "geeft een fout"
-            box.setText("Tenminste één file " + info)
-            box.setInformativeText('<pre>{}</pre>'.format(''.join(
-                traceback.format_exception(error, msg, tb))))
+            box.setText(data[0])
+            box.setInformativeText('<pre>{}</pre>'.format(''.join(data[1])))
             box.exec_()
-            return False
-        return True
+            return True
+        if self.lhs_path in self.ini.mru_left:
+            self.ini.mru_left.remove(self.lhs_path)
+        self.ini.mru_left.insert(0, self.lhs_path)
+        if self.rhs_path in self.ini.mru_right:
+            self.ini.mru_right.remove(self.rhs_path)
+        self.ini.mru_right.insert(0, self.rhs_path)
+        self.ini.write()
+        self.data = data
+        if self.data:
+            self.selected_option = self.data[0]
+        self.win.refresh_tree()
+        return False
 
     def about(self, event=None):
         """opening blurb
