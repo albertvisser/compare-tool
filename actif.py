@@ -3,7 +3,8 @@
 """
 import argparse
 ## from actif_qt4 import main
-from actif_qt import comparetypes, main
+from actif_shared import comparetypes
+from actif_qt import main
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-m', '--method', choices=comparetypes, help='comparison method')
