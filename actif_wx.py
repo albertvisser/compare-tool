@@ -118,6 +118,9 @@ class ShowComparison(wx.Panel):
         # die show_tooltip switch zorgt ervoor dat de teksten onleesbaar worden
         self.tree = gizmos.TreeListCtrl(self, -1, size=(1080, 600),
                                         agwStyle=gizmos.TR_DEFAULT_STYLE |
+                                                 gizmos.TR_HAS_VARIABLE_ROW_HEIGHT |
+                                                 # 0x100000 | # wx.TR_TOOLTIP_ON_LONG_ITEMS |
+                                                 gizmos.TR_ELLIPSIZE_LONG_ITEMS |
                                                  gizmos.TR_FULL_ROW_HIGHLIGHT)  # |
                                                  # CTC.TR_TOOLTIP_ON_LONG_ITEMS |
                                                  # HTL.TR_ELLIPSIZE_LONG_ITEMS)
@@ -217,6 +220,7 @@ class MainWindow(wx.Frame):
     """Application screen
     """
     def __init__(self, parent, fileargs, method):
+        print('in MainWindow, fileargs is,', fileargs, 'method is', method)
         self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
         # voor nu gebruiken we een vaste default voor het method argument
         self.comparetype = method
@@ -290,7 +294,10 @@ class MainWindow(wx.Frame):
         if mld:
             wx.MessageBox(mld, shared.apptitel)
             return True
+        print('in mainwindow.doit, starting compare')
         ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.comparetype)
+        with open('data.txt', 'w') as out:
+            print('got data:', data, file=out)
         if not ok or not data:
             message = data[0] if data else 'Vergelijking mislukt'
             x, y = self.GetPosition()

@@ -175,6 +175,7 @@ class ShowComparison(qtw.QTreeWidget):
         self is only used for API's sake
         """
         node.setText(column, value)
+        node.setTextAlignment(column, core.Qt.AlignTop)
         node.setToolTip(column, value)
 
     def get_parent(self, node):
