@@ -26,8 +26,8 @@ def compare_txtdata(fn1, fn2):
     left_data = get_file(fn1)
     right_data = get_file(fn2)
     result = []
-    gen1 = (x.rstrip() for x in left_data)
-    gen2 = (x.rstrip() for x in right_data)
+    gen1 = (x.rstrip() for x in left_data if x.rstrip())
+    gen2 = (x.rstrip() for x in right_data if x.rstrip())
 
     def gen_next(gen):
         "generator to get next item from file"
