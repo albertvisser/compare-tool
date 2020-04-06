@@ -30,5 +30,29 @@ is compared as::
     horns = 1                       horns = 1
 
 
-I'm currently writing a variant that makes it possible to compare XML files in a
-similar fashion.
+I've also included the possibilty to compare XML files in a similar fashion, and to do a simple lini-by-line text comparison (after sorting all the lines in the files).
+
+Usage
+-----
+
+Execute ``actif.py``. When executed from the command line, the --help switch gives you the following information::
+
+ usage: actif.py [-h] [-m {ini,ini2,xml,txt}] FILE FILE
+
+ starter for Compare Tool
+
+ positional arguments:
+   FILE
+
+ optional arguments:
+   -h, --help            show this help message and exit
+   -m {ini,ini2,xml,txt}, --method {ini,ini2,xml,txt}
+                         comparison method
+
+showing that you can specify the files to compare and the method to use when calling the tool. Without (all necessary) arguments, you start with a dialog where you can choose your options.
+
+Requirements
+------------
+
+- Python
+- PyQt(5) / wxPython (Phoenix)
