@@ -3,8 +3,11 @@
 """
 import argparse
 from actif_shared import comparetypes
-from actif_qt import main
-# from actif_wx import main
+from toolkit import toolkit
+if toolkit == 'qt':
+    from actif_qt import main
+elif toolkit == 'wx':
+    from actif_wx import main
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-m', '--method', choices=comparetypes, help='comparison method')

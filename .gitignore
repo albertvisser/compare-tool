@@ -12,3 +12,6 @@ logs/
 *.xml
 *.ini
 *.txt
+
+# on-demand
+toolkit.py
