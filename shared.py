@@ -8,6 +8,7 @@ from configparser import ConfigParser
 from conf_comp import compare_configs, compare_configs_2, MissingSectionHeaderError
 from xml_comp import compare_xmldata, ParseError
 from txt_comp import compare_txtdata
+from html_comp import compare_htmldata
 ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
@@ -17,6 +18,7 @@ comparetypes = {
     'ini': ('ini files', compare_configs),
     'ini2': ('ini files, allowing for missing first header', compare_configs_2),
     'xml': ('XML files', compare_xmldata),
+    'html': ('HTML files', compare_htmldata),
     'txt': ('Simple text comparison', compare_txtdata)}
 catchables = (MissingSectionHeaderError, ParseError)
 
@@ -83,6 +85,8 @@ def refresh_tree(self):
         refresh_inicompare(self)
     elif self.parent.comparetype == 'xml':
         refresh_xmlcompare(self)
+    elif self.parent.comparetype == 'html':
+        refresh_htmlcompare(self)
     elif self.parent.comparetype == 'txt':
         refresh_txtcompare(self)
 
@@ -171,6 +175,33 @@ def refresh_xmlcompare(self):
         self.set_node_text(child, 2, rvalue)
     if self.parent.data:
         self.colorize_header(header, rightonly, leftonly, difference)
+
+
+def refresh_htmlcompare(self):
+    """(re)do the HTML compare
+     """
+    self.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
+    current_elems = []
+    parents = {-1: None}
+    for item, lvalue, rvalue in self.parent.data:
+        node, attr_name = item
+        level, elem_name = node
+        if not attr_name:
+            my_parent = parents[level - 1]
+            node_text = elem_name
+        else:
+            my_parent = parents[level]
+            node_text = ' ' + attr_name
+        if my_parent:
+            new_node = self.build_child(my_parent, node_text)
+        else:
+            new_node = self.build_header(node_text)
+        if not attr_name:
+            parents[level] = new_node
+        if lvalue:
+            self.set_node_text(new_node, 1, lvalue)
+        if rvalue:
+            self.set_node_text(new_node, 2, rvalue)
 
 
 def refresh_txtcompare(self):

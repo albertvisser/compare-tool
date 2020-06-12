@@ -9,8 +9,6 @@ output naar hoofdprogramma: list van 3-tuples
 import sys
 import bs4 as bs
 import pprint
-ELSTART = '<> '
-CMSTART = '<!> '
 
 # hoofdroutine: compare_htmldata - kan misschien overgenomen worden uit xml vergelijking en dan
 # gefinetuned
@@ -95,7 +93,7 @@ def get_next_level_data(element, level=0):
     result = []
     for item in element.children:
         if isinstance(item, bs.Tag):
-            element_tag = (level, ELSTART + item.name)
+            element_tag = (level, '<{}>'.format(item.name))
             result.append([element_tag, '', ''])
             if item.attrs is not None:
                 # eerst even ongesorteerd
@@ -105,7 +103,7 @@ def get_next_level_data(element, level=0):
                         result.append([element_tag, name, value])
             result.extend(get_next_level_data(item, level + 1))
         elif isinstance(item, bs.Comment):
-            result.append([(level, ''), '', CMSTART + item.string])
+            result.append([(level, ''), '', '<!-- {} -->'.format(item.string)])
         elif isinstance(item, bs.NavigableString):
             result.append([(level, ''), '', item.string])
         else:
