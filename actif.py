@@ -2,12 +2,12 @@
 """starter for Compare Tool
 """
 import argparse
-from actif_shared import comparetypes
+from shared import comparetypes
 from toolkit import toolkit
 if toolkit == 'qt':
-    from actif_qt import main
+    from qt_gui import main
 elif toolkit == 'wx':
-    from actif_wx import main
+    from wx_gui import main
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-m', '--method', choices=comparetypes, help='comparison method')

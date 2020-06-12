@@ -7,7 +7,7 @@ import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.gizmos as gizmos
 # import wx.lib.agw.customtreectrl as CTC
 # import wx.lib.agw.hypertreelist as HTL
-import actif_shared as shared
+import shared
 
 
 class AskOpenFiles(wx.Dialog):
