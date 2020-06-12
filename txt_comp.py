@@ -61,3 +61,20 @@ def compare_txtdata(fn1, fn2):
             if not eof2:
                 eof2, line2 = gen_next(gen2)
     return result
+
+
+def refresh_txtcompare(self):
+    """(re)do the text compare
+    """
+    self.init_tree('Text in both files', self.parent.lhs_path, self.parent.rhs_path)
+    for x in self.parent.data:
+        bvalue, lvalue, rvalue = x
+        rightonly = leftonly = difference = False
+        node = self.build_header(bvalue)
+        self.set_node_text(node, 1, lvalue)
+        self.set_node_text(node, 2, rvalue)
+        if lvalue:
+            leftonly = True
+        if rvalue:
+            rightonly = True
+        self.colorize_child(node, rightonly, leftonly, difference)

@@ -111,6 +111,33 @@ def get_next_level_data(element, level=0):
     return result
 
 
+def refresh_htmlcompare(self):
+    """(re)do the HTML compare
+     """
+    self.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
+    current_elems = []
+    parents = {-1: None}
+    for item, lvalue, rvalue in self.parent.data:
+        node, attr_name = item
+        level, elem_name = node
+        if not attr_name:
+            my_parent = parents[level - 1]
+            node_text = elem_name
+        else:
+            my_parent = parents[level]
+            node_text = ' ' + attr_name
+        if my_parent:
+            new_node = self.build_child(my_parent, node_text)
+        else:
+            new_node = self.build_header(node_text)
+        if not attr_name:
+            parents[level] = new_node
+        if lvalue:
+            self.set_node_text(new_node, 1, lvalue)
+        if rvalue:
+            self.set_node_text(new_node, 2, rvalue)
+
+
 if __name__ == "__main__":
     "read a document and show results"
     with open('html_comp_left', 'w') as out:
