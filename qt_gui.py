@@ -106,7 +106,7 @@ class ShowComparison(qtw.QTreeWidget):
         self.setHeaderLabels(['Document structure', 'value in "lefthand-side" file',
                               'value in "righthand-side" file'])
         hdr = self.header()
-        hdr.resizeSection(0, 100)
+        hdr.resizeSection(0, 200)
         ## hdr.resizeSection(0, 350)
         hdr.resizeSection(1, 350)
         root = qtw.QTreeWidgetItem()
