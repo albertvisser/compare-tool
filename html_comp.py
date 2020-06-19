@@ -17,6 +17,8 @@ import pprint
 # - in volgorde van het document de elementen opsomt die erin voorkomen (alleen de tagnaam)
 # - de bijbehorende attributen sorteert op naam en naam + waarde teruggeeft
 # - de gevonden string of strings toont in volgorde van het document
+# - de volgorde van elementen en teksten moet intact blijven
+# - attributen van een element moeten wel gesorteerd worden
 
 
 def compare_htmldata(fn1, fn2):
@@ -79,12 +81,20 @@ def compare_htmldata(fn1, fn2):
     return result
 
 
-def get_htmldata(filename):
-    """de volgorde van elementen en teksten moet intact blijven
-    attributen van een element moeten wel gesorteerd worden
+def get_htmldata(filename, strip_newlines=True, fix_selfclosing=True):
+    """read data from document using BeautifulSoup
+
+    extra parameters to avoid a lot of blank lines in the output - possible to override
     """
     with open(filename) as _in:
-        soup = bs.BeautifulSoup(_in, 'lxml')
+        data = _in.readlines()  # [x for x in _in]
+        if strip_newlines:
+            data = [x.strip() for x in data]
+        html = ''.join(data)
+        if fix_selfclosing:
+            html = html.replace('<br/>', '<br />').replace('<hr/>', '<hr />')
+        soup = bs.BeautifulSoup(html, 'lxml')
+        # soup = bs.BeautifulSoup(_in, 'lxml')
     return get_next_level_data(soup)
 
 
@@ -140,10 +150,19 @@ def refresh_htmlcompare(self):
 
 if __name__ == "__main__":
     "read a document and show results"
-    with open('html_comp_left', 'w') as out:
+    with open('html_ongefilterd', 'w') as out:
+        pprint.pprint(get_htmldata(sys.argv[1], strip_newlines=False, fix_selfclosing=False),
+                      stream=out)
+    with open('html_strip_newlines', 'w') as out:
+        pprint.pprint(get_htmldata(sys.argv[1], strip_newlines=False), stream=out)
+    with open('html_fix_selfclosing', 'w') as out:
+        # in het voorbeeld geeft dit geen verschil ten opzichte van beide False
+        pprint.pprint(get_htmldata(sys.argv[1], fix_selfclosing=False), stream=out)
+    with open('html_both', 'w') as out:
+        # in het voorbeeld geeft deze geen verschil ten opzichte van alleen newlines False
         pprint.pprint(get_htmldata(sys.argv[1]), stream=out)
-    with open('html_comp_right', 'w') as out:
-        pprint.pprint(get_htmldata(sys.argv[2]), stream=out)
-    with open('html_comp_both', 'w') as out:
-        pprint.pprint(compare_htmldata(sys.argv[1], sys.argv[2]), stream=out)
+    # with open('html_comp_right', 'w') as out:
+    #     pprint.pprint(get_htmldata(sys.argv[2]), stream=out)
+    # with open('html_comp_both', 'w') as out:
+    #     pprint.pprint(compare_htmldata(sys.argv[1], sys.argv[2]), stream=out)
 
