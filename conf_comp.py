@@ -153,27 +153,3 @@ def refresh_inicompare(self):
         self.set_node_text(child, 2, rvalue)
     if self.parent.data:
         self.colorize_header(header, rightonly, leftonly, difference)
-
-
-if __name__ == "__main__":
-    f1 = "actif.ini"
-    ## f1 = check_inifile(f1)
-    ## pprint.pprint(build_options_list(f1))
-    ## print()
-    f2 = "testing.ini"
-    ## f2 = check_inifile(f2)
-    ## pprint.pprint(build_options_list(f2))
-    ## print()
-    f2 = "jvscompare.ini"
-    pprint.pprint(compare_configs(f1, f2))
-    ## compare_configs(f1, f2)
-    ## fn = "wincmd.ini"
-    ## pprint.pprint(build_options_list(fn))
-
-    ## test_afrift(f1, f2)
-    ## test_readini(f1)
-    ## test_readini(f2)
-    ## fn = "wincmd.ini"
-    ## test_myNCP(fn)
-    ## test_myCP(fn)
-    ## test_readini(fn)

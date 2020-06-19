@@ -146,23 +146,3 @@ def refresh_htmlcompare(self):
             self.set_node_text(new_node, 1, lvalue)
         if rvalue:
             self.set_node_text(new_node, 2, rvalue)
-
-
-if __name__ == "__main__":
-    "read a document and show results"
-    with open('html_ongefilterd', 'w') as out:
-        pprint.pprint(get_htmldata(sys.argv[1], strip_newlines=False, fix_selfclosing=False),
-                      stream=out)
-    with open('html_strip_newlines', 'w') as out:
-        pprint.pprint(get_htmldata(sys.argv[1], strip_newlines=False), stream=out)
-    with open('html_fix_selfclosing', 'w') as out:
-        # in het voorbeeld geeft dit geen verschil ten opzichte van beide False
-        pprint.pprint(get_htmldata(sys.argv[1], fix_selfclosing=False), stream=out)
-    with open('html_both', 'w') as out:
-        # in het voorbeeld geeft deze geen verschil ten opzichte van alleen newlines False
-        pprint.pprint(get_htmldata(sys.argv[1]), stream=out)
-    # with open('html_comp_right', 'w') as out:
-    #     pprint.pprint(get_htmldata(sys.argv[2]), stream=out)
-    # with open('html_comp_both', 'w') as out:
-    #     pprint.pprint(compare_htmldata(sys.argv[1], sys.argv[2]), stream=out)
-

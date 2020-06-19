@@ -190,26 +190,3 @@ def refresh_xmlcompare(self):
         self.set_node_text(child, 2, rvalue)
     if self.parent.data:
         self.colorize_header(header, rightonly, leftonly, difference)
-
-
-def main():
-    "function to test/demonstrate what's in this module"
-    ## pprint.pprint(compare_xmldata('.lmmsrc.xml', '.lmmsrc_o.xml'))
-    ## pprint.pprint(sort_xmldata('.lmmsrc.xml'))
-    with open('bezettingen_current', 'w') as _o:
-        pprint.pprint(sort_xmldata('/home/albert/magiokis/data/songs/'
-                                   'magiokis_songs_xmldata/Bezettingen.xml'),
-                      stream=_o)
-    with open('bezettingen_backup', 'w') as _o:
-        pprint.pprint(sort_xmldata('/home/albert/magiokis/data/songs/'
-                                   'magiokis_songs_xmldata/Bezettingen.xml.bak'),
-                      stream=_o)
-    with open('bezettingen_compare', 'w') as _o:
-        pprint.pprint(compare_xmldata('/home/albert/magiokis/data/songs/'
-                                      'magiokis_songs_xmldata/Bezettingen.xml',
-                                      '/home/albert/magiokis/data/songs/'
-                                      'magiokis_songs_xmldata/Bezettingen.xml.bak'),
-                      stream=_o)
-
-if __name__ == '__main__':
-    main()
