@@ -136,6 +136,7 @@ def refresh_htmlcompare(self):
         else:
             my_parent = parents[level]
             node_text = ' ' + attr_name
+        rightonly = leftonly = difference = False
         if my_parent:
             new_node = self.build_child(my_parent, node_text)
         else:
@@ -146,3 +147,16 @@ def refresh_htmlcompare(self):
             self.set_node_text(new_node, 1, lvalue)
         if rvalue:
             self.set_node_text(new_node, 2, rvalue)
+        if attr_name or not elem_name:
+            if lvalue == '':
+                rightonly = True
+                self.colorize_child(new_node, rightonly, leftonly, difference)
+            if rvalue == '':
+                leftonly = True
+                self.colorize_child(new_node, rightonly, leftonly, difference)
+            if lvalue and rvalue and lvalue != rvalue:
+                difference = True
+                self.colorize_child(new_node, rightonly, leftonly, difference)
+            # if my_parent:
+            #     self.colorize_header(my_parent, rightonly, leftonly, difference)
+
