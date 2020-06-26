@@ -113,9 +113,9 @@ def get_next_level_data(element, level=0):
                         result.append([element_tag, name, value])
             result.extend(get_next_level_data(item, level + 1))
         elif isinstance(item, bs.Comment):
-            result.append([(level, ''), '', '<!-- {} -->'.format(item.string)])
+            result.append([(level, '<!>'), '', item.string])
         elif isinstance(item, bs.NavigableString):
-            result.append([(level, ''), '', item.string])
+            result.append([(level, '<"">'), '', item.string])
         else:
             result.append(["Oops, what's this?" + str(item), '', ''])
     return result
