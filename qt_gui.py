@@ -9,7 +9,7 @@ import PyQt5.QtCore as core
 import shared
 
 rightonly_colour = gui.QBrush(core.Qt.blue)
-leftonly_colour = gui.QBrush(core.Qt.green)
+leftonly_colour = gui.QBrush(core.Qt.darkGreen)
 difference_colour = gui.QBrush(core.Qt.red)
 ## inversetext_colour = core.Qt.white
 
