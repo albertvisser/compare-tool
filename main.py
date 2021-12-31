@@ -24,6 +24,95 @@ comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
 catchables = (MissingSectionHeaderError, ParseError)
 
 
+class Comparer:
+    """Application class
+    """
+    def __init__(self, args):
+        self.comp = ShowComparison(self)
+        self.win = gui.MainWindow(self)
+        self.lhs_path, self.rhs_path = shared.get_input_paths(args)
+
+        self.ini = shared.IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
+        self.hier = getcwd()
+        self.ini = shared.IniFile(self.hier + "/actif.ini")
+
+        self.ini.read()
+        self.data = {}
+        self.selected_option = ''
+        self.comparetype = ''  # = method in wx version
+        if method and method in shared.comparetypes:
+            self.comparetype = method
+        if self.lhs_path and self.rhs_path:
+            if not self.comparetype:
+                extl = pathlib.Path(self.lhs_path).suffix[1:]
+                extr = pathlib.Path(self.rhs_path).suffix[1:]
+                if extl == extr and extl.lower() in shared.comparetypes:
+                    self.comparetype = extl.lower()
+            self.doit(first_time=True)
+        else:
+            self.about()
+            self.open()
+
+        win.go()
+
+    def setup_menu(self):
+        self.gui.setup_menu(("&File", (
+                (shared.ID_OPEN, "&Open/kies", "Ctrl+O", "Bepaal de te vergelijken (ini) files",
+                    self.open),
+                (shared.ID_DOIT, "&Vergelijk", "F5", "Orden en vergelijk de (ini) files"),
+                    self.doit),
+                (),
+                (shared.ID_EXIT, "E&xit", "Ctrl+Q", " Terminate the program", self.exit)),
+            ("&Help", ((shared.ID_ABOUT, "&About", "F1", " Information about this program",i
+                self.about))))
+
+    def open(self):
+        # TODO: doit() geeft ook terug dat het comparetype nog niet is opgegeven
+        if gui.open_files():
+            self.doit()
+
+    def doit(self, event=none, first_time=false):
+        """perform action
+        """
+        mld = shared.check_input(self.lhs_path, self.rhs_path, self.comparetype)
+        if mld:
+            self.gui.meld(...)
+            if first_time:
+                self.open()
+            return True
+        ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.comparetype)
+        if not ok:  # qt versie
+        if not ok or not data:  # wx versie
+            self.gui.meld2(...)
+            return True  # True brengt ons terug in de invoerlus in open()
+        if self.lhs_path in self.ini.mru_left:
+            self.ini.mru_left.remove(self.lhs_path)
+        self.ini.mru_left.insert(0, self.lhs_path)
+        if self.rhs_path in self.ini.mru_right:
+            self.ini.mru_right.remove(self.rhs_path)
+        self.ini.mru_right.insert(0, self.rhs_path)
+        self.ini.write()
+        self.data = data
+        if self.data:
+            self.selected_option = self.data[0]
+        self.gui.refresh()
+        return False
+
+    def about(self, event=None):
+        """opening blurb
+        """
+        self.gui.meld3(
+        qtw.QMessageBox.information(self, shared.apptitel, '\n'.join((
+            "Met dit programma kun je twee (ini) files met elkaar vergelijken,",
+            "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
+            "",
+            "Het is ook bruikbaar voor XML bestanden.")))
+
+    def exit(self):
+        "quit"
+        self.gui.exit()
+
+
 def get_input_paths(fileargs):
     "split up incoming file arguments"
     leftpath = rightpath = ''
@@ -94,7 +183,7 @@ def refresh_tree(self):
 
 
 class IniFile:
-    """interface to file conatining program settings
+    """interface to file containing program settings
     """
     def __init__(self, fileref):
         self.fname = fileref

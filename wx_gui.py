@@ -1,4 +1,4 @@
-"""Presentation logic for Compare Tool - PyQT5 version
+"""Presentation logic for Compare Tool - wxPython version
 """
 from os import getcwd
 # from os.path import exists
@@ -8,6 +8,85 @@ import wx.lib.gizmos as gizmos
 # import wx.lib.agw.customtreectrl as CTC
 # import wx.lib.agw.hypertreelist as HTL
 import shared
+
+
+class MainWindow(wx.Frame):
+    """Application screen
+    """
+    def __init__(self, parent, fileargs, method):
+        app = wx.App()
+        wx.Frame.__init__(self, parent, wx.ID_ANY, shared.apptitel, size=(1080, 600),
+                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
+        # self.CreateStatusBar()
+
+        self.setup_menu()
+        self.win = ShowComparison(self)
+        vsizer = wx.BoxSizer(wx.VERTICAL)
+        vsizer.Add(self.win, 1, wx.EXPAND)  # | wx.ALL)
+        self.SetAutoLayout(True)
+        self.SetSizer(vsizer)
+        vsizer.Fit(self)
+
+    def go(self):
+        self.Show(True)
+        app.MainLoop()
+
+    def open_files(self):
+        """ask for files to compare
+        """
+        x, y = self.GetPosition()
+        with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
+            result = dlg.ShowModal() == dlg.GetAffirmativeId()
+            if result:
+                self.lhs_path = dlg.path_left
+                self.rhs_path = dlg.path_right
+                for rb, type_ in dlg.sel:
+                    if rb.GetValue():
+                        self.comparetype = type_
+                        break
+        return result
+
+    def setup_menu(self):
+        """Setting up the menu
+        """
+        menubar = wx.menuBar()
+        for title, options in menudict.items():
+            menu = wx.Menu()
+            for item in options:
+                if not item:
+                    menu.AppendSeparator()
+                    continue
+                item_id, title, shortcut, text, callback = item
+                menu.Append(item_id, '\t'.join((tetle, shortcut)), text)
+                self.Connect(item_id, wx.NewId(), wx.wxEVT_COMMAND_MENU_SELECTED, callback)
+            menubar.Append(menu, title)
+        self.SetMenuBar(menubar)
+
+    def meld(self, mld):
+        wx.MessageBox(mld, shared.apptitel)
+
+    def meld2(self, data):
+        message = data[0] if data else 'Vergelijking mislukt'
+        x, y = self.GetPosition()
+        with wx.MessageDialog(self, message, shared.apptitel, pos=(x + 50, y + 50),
+                              style=wx.OK | wx.ICON_INFORMATION) as dlg:
+            if data:
+                dlg.SetExtendedMessage(''.join(data[1]))
+            dlg.ShowModal()
+
+    def meld3(self, melding):
+        dlg = wx.MessageDialog(self, melding, shared.apptitel, wx.OK | wx.ICON_INFORMATION)
+        dlg.ShowModal()
+        dlg.Destroy()
+
+    def refresh(self):
+        # panel opnieuw opbouwen in plaats van een refresh doen
+        self.win.Destroy()
+        self.win = ShowComparison(self)
+
+    def exit(self, event):
+        "quit"
+        self.Close(True)
 
 
 class AskOpenFiles(wx.Dialog):
@@ -214,132 +293,3 @@ class ShowComparison(wx.Panel):
         """retrieve parent of current node
         """
         return self.tree.GetItemParent(node)
-
-
-class MainWindow(wx.Frame):
-    """Application screen
-    """
-    def __init__(self, parent, fileargs, method):
-        print('in MainWindow, fileargs is,', fileargs, 'method is', method)
-        self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
-        # voor nu gebruiken we een vaste default voor het method argument
-        self.comparetype = method
-        self.hier = getcwd()
-        self.ini = shared.IniFile(self.hier + "/actif.ini")
-        self.ini.read()
-        self.data = {}
-        self.selectedOption = ''
-
-        wx.Frame.__init__(self, parent, wx.ID_ANY, shared.apptitel, size=(1080, 600),
-                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-        # self.CreateStatusBar()
-
-        self.setup_menu()
-        self.win = ShowComparison(self)
-        vsizer = wx.BoxSizer(wx.VERTICAL)
-        vsizer.Add(self.win, 1, wx.EXPAND)  # | wx.ALL)
-        self.SetAutoLayout(True)
-        self.SetSizer(vsizer)
-        vsizer.Fit(self)
-        self.Show(True)
-        if self.lhs_path and self.rhs_path:
-            self.doit()
-        else:
-            self.about()
-            self.open()
-
-    def setup_menu(self):
-        """Setting up the menu
-        """
-        filemenu = wx.Menu()
-        filemenu.Append(shared.ID_OPEN, "&Open/kies\tCtrl+O", " Kies de te vergelijken ini files")
-        filemenu.Append(shared.ID_DOIT, "&Vergelijk\tF5", " Orden en vergelijk de ini files")
-        filemenu.AppendSeparator()
-        filemenu.Append(shared.ID_EXIT, "E&xit\tCtrl+Q", " Terminate the program")
-        helpmenu = wx.Menu()
-        helpmenu.Append(shared.ID_ABOUT, "&About\tF1", " Information about this program")
-
-        menuBar = wx.MenuBar()
-        menuBar.Append(filemenu, "&File")
-        menuBar.Append(helpmenu, "&Help")
-        self.SetMenuBar(menuBar)
-        self.Connect(shared.ID_OPEN, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.open)
-        self.Connect(shared.ID_DOIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.doit)
-        self.Connect(shared.ID_EXIT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.exit)
-        self.Connect(shared.ID_ABOUT, -1, wx.wxEVT_COMMAND_MENU_SELECTED, self.about)
-
-    def open(self, event=None):
-        """ask for files to compare
-        """
-        x, y = self.GetPosition()
-        with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
-            retry = True
-            while retry:
-                result = dlg.ShowModal()
-                if result == dlg.GetAffirmativeId():
-                    self.lhs_path = dlg.path_left
-                    self.rhs_path = dlg.path_right
-                    for rb, type_ in dlg.sel:
-                        if rb.GetValue():
-                            self.comparetype = type_
-                            break
-                    retry = self.doit()
-                else:
-                    retry = False
-
-    def doit(self, event=None):
-        """perform action
-        """
-        mld = shared.check_input(self.lhs_path, self.rhs_path, self.comparetype)
-        if mld:
-            wx.MessageBox(mld, shared.apptitel)
-            return True
-        print('in mainwindow.doit, starting compare')
-        ok, data = shared.do_compare(self.lhs_path, self.rhs_path, self.comparetype)
-        with open('data.txt', 'w') as out:
-            print('got data:', data, file=out)
-        if not ok or not data:
-            message = data[0] if data else 'Vergelijking mislukt'
-            x, y = self.GetPosition()
-            with wx.MessageDialog(self, message, shared.apptitel, pos=(x + 50, y + 50),
-                                  style=wx.OK | wx.ICON_INFORMATION) as dlg:
-                if data:
-                    dlg.SetExtendedMessage(''.join(data[1]))
-                dlg.ShowModal()
-            return True  # True brengt ons terug in de invoerlus in open()
-        if self.lhs_path in self.ini.mru_left:
-            self.ini.mru_left.remove(self.lhs_path)
-        self.ini.mru_left.insert(0, self.lhs_path)
-        if self.rhs_path in self.ini.mru_right:
-            self.ini.mru_right.remove(self.rhs_path)
-        self.ini.mru_right.insert(0, self.rhs_path)
-        self.ini.write()
-        if data:
-            self.selectedOption = data[0]
-        self.data = data  # [1:]
-        # panel opnieuw opbouwen in plaats van een refresh doen
-        self.win.Destroy()
-        self.win = ShowComparison(self)
-        return False
-
-    def about(self, event=None):
-        """opening blurb
-        """
-        dlg = wx.MessageDialog(self,
-                               ("Hulpmiddel om twee ini files te vergelijken, "
-                                "maakt niet uit hoe door elkaar de secties en entries ook zitten"),
-                               shared.apptitel, wx.OK | wx.ICON_INFORMATION)
-        dlg.ShowModal()
-        dlg.Destroy()
-
-    def exit(self, event):
-        "quit"
-        self.Close(True)
-
-
-def main(args):
-    """main function"""
-    ## print a1, a2
-    app = wx.App()
-    frame = MainWindow(None, (args.input), method=args.method)
-    app.MainLoop()
