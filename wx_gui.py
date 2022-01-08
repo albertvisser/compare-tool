@@ -223,7 +223,7 @@ class MainWindow(wx.Frame):
         print('in MainWindow, fileargs is,', fileargs, 'method is', method)
         self.lhs_path, self.rhs_path = shared.get_input_paths(fileargs)
         # voor nu gebruiken we een vaste default voor het method argument
-        self.comparetype = method
+        self.comparetype = method or 'ini'
         self.hier = getcwd()
         self.ini = shared.IniFile(self.hier + "/actif.ini")
         self.ini.read()
