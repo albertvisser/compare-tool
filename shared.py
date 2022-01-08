@@ -27,12 +27,13 @@ catchables = (MissingSectionHeaderError, ParseError)
 def get_input_paths(fileargs):
     "split up incoming file arguments"
     leftpath = rightpath = ''
-    if len(fileargs) > 0:
-        leftpath = fileargs[0]
-    if len(fileargs) > 1:
-        rightpath = fileargs[1]
-        if len(fileargs) > 2:
-            print('excessive filename arguments truncated')
+    if fileargs:
+        if len(fileargs) > 0:
+            leftpath = fileargs[0]
+        if len(fileargs) > 1:
+            rightpath = fileargs[1]
+            if len(fileargs) > 2:
+                print('excessive filename arguments truncated')
     return leftpath, rightpath
 
 

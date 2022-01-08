@@ -2,6 +2,7 @@
 """starter for Compare Tool
 """
 import argparse
+from types import SimpleNamespace
 from shared import comparetypes
 from toolkit import toolkit
 if toolkit == 'qt':
@@ -11,6 +12,7 @@ elif toolkit == 'wx':
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-m', '--method', choices=comparetypes, help='comparison method')
-parser.add_argument('input', metavar='FILE', nargs=2)
+parser.add_argument('-i', '--input', metavar='FILE', nargs=2)
 args = parser.parse_args()
+# args = SimpleNamespace(method='', input=())
 main(args)
