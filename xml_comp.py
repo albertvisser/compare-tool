@@ -70,10 +70,11 @@ def sort_xmldata(fn):
     # build the root element for the comparison list
     nodevalue = [(root.tag, 0)]         # elements
     if root.items():
-        attr_name, datavalue = root.items()[0]  # name/value of (in this case first) attribute
+        for attr_name, datavalue in sorted(root.items()):
+            result.append((nodevalue, attr_name, datavalue))
     else:
         attr_name = datavalue = ''
-    result.append((nodevalue, attr_name, datavalue))
+        result.append((nodevalue, attr_name, datavalue))
     # get a sorted list of the subelement names
     current_element_list = [(root, 0), ]
     process_subelements()
