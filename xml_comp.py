@@ -156,7 +156,12 @@ def refresh_xmlcompare(self):
                 if len(elems) > len(current_elems):
                     parent = header
                 elif len(elems) < len(current_elems):
-                    parent = self.get_parent(self.get_parent(header))
+                    level = 1
+                    while elems[level] == current_elems[level]:
+                        level +=1
+                    parent = header
+                    for item in current_elems[level:]:
+                        parent = self.get_parent(parent)
                 else:
                     parent = self.get_parent(header)
                 header = self.build_child(parent, '<> ' + elems[-1][0])
@@ -190,3 +195,4 @@ def refresh_xmlcompare(self):
         self.set_node_text(child, 2, rvalue)
     if self.parent.data:
         self.colorize_header(header, rightonly, leftonly, difference)
+    # o.close()
