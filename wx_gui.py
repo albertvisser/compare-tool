@@ -77,7 +77,7 @@ class AskOpenFiles(wx.Dialog):
         self.SetEscapeId(btn.GetId())
         btn.SetHelpText("Klik hier om zonder wijzigingen terug te gaan naar het hoofdscherm")
         box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        sizer.Add(box, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        sizer.Add(box, 0, wx.GROW | wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
