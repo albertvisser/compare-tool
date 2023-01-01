@@ -2,7 +2,6 @@
 """
 import sys
 import os.path
-import pathlib
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
@@ -53,26 +52,31 @@ class MainWindow(qtw.QMainWindow):
                                                                text, menu)
 
     def go(self):
+        "display the screen and start the event loop"
         self.win = self.master.showcomp.gui
         self.setCentralWidget(self.win)
         self.show()
         sys.exit(self.app.exec_())
 
     def meld_input_fout(self, mld):
+        "show invalid input message"
         qtw.QMessageBox.critical(self, self.master.apptitel, mld)
 
     def meld_vergelijking_fout(self, message, data):
+        "show comparison error(s)"
         box = qtw.QMessageBox(self)
         box.setWindowTitle(self.master.apptitel)
         box.setText(message)
         if data:
-            box.setInformativeText('<pre>{}</pre>'.format(''.join(data)))
+            box.setInformativeText(f'<pre>{"".join(data)}</pre>')
         box.exec_()
 
     def meld(self, melding):
+        "show a message"
         qtw.QMessageBox.information(self, self.master.apptitel, melding)
 
     def refresh(self):
+        "redisplay the subscreen"
         self.win.refresh_tree()
 
     def keyPressEvent(self, evt):
@@ -90,6 +94,8 @@ class MainWindow(qtw.QMainWindow):
 
 def show_dialog(parent, cls):
     """show a dialog and return the result
+
+    parent argument is voor compatibiliteit met wx versie
     """
     ok = cls.exec_()
     return ok == qtw.QDialog.Accepted
@@ -109,9 +115,11 @@ class AskOpenFilesGui(qtw.QDialog):
         ## self.resize(size)  # (680, 400)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
+        "add a line for selecting a file"
         return FileBrowseButton(self, caption=label, button=browse, text=value, items=history)
 
     def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
+        "do the screen layout"
         self.sizer = qtw.QVBoxLayout()
 
         hsizer = qtw.QHBoxLayout()
@@ -164,16 +172,17 @@ class AskOpenFilesGui(qtw.QDialog):
         rechterpad = self.browse2.input.currentText()
         selectiontype = ''
         for ix, sel in enumerate(self.sel):
+            print('   ', ix)
             if sel[0].isChecked():
                 selectiontype = sel[1]
                 break
         mld = self.master.check_input(linkerpad, rechterpad, selectiontype)
         if mld:
-            qtw.QMessageBox.critical(self, self.master.shared.apptitel, mld)
+            qtw.QMessageBox.critical(self, self.master.parent.apptitel, mld)
             return
-        self.master.lhs_path = linkerpad
-        self.master.rhs_path = rechterpad
-        self.master.comparetype = selectiontype
+        self.master.parent.lhs_path = linkerpad
+        self.master.parent.rhs_path = rechterpad
+        self.master.parent.comparetype = selectiontype
         super().accept()
 
 
@@ -191,12 +200,14 @@ class ShowComparisonGui(qtw.QTreeWidget):
         hdr.resizeSection(1, 350)
 
     def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
+        "set header texts when there's no data to be shown"
         root = qtw.QTreeWidgetItem()
         root.setText(1, leftcaption)
         root.setText(2, rightcaption)
         self.addTopLevelItem(root)
 
     def finish_init(self):
+        "render the area"
         self.show()
 
     def refresh_tree(self):
@@ -305,5 +316,3 @@ class FileBrowseButton(qtw.QFrame):
         path = qtw.QFileDialog.getOpenFileName(self, 'Kies een bestand', startdir)
         if path[0]:
             self.input.setEditText(path[0])
-
-

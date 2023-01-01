@@ -2,15 +2,11 @@
 """starter for Compare Tool
 """
 import argparse
-from shared import comparetypes
-from toolkit import toolkit
-if toolkit == 'qt':
-    from qt_gui import main
-elif toolkit == 'wx':
-    from wx_gui import main
+import main
 
 parser = argparse.ArgumentParser(description=__doc__)
-parser.add_argument('-m', '--method', choices=comparetypes, help='comparison method')
-parser.add_argument('input', metavar='FILE', nargs=2)
+parser.add_argument('-m', '--method', choices=main.comparetypes, help='comparison method')
+# parser.add_argument('input', metavar='FILE', nargs=2)  # maakt het verplicht
+parser.add_argument('-i', '--input', metavar='FILE', nargs=2)
 args = parser.parse_args()
-main(args)
+main.Comparer((args.input), args.method)

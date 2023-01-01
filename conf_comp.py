@@ -3,8 +3,7 @@
 sort sections and options before comparing
 """
 import pathlib
-import pprint
-from configparser import ConfigParser, MissingSectionHeaderError
+from configparser import ConfigParser, MissingSectionHeaderError  # needed in main.py
 
 
 def sort_inifile(fn):
@@ -124,32 +123,34 @@ def compare_configs_2(fn1, fn2):
 def refresh_inicompare(self):
     """(re)do comparing the ini files
     """
-    self.init_tree('Section/Option', self.parent.lhs_path, self.parent.rhs_path)
+    self.gui.init_tree('Section/Option', self.parent.lhs_path, self.parent.rhs_path)
+    header = None
     current_section = ''
+    rightonly = leftonly = difference = False
     for x in self.parent.data:
         node, lvalue, rvalue = x
         section, option = node
         if section != current_section:
             if current_section:
-                self.colorize_header(header, rightonly, leftonly, difference)
-            header = self.build_header(section)
+                self.gui.colorize_header(header, rightonly, leftonly, difference)
+            header = self.gui.build_header(section)
             current_section = section
             rightonly = leftonly = difference = False
-        child = self.build_child(header, option)
+        child = self.gui.build_child(header, option)
         if lvalue is None:
             lvalue = '(no value)'
         if lvalue == '':
             rightonly = True
-            self.colorize_child(child, rightonly, leftonly, difference)
-        self.set_node_text(child, 1, lvalue)
+            self.gui.colorize_child(child, rightonly, leftonly, difference)
+        self.gui.set_node_text(child, 1, lvalue)
         if rvalue is None:
             rvalue = '(no value)'
         if rvalue == '':
             leftonly = True
-            self.colorize_child(child, rightonly, leftonly, difference)
+            self.gui.colorize_child(child, rightonly, leftonly, difference)
         if lvalue and rvalue and lvalue != rvalue:
             difference = True
-            self.colorize_child(child, rightonly, leftonly, difference)
-        self.set_node_text(child, 2, rvalue)
+            self.gui.colorize_child(child, rightonly, leftonly, difference)
+        self.gui.set_node_text(child, 2, rvalue)
     if self.parent.data:
-        self.colorize_header(header, rightonly, leftonly, difference)
+        self.gui.colorize_header(header, rightonly, leftonly, difference)

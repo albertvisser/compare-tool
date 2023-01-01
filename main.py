@@ -7,7 +7,7 @@ from configparser import ConfigParser
 import gui
 # import exception types so they can be caught in calling modules
 from conf_comp import (compare_configs, compare_configs_2, refresh_inicompare,
-    MissingSectionHeaderError)
+                       MissingSectionHeaderError)
 from xml_comp import compare_xmldata, refresh_xmlcompare, ParseError
 from txt_comp import compare_txtdata, refresh_txtcompare
 from html_comp import compare_htmldata, refresh_htmlcompare
@@ -15,6 +15,7 @@ ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
 ID_ABOUT = 120
+ID_COLORS = 121
 comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
                 'ini2': ('ini files, allowing for missing first header', compare_configs_2,
                          refresh_inicompare),
@@ -22,6 +23,15 @@ comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
                 'html': ('HTML files', compare_htmldata, refresh_htmlcompare),
                 'txt': ('Simple text comparison', compare_txtdata, refresh_txtcompare)}
 catchables = (MissingSectionHeaderError, ParseError)
+
+
+def auto_determine_comparetype(leftpath, rightpath):
+    "try to guess the comparison type from the file extension (only if they match)"
+    extl = pathlib.Path(leftpath).suffix[1:]
+    extr = pathlib.Path(rightpath).suffix[1:]
+    if extl == extr and extl.lower() in comparetypes:
+        return extl.lower()
+    return ''
 
 
 class Comparer:
@@ -34,10 +44,12 @@ class Comparer:
                                    (ID_DOIT, "&Vergelijk", "F5",
                                     "Orden en vergelijk de (ini) files", self.doit),
                                    (),
-                                   (ID_EXIT, "E&xit", "Ctrl+Q", " Terminate the program",
+                                   (ID_EXIT, "E&xit", "Ctrl+Q", "Terminate the program",
                                     self.exit)),
-                         "&Help": ((ID_ABOUT, "&About", "F1", " Information about this program",
-                                    self.about), )}
+                         "&Help": ((ID_ABOUT, "&About", "Ctrl+H", "Information about this program",
+                                    self.about),
+                                   (ID_COLORS, "&Legenda", "F1", "What do the colors indicate?",
+                                    self.legend), )}
         self.data = {}
         self.selected_option = ''
         self.comparetype = ''  # = method in wx version
@@ -47,49 +59,44 @@ class Comparer:
         self.lhs_path, self.rhs_path = get_input_paths(fileargs)
 
         self.ini = IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
-
         self.ini.read()
+        self.get_input = AskOpenFiles(self)
+
         if method and method in comparetypes:
             self.comparetype = method
         if self.lhs_path and self.rhs_path:
             if not self.comparetype:
-                extl = pathlib.Path(self.lhs_path).suffix[1:]
-                extr = pathlib.Path(self.rhs_path).suffix[1:]
-                if extl == extr and extl.lower() in comparetypes:
-                    self.comparetype = extl.lower()
-            self.doit(first_time=True)
+                self.comparetype = auto_determine_comparetype(self.lhs_path, self.rhs_path)
+            mld = self.get_input.check_input(self.lhs_path, self.rhs_path, self.comparetype)
+            if mld:
+                self.gui.meld_input_fout(mld)  # qt: critical; wx: unspecified
+            else:
+                self.doit()  # first_time=True)
         else:
             self.about()
             if self.open():
+                print('in Comparer na open(): comparetype is ', self.comparetype)
+                # self.comparetype = auto_determine_comparetype(self.lhs_path, self.rhs_path)
                 self.doit()
 
         self.gui.go()
 
     def open(self):
-        # TODO: doit() geeft ook terug dat het comparetype nog niet is opgegeven
-        get_input = AskOpenFiles(self)
-        ok = gui.show_dialog(self, self.gui)
+        "show open dialog"
+        ok = gui.show_dialog(self.get_input, self.get_input.gui)
         return ok
-        # if ok:
-        #     self.doit()
 
-    def doit(self, event=None, first_time=False):
+    def doit(self, event=None):   # , first_time=False):
         """perform action
         """
-        mld = check_input(self.lhs_path, self.rhs_path, self.comparetype)
-        if mld:
-            self.gui.meld_input_fout(mld)  # qt: critical; wx: unspecified
-        else:
-            ok, data = do_compare(self.lhs_path, self.rhs_path, self.comparetype)
-            if not ok:
-                message, data = data[0], data[1]
-            elif not data:
-                ok = False
-                message = 'Vergelijking mislukt'
-            if not ok:
-                self.gui.meld_vergelijking_fout(message, data)
-                mld = 'fout'
-        if mld:
+        ok, data = do_compare(self.lhs_path, self.rhs_path, self.comparetype)
+        if not ok:
+            message, data = data[0], data[1]
+        elif not data:
+            ok = False
+            message = 'Vergelijking mislukt'
+        if not ok:
+            self.gui.meld_vergelijking_fout(message, data)
             return
         if self.lhs_path in self.ini.mru_left:
             self.ini.mru_left.remove(self.lhs_path)
@@ -110,6 +117,14 @@ class Comparer:
             "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
             "",
             "Het is ook bruikbaar voor XML bestanden.")))
+
+    def legend(self, event=None):
+        """explanation of the colors used
+        """
+        self.gui.meld('\n'.join((
+            "Rood: aan beide kanten aanwezig, verschillend",
+            "Groen: alleen aanwezig in linkerfile",
+            "Blauw: alleen aanwezig in rechterfile")))
 
     def exit(self):
         "quit"
@@ -135,21 +150,21 @@ def do_compare(leftpath, rightpath, selectiontype):
     try:
         data = compare_func(leftpath, rightpath)
         return True, data
-    except catchables:
+    except (MissingSectionHeaderError, ParseError):
         error, msg, tb = sys.exc_info()
         # set data to info to show in message
-        if error == catchables[0]:
+        if error == MissingSectionHeaderError:
             info = "begint niet met een header"
-        elif error == catchables[1]:
-            info = "bevat geen correcte XML"
         else:
-            info = "geeft een fout"
-        data = ['Tenminste één file {}'.format(info)]
+            info = "bevat geen correcte XML"
+        data = [f'Tenminste één file {info}']
         data.append(traceback.format_exception(error, msg, tb))
         return False, data
 
 
 class AskOpenFiles:
+    """gui-onafhankelijke master class voor dialog om de te vergelijken bestanden op te geven
+    """
     def __init__(self, parent):
         self.parent = parent
         self.gui = gui.AskOpenFilesGui(self, size=(400, 200))
@@ -167,7 +182,7 @@ class AskOpenFiles:
                                                  history=self.parent.ini.mru_left,
                                                  value=self.parent.lhs_path)
         self.gui.build_screen(lhs_file, rhs_file, 'Soort vergelijking:', comparetypes,
-                              oktext= ("&Gebruiken", "Klik hier om de vergelijking uit te voeren"),
+                              oktext=("&Gebruiken", "Klik hier om de vergelijking uit te voeren"),
                               canceltext=("&Afbreken", "Klik hier om zonder wijzigingen terug te"
                                           " gaan naar het hoofdscherm"))
 
@@ -176,14 +191,12 @@ class AskOpenFiles:
         """
         if linkerpad == "":
             return 'Geen linkerbestand opgegeven'
-        else:
-            if not pathlib.Path(linkerpad).exists():
-                return f'Bestand {linkerpad} kon niet gevonden/geopend worden'
         if rechterpad == "":
             return 'Geen rechterbestand opgegeven'
-        else:
-            if not pathlib.Path(rechterpad).exists():
-                return f'Bestand {rechterpad} kon niet gevonden/geopend worden'
+        if not pathlib.Path(linkerpad).exists():
+            return f'Bestand {linkerpad} kon niet gevonden/geopend worden'
+        if not pathlib.Path(rechterpad).exists():
+            return f'Bestand {rechterpad} kon niet gevonden/geopend worden'
         if rechterpad == linkerpad:
             return "Bestandsnamen zijn gelijk"
         if seltype not in comparetypes:
@@ -192,13 +205,15 @@ class AskOpenFiles:
 
 
 class ShowComparison:
+    """Gui-independent master class for the main window part showing the comparison as a tree
+    """
     def __init__(self, parent):
         self.parent = parent
         self.gui = gui.ShowComparisonGui(parent.gui)
         # self.gui.init_tree("Sectie / Optie:", f"waarde in {self.parent.lhs_path}",
         #                   f"waarde in {self.parent.rhs_path}")
         self.gui.init_tree('Document structure', 'value in "lefthand-side" file',
-                              'value in "righthand-side" file')
+                           'value in "righthand-side" file')
         if not self.parent.data:
             self.gui.setup_nodata_columns('geen bestanden geladen', "niks om te laten zien",
                                           "hier ook niet")

@@ -1,10 +1,8 @@
 """Presentation logic for Compare Tool - wxPython version
 """
-from os import getcwd
-# from os.path import exists
 import wx
 import wx.lib.filebrowsebutton as filebrowse
-import wx.lib.gizmos as gizmos
+from wx.lib import gizmos
 # import wx.lib.agw.customtreectrl as CTC
 # import wx.lib.agw.hypertreelist as HTL
 
@@ -13,13 +11,17 @@ class MainWindow(wx.Frame):
     """Application screen
     """
     def __init__(self, master):
-        app = wx.App()
+        self.app = wx.App()
         self.master = master
         parent = None
         super().__init__(self, parent, wx.ID_ANY, self.master.apptitel, size=(1080, 600),
                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         self.setup_menu()
+        self.setup_gui()
+
+    def setup_gui(self):
+        "(re)build the screen"
         self.win = self.master.showcomp.gui
         vsizer = wx.BoxSizer(wx.VERTICAL)
         vsizer.Add(self.win, 1, wx.EXPAND)  # | wx.ALL)
@@ -30,7 +32,7 @@ class MainWindow(wx.Frame):
     def setup_menu(self):
         """Setting up the menu
         """
-        menubar = wx.menuBar()
+        menubar = wx.MenuBar()
         for title, options in self.master.menudict.items():
             menu = wx.Menu()
             for item in options:
@@ -38,19 +40,22 @@ class MainWindow(wx.Frame):
                     menu.AppendSeparator()
                     continue
                 item_id, title, shortcut, text, callback = item
-                menu.Append(item_id, '\t'.join((tetle, shortcut)), text)
+                menu.Append(item_id, '\t'.join((title, shortcut)), text)
                 self.Connect(item_id, wx.NewId(), wx.wxEVT_COMMAND_MENU_SELECTED, callback)
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)
 
     def go(self):
+        "display the screen and start the event loop"
         self.Show(True)
-        app.MainLoop()
+        self.app.MainLoop()
 
     def meld_input_fout(self, mld):
+        "show invalid input message"
         wx.MessageBox(mld, self.master.apptitel)
 
     def meld_vergelijking_fout(self, message, data):
+        "show comparison error(s)"
         x, y = self.GetPosition()
         with wx.MessageDialog(self, message, self.master.apptitel, pos=(x + 50, y + 50),
                               style=wx.OK | wx.ICON_INFORMATION) as dlg:
@@ -59,14 +64,17 @@ class MainWindow(wx.Frame):
             dlg.ShowModal()
 
     def meld(self, melding):
+        "show a message"
         dlg = wx.MessageDialog(self, melding, self.master.apptitel, wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
     def refresh(self):
-        # panel opnieuw opbouwen in plaats van een refresh doen
+        """panel opnieuw opbouwen in plaats van een refresh doen
+        maar ik vraag me af of dit zo wel werkt
+        """
         self.win.Destroy()
-        self.win = ShowComparison(self)
+        self.setup_gui()
 
     def exit(self, event):
         "quit"
@@ -76,16 +84,11 @@ class MainWindow(wx.Frame):
 def show_dialog(parent, cls):
     """show a dialog and return the result
     """
-    x, y = self.GetPosition()
-    with cls(self, -1, self.master.apptitel, pos=(x + 50, y + 50)) as dlg:
+    x, y = parent.GetPosition()
+    with cls(parent, -1, parent.master.apptitel, pos=(x + 50, y + 50)) as dlg:
         result = dlg.ShowModal() == dlg.GetAffirmativeId()
         if result:
-            parent.lhs_path = dlg.path_left
-            parent.rhs_path = dlg.path_right
-            for rb, type_ in dlg.sel:
-                if rb.GetValue():
-                    parent.comparetype = type_
-                    break
+            dlg.accept()
     return result
 
 
@@ -97,26 +100,28 @@ class AskOpenFilesGui(wx.Dialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, parent, size):
+    def __init__(self, parent, title, size):
         self.logical_parent = parent
         physical_parent = parent.gui
-        super().__init__(self, physical_parent, wx.ID_ANY, title, size, pos=wx.DefaultPosition,
+        super().__init__(self, physical_parent, pos=wx.DefaultPosition, title=title, size=size,
                          style=wx.DEFAULT_DIALOG_STYLE)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
+        "add a line for selecting a file"
         callback = self.fbbh1_callback if path == 'linker' else self.fbbh2_callback
         fbbh = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
-                                                       labelText=label,
-                                                       buttonText=browse,
-                                                       toolTip=tooltip.format(path),
-                                                       dialogTitle=title.format(path),
-                                                       changeCallback=callback)
+                                                      labelText=label,
+                                                      buttonText=browse,
+                                                      toolTip=tooltip.format(path),
+                                                      dialogTitle=title.format(path),
+                                                      changeCallback=callback)
         fbbh.SetHistory(history)
         fbbh.SetValue(value)
         return fbbh
 
     def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
-        self.fbbh1, self.fbbh2 = leftfile, righfile
+        "do the screen layout"
+        self.fbbh1, self.fbbh2 = leftfile, rightfile
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         box = wx.BoxSizer(wx.VERTICAL)
@@ -156,6 +161,16 @@ class AskOpenFilesGui(wx.Dialog):
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
         sizer.Fit(self)
+
+    def accept(self):
+        """transmit the chosen data
+        """
+        self.master.parent.lhs_path = self.path_left
+        self.master.parent.rhs_path = self.path_right
+        for rb, type_ in self.sel:
+            if rb.GetValue():
+                self.master.parent.comparetype = type_
+                break
 
     def fbbh1_callback(self, evt):
         "callback voor bovenste/linker/source file selector"
@@ -203,13 +218,14 @@ class ShowComparisonGui(wx.Panel):
         self.difference_colour = wx.Colour(wx.RED)
         ## self.inversetext_colour = wx.Colour(Qt.WHITE)
 
-
     def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
+        "set header texts when there's no data to be shown"
         first = self.tree.AppendItem(self.root, root_text)
         self.tree.SetItemText(first, leftcaption)
         self.tree.SetItemText(first, rightcaption)
 
     def finish_init(self):
+        "(do layout and) render the area"
         ## self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.on_right_up)
         ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self.on_left_up)
         ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_DCLICK, self.on_doubleclick)
