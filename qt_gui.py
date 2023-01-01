@@ -6,7 +6,6 @@ import pathlib
 import PyQt5.QtWidgets as qtw
 import PyQt5.QtGui as gui
 import PyQt5.QtCore as core
-import shared
 
 rightonly_colour = gui.QBrush(core.Qt.blue)
 leftonly_colour = gui.QBrush(core.Qt.darkGreen)
@@ -18,29 +17,19 @@ class MainWindow(qtw.QMainWindow):
     """Application screen
     """
     def __init__(self, master):  # parent, args, method=None):
+        self.master = master
         self.app = qtw.QApplication(sys.argv)
+        parent = None
         super().__init__(parent)
         self.menuactions = {}
 
         self.resize(1024, 600)
-        self.setWindowTitle(shared.apptitel)  # 'Vergelijken van ini files')
+        self.setWindowTitle(self.master.apptitel)  # 'Vergelijken van ini files')
         self.setWindowIcon(gui.QIcon('inicomp.ico'))
         # self.sb = self.statusBar()
         self.setup_menu()
-        self.win = self.master.comp
-        self.setCentralWidget(self.win)
 
-    def go(self):
-        self.show()
-        sys.exit(self.app.exec_())
-
-    def open_files(self):
-        """ask for files to compare
-        """
-        dlg = AskOpenFiles(self).exec_()
-        return dlg == qtw.QDialog.Accepted
-
-    def setup_menu(self, menudict):
+    def setup_menu(self):
         """Setting up the menu
         """
         def add_action_to_menu(name, callback, shortcut, statustext, menu):
@@ -53,7 +42,7 @@ class MainWindow(qtw.QMainWindow):
             menu.addAction(act)
             return act
         self.menu_bar = self.menuBar()
-        for title, options in menudict.items():
+        for title, options in self.master.menudict.items():
             menu = self.menu_bar.addMenu(title)
             for item in options:
                 if not item:
@@ -63,19 +52,25 @@ class MainWindow(qtw.QMainWindow):
                 self.menuactions[item_id] = add_action_to_menu(title, callback, shortcut,
                                                                text, menu)
 
+    def go(self):
+        self.win = self.master.showcomp.gui
+        self.setCentralWidget(self.win)
+        self.show()
+        sys.exit(self.app.exec_())
 
-    def meld(self, mld):
-        qtw.QMessageBox.critical(self, shared.apptitel, mld)
+    def meld_input_fout(self, mld):
+        qtw.QMessageBox.critical(self, self.master.apptitel, mld)
 
-    def meld2(self, data):
+    def meld_vergelijking_fout(self, message, data):
         box = qtw.QMessageBox(self)
-        box.setWindowTitle(shared.apptitel)
-        box.setText(data[0])
-        box.setInformativeText('<pre>{}</pre>'.format(''.join(data[1])))
+        box.setWindowTitle(self.master.apptitel)
+        box.setText(message)
+        if data:
+            box.setInformativeText('<pre>{}</pre>'.format(''.join(data)))
         box.exec_()
 
-    def meld3(self, melding):
-        qtw.QMessageBox.information(self, shared.apptitel, melding)
+    def meld(self, melding):
+        qtw.QMessageBox.information(self, self.master.apptitel, melding)
 
     def refresh(self):
         self.win.refresh_tree()
@@ -93,7 +88,14 @@ class MainWindow(qtw.QMainWindow):
         self.close()
 
 
-class AskOpenFiles(qtw.QDialog):
+def show_dialog(parent, cls):
+    """show a dialog and return the result
+    """
+    ok = cls.exec_()
+    return ok == qtw.QDialog.Accepted
+
+
+class AskOpenFilesGui(qtw.QDialog):
     """dialog om de te vergelijken bestanden op te geven
 
     voor elk file een combobox om direct een filenaam op te geven of te kiezen
@@ -101,48 +103,48 @@ class AskOpenFiles(qtw.QDialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, parent):
-        self.parent = parent
-        super().__init__(parent)
-        ## self.resize(680, 400)
+    def __init__(self, master, size):
+        self.master = master
+        super().__init__(master.parent.gui)
+        ## self.resize(size)  # (680, 400)
+
+    def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
+        return FileBrowseButton(self, caption=label, button=browse, text=value, items=history)
+
+    def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
         self.sizer = qtw.QVBoxLayout()
 
         hsizer = qtw.QHBoxLayout()
-        browse = FileBrowseButton(self, caption='Linker bestand:  ',
-                                  text=self.parent.lhs_path,
-                                  items=self.parent.ini.mru_left)
-        hsizer.addWidget(browse)
+        hsizer.addWidget(leftfile)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
         self.sizer.addLayout(hsizer)
-        self.browse1 = browse
+        self.browse1 = leftfile
 
         hsizer = qtw.QHBoxLayout()
-        browse = FileBrowseButton(self, caption='Rechter bestand: ',
-                                  text=self.parent.rhs_path,
-                                  items=self.parent.ini.mru_right)
-        hsizer.addWidget(browse)
+        hsizer.addWidget(rightfile)
         ## self.paths.append((name, browse))
         ## hsizer.addStretch()
         self.sizer.addLayout(hsizer)
-        self.browse2 = browse
+        self.browse2 = rightfile
 
         hsizer = qtw.QHBoxLayout()
         hsizer.addSpacing(10)
         gsizer = qtw.QGridLayout()
-        gsizer.addWidget(qtw.QLabel('Soort vergelijking:'), 0, 0)
+        gsizer.addWidget(qtw.QLabel(comparetext), 0, 0)
         self.sel = []
-        for ix, type in enumerate(sorted(shared.comparetypes)):
-            text = shared.comparetypes[type][0]
+        for ix, type_ in enumerate(sorted(choices)):
+            text = choices[type_][0]
             rb = qtw.QRadioButton(text, self)
             gsizer.addWidget(rb, ix, 1)
-            if self.parent.comparetype == type:
+            if self.master.parent.comparetype == type_:
                 rb.setChecked(True)
-            self.sel.append((rb, type))
+            self.sel.append((rb, type_))
         hsizer.addLayout(gsizer)
         hsizer.addStretch()
         self.sizer.addLayout(hsizer)
 
+        # eigenlijk hier ook die oktext en canceltext gebruiken
         buttonbox = qtw.QDialogButtonBox()
         buttonbox.addButton(qtw.QDialogButtonBox.Ok)
         buttonbox.addButton(qtw.QDialogButtonBox.Cancel)
@@ -165,39 +167,42 @@ class AskOpenFiles(qtw.QDialog):
             if sel[0].isChecked():
                 selectiontype = sel[1]
                 break
-        mld = shared.check_input(linkerpad, rechterpad, selectiontype)
+        mld = self.master.check_input(linkerpad, rechterpad, selectiontype)
         if mld:
-            qtw.QMessageBox.critical(self, shared.apptitel, mld)
+            qtw.QMessageBox.critical(self, self.master.shared.apptitel, mld)
             return
-        self.parent.lhs_path = linkerpad
-        self.parent.rhs_path = rechterpad
-        self.parent.comparetype = selectiontype
+        self.master.lhs_path = linkerpad
+        self.master.rhs_path = rechterpad
+        self.master.comparetype = selectiontype
         super().accept()
 
 
-class ShowComparison(qtw.QTreeWidget):
+class ShowComparisonGui(qtw.QTreeWidget):
     """Part of the main window showing the comparison as a tree
     """
     def __init__(self, parent):
         self.parent = parent
         super().__init__(parent)
         self.setColumnCount(3)
-        self.setHeaderLabels(['Document structure', 'value in "lefthand-side" file',
-                              'value in "righthand-side" file'])
+        #  hoef ik de kleuren hier niet in te stellen?
         hdr = self.header()
         hdr.resizeSection(0, 200)
         ## hdr.resizeSection(0, 350)
         hdr.resizeSection(1, 350)
+
+    def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
         root = qtw.QTreeWidgetItem()
-        root.setText(1, 'nothing to show')
-        root.setText(2, 'also nothing to show')
+        root.setText(1, leftcaption)
+        root.setText(2, rightcaption)
         self.addTopLevelItem(root)
+
+    def finish_init(self):
         self.show()
 
     def refresh_tree(self):
-        """(re)do the comparison
+        """after (re)doing the comparison
         """
-        shared.refresh_tree(self)
+        # no extra action needed
 
     # API methods to be called from the specific refresh functions
     def init_tree(self, caption, left_title, right_title):
@@ -268,7 +273,7 @@ class FileBrowseButton(qtw.QFrame):
     making it possible to either manually enter a filename or select
     one using a FileDialog
     """
-    def __init__(self, parent, caption="", text="", items=None):
+    def __init__(self, parent, caption="", button="", text="", items=None):
         self.parent = parent
         if items is None:
             items = []
@@ -283,11 +288,11 @@ class FileBrowseButton(qtw.QFrame):
         self.input.addItems(items)
         self.input.setEditText(text)
         lbl = qtw.QLabel(caption)
-        lbl.setMinimumWidth(100)
-        lbl.setMaximumWidth(100)
+        lbl.setMinimumWidth(120)
+        lbl.setMaximumWidth(120)
         box.addWidget(lbl)
         box.addWidget(self.input)
-        self.button = qtw.QPushButton('Browse', self, clicked=self.browse)
+        self.button = qtw.QPushButton(button, self, clicked=self.browse)
         self.button.setMaximumWidth(68)
         box.addWidget(self.button)
         vbox.addLayout(box)

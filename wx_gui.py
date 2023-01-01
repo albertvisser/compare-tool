@@ -7,50 +7,31 @@ import wx.lib.filebrowsebutton as filebrowse
 import wx.lib.gizmos as gizmos
 # import wx.lib.agw.customtreectrl as CTC
 # import wx.lib.agw.hypertreelist as HTL
-import shared
 
 
 class MainWindow(wx.Frame):
     """Application screen
     """
-    def __init__(self, parent, fileargs, method):
+    def __init__(self, master):
         app = wx.App()
-        wx.Frame.__init__(self, parent, wx.ID_ANY, shared.apptitel, size=(1080, 600),
-                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
-        # self.CreateStatusBar()
+        self.master = master
+        parent = None
+        super().__init__(self, parent, wx.ID_ANY, self.master.apptitel, size=(1080, 600),
+                         style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         self.setup_menu()
-        self.win = ShowComparison(self)
+        self.win = self.master.showcomp.gui
         vsizer = wx.BoxSizer(wx.VERTICAL)
         vsizer.Add(self.win, 1, wx.EXPAND)  # | wx.ALL)
         self.SetAutoLayout(True)
         self.SetSizer(vsizer)
         vsizer.Fit(self)
 
-    def go(self):
-        self.Show(True)
-        app.MainLoop()
-
-    def open_files(self):
-        """ask for files to compare
-        """
-        x, y = self.GetPosition()
-        with AskOpenFiles(self, -1, shared.apptitel, pos=(x + 50, y + 50)) as dlg:
-            result = dlg.ShowModal() == dlg.GetAffirmativeId()
-            if result:
-                self.lhs_path = dlg.path_left
-                self.rhs_path = dlg.path_right
-                for rb, type_ in dlg.sel:
-                    if rb.GetValue():
-                        self.comparetype = type_
-                        break
-        return result
-
     def setup_menu(self):
         """Setting up the menu
         """
         menubar = wx.menuBar()
-        for title, options in menudict.items():
+        for title, options in self.master.menudict.items():
             menu = wx.Menu()
             for item in options:
                 if not item:
@@ -62,20 +43,23 @@ class MainWindow(wx.Frame):
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)
 
-    def meld(self, mld):
-        wx.MessageBox(mld, shared.apptitel)
+    def go(self):
+        self.Show(True)
+        app.MainLoop()
 
-    def meld2(self, data):
-        message = data[0] if data else 'Vergelijking mislukt'
+    def meld_input_fout(self, mld):
+        wx.MessageBox(mld, self.master.apptitel)
+
+    def meld_vergelijking_fout(self, message, data):
         x, y = self.GetPosition()
-        with wx.MessageDialog(self, message, shared.apptitel, pos=(x + 50, y + 50),
+        with wx.MessageDialog(self, message, self.master.apptitel, pos=(x + 50, y + 50),
                               style=wx.OK | wx.ICON_INFORMATION) as dlg:
             if data:
-                dlg.SetExtendedMessage(''.join(data[1]))
+                dlg.SetExtendedMessage(''.join(data))
             dlg.ShowModal()
 
-    def meld3(self, melding):
-        dlg = wx.MessageDialog(self, melding, shared.apptitel, wx.OK | wx.ICON_INFORMATION)
+    def meld(self, melding):
+        dlg = wx.MessageDialog(self, melding, self.master.apptitel, wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
 
@@ -89,7 +73,23 @@ class MainWindow(wx.Frame):
         self.Close(True)
 
 
-class AskOpenFiles(wx.Dialog):
+def show_dialog(parent, cls):
+    """show a dialog and return the result
+    """
+    x, y = self.GetPosition()
+    with cls(self, -1, self.master.apptitel, pos=(x + 50, y + 50)) as dlg:
+        result = dlg.ShowModal() == dlg.GetAffirmativeId()
+        if result:
+            parent.lhs_path = dlg.path_left
+            parent.rhs_path = dlg.path_right
+            for rb, type_ in dlg.sel:
+                if rb.GetValue():
+                    parent.comparetype = type_
+                    break
+    return result
+
+
+class AskOpenFilesGui(wx.Dialog):
     """dialog om de te vergelijken bestanden op te geven
 
     voor elk file een combobox om direct een filenaam op te geven of te kiezen
@@ -97,32 +97,26 @@ class AskOpenFiles(wx.Dialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, parent, id, title, size=(400, 200), pos=wx.DefaultPosition,
-                 style=wx.DEFAULT_DIALOG_STYLE):
-        wx.Dialog.__init__(self, parent, wx.ID_ANY, title, size, pos, style)
-        self.parent = parent
+    def __init__(self, parent, size):
+        self.logical_parent = parent
+        physical_parent = parent.gui
+        super().__init__(self, physical_parent, wx.ID_ANY, title, size, pos=wx.DefaultPosition,
+                         style=wx.DEFAULT_DIALOG_STYLE)
 
-        tooltip = ("Geef hier de naam van het {} te vergelijken ini file "
-                   "of kies er een uit een lijst met recent gebruikte")
-        title = "Selecteer het {} ini file"
-        self.fbbh1 = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
-                                                            labelText="Vergelijk:",
-                                                            buttonText="Zoek",
-                                                            toolTip=tooltip.format('eerste'),
-                                                            dialogTitle=title.format("eerste"),
-                                                            changeCallback=self.fbbh1_callback)
-        self.fbbh1.SetHistory(self.parent.ini.mru_left)
-        self.fbbh1.SetValue(self.parent.lhs_path)
+    def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
+        callback = self.fbbh1_callback if path == 'linker' else self.fbbh2_callback
+        fbbh = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
+                                                       labelText=label,
+                                                       buttonText=browse,
+                                                       toolTip=tooltip.format(path),
+                                                       dialogTitle=title.format(path),
+                                                       changeCallback=callback)
+        fbbh.SetHistory(history)
+        fbbh.SetValue(value)
+        return fbbh
 
-        self.fbbh2 = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
-                                                            labelText="Met:       ",
-                                                            buttonText="Zoek",
-                                                            toolTip=tooltip.format('tweede'),
-                                                            dialogTitle=title.format('tweede'),
-                                                            changeCallback=self.fbbh2_callback)
-        self.fbbh2.SetHistory(self.parent.ini.mru_right)
-        self.fbbh2.SetValue(self.parent.rhs_path)
-
+    def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
+        self.fbbh1, self.fbbh2 = leftfile, righfile
         sizer = wx.BoxSizer(wx.VERTICAL)
 
         box = wx.BoxSizer(wx.VERTICAL)
@@ -132,15 +126,15 @@ class AskOpenFiles(wx.Dialog):
 
         box = wx.BoxSizer(wx.VERTICAL)
         gbox = wx.FlexGridSizer(cols=2, vgap=0, hgap=4)
-        gbox.Add(wx.StaticText(self, label='Soort vergelijking:'))
+        gbox.Add(wx.StaticText(self, label=comparetext))
         self.sel = []
-        for ix, type_ in enumerate(sorted(shared.comparetypes)):
+        for ix, type_ in enumerate(sorted(choices)):
             if ix > 0:
                 gbox.Add(wx.StaticText(self, label=''))
-            text = shared.comparetypes[type_][0]
+            text = choices[type_][0]
             rb = wx.RadioButton(self, label=text)
             gbox.Add(rb)
-            if self.parent.comparetype == type_:
+            if self.logical_parent.comparetype == type_:
                 rb.SetValue(True)
             self.sel.append((rb, type_))
         box.Add(gbox, 0, wx.ALL, 9)
@@ -149,14 +143,15 @@ class AskOpenFiles(wx.Dialog):
         box = wx.BoxSizer(wx.HORIZONTAL)
         label = wx.StaticText(self, -1, "", size=(155, -1))
         box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        btn = wx.Button(self, label="&Gebruiken")
+        btn = wx.Button(self, label=oktext[0])
         self.SetAffirmativeId(btn.GetId())
+        btn.SetHelpText(oktext[1])
         box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        btn = wx.Button(self, 403, "&Afbreken")
+        btn = wx.Button(self, 403, canceltext[0])
         self.SetEscapeId(btn.GetId())
-        btn.SetHelpText("Klik hier om zonder wijzigingen terug te gaan naar het hoofdscherm")
+        btn.SetHelpText(canceltext[1])
         box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        sizer.Add(box, 0, wx.GROW | wx.ALIGN_CENTER_VERTICAL | wx.ALL, 5)
+        sizer.Add(box, 0, wx.EXPAND | wx.ALL, 5)
 
         self.SetSizer(sizer)
         self.SetAutoLayout(True)
@@ -183,7 +178,7 @@ class AskOpenFiles(wx.Dialog):
                 self.fbbh2.GetHistoryControl().SetStringSelection(self.path_right)
 
 
-class ShowComparison(wx.Panel):
+class ShowComparisonGui(wx.Panel):
     """Part of the main window showing the comparison as a tree
     """
     def __init__(self, parent):
@@ -208,16 +203,13 @@ class ShowComparison(wx.Panel):
         self.difference_colour = wx.Colour(wx.RED)
         ## self.inversetext_colour = wx.Colour(Qt.WHITE)
 
-        self.init_tree("Sectie / Optie:", "waarde in %s" % self.parent.lhs_path,
-                       "waarde in %s" % self.parent.rhs_path)
 
-        if not self.parent.data:
-            first = self.tree.AppendItem(self.root, 'geen bestanden geladen')
-            self.tree.SetItemText(first, "niks om te laten zien", 1)
-            self.tree.SetItemText(first, "hier ook niet", 2)
+    def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
+        first = self.tree.AppendItem(self.root, root_text)
+        self.tree.SetItemText(first, leftcaption)
+        self.tree.SetItemText(first, rightcaption)
 
-        self.refresh_tree()
-
+    def finish_init(self):
         ## self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.on_right_up)
         ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self.on_left_up)
         ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_DCLICK, self.on_doubleclick)
@@ -230,11 +222,9 @@ class ShowComparison(wx.Panel):
         self.Show(True)
 
     def refresh_tree(self):
-        """(re)do the comparison
+        """after (re)doing the comparison
         """
-        shared.refresh_tree(self)
         self.tree.Expand(self.root)
-        # self.tree.ExpandAllChildren(self.root)
 
     # API methods to be called from the specific refresh functions
     def init_tree(self, caption, left_title, right_title):
