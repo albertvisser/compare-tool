@@ -1,4 +1,4 @@
-"""compre logic for html files
+"""compare logic for html files
 
 output naar hoofdprogramma: list van 3-tuples
 1e waarde: node (element, attribuut, tekst)
@@ -6,9 +6,7 @@ output naar hoofdprogramma: list van 3-tuples
 3e waarde: entry in rechterfile
 """
 
-import sys
 import bs4 as bs
-import pprint
 
 # hoofdroutine: compare_htmldata - kan misschien overgenomen worden uit xml vergelijking en dan
 # gefinetuned
@@ -103,7 +101,7 @@ def get_next_level_data(element, level=0):
     result = []
     for item in element.children:
         if isinstance(item, bs.Tag):
-            element_tag = (level, '<{}>'.format(item.name))
+            element_tag = (level, f'<{item.name}>')
             result.append([element_tag, '', ''])
             if item.attrs is not None:
                 # eerst even ongesorteerd
@@ -124,8 +122,7 @@ def get_next_level_data(element, level=0):
 def refresh_htmlcompare(self):
     """(re)do the HTML compare
      """
-    self.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
-    current_elems = []
+    self.gui.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
     parents = {-1: None}
     for item, lvalue, rvalue in self.parent.data:
         node, attr_name = item
@@ -138,25 +135,24 @@ def refresh_htmlcompare(self):
             node_text = ' ' + attr_name
         rightonly = leftonly = difference = False
         if my_parent:
-            new_node = self.build_child(my_parent, node_text)
+            new_node = self.gui.build_child(my_parent, node_text)
         else:
-            new_node = self.build_header(node_text)
+            new_node = self.gui.build_header(node_text)
         if not attr_name:
             parents[level] = new_node
         if lvalue:
-            self.set_node_text(new_node, 1, lvalue)
+            self.gui.set_node_text(new_node, 1, lvalue)
         if rvalue:
-            self.set_node_text(new_node, 2, rvalue)
+            self.gui.set_node_text(new_node, 2, rvalue)
         if attr_name or not elem_name:
             if lvalue == '':
                 rightonly = True
-                self.colorize_child(new_node, rightonly, leftonly, difference)
+                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
             if rvalue == '':
                 leftonly = True
-                self.colorize_child(new_node, rightonly, leftonly, difference)
+                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
-                self.colorize_child(new_node, rightonly, leftonly, difference)
+                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
             # if my_parent:
-            #     self.colorize_header(my_parent, rightonly, leftonly, difference)
-
+            #     self.gui.colorize_header(my_parent, rightonly, leftonly, difference)
