@@ -6,7 +6,7 @@ import pathlib
 from configparser import ConfigParser
 import gui
 # import exception types so they can be caught in calling modules
-from conf_comp import (compare_configs, compare_configs_2, refresh_inicompare,
+from conf_comp import (compare_configs, compare_configs_safe, refresh_inicompare,
                        MissingSectionHeaderError)
 from xml_comp import compare_xmldata, refresh_xmlcompare, ParseError
 from txt_comp import compare_txtdata, refresh_txtcompare
@@ -17,7 +17,7 @@ ID_EXIT = 109
 ID_ABOUT = 120
 ID_COLORS = 121
 comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
-                'ini2': ('ini files, allowing for missing first header', compare_configs_2,
+                'ini2': ('ini files, allowing for missing first header', compare_configs_safe,
                          refresh_inicompare),
                 'xml': ('XML files', compare_xmldata, refresh_xmlcompare),
                 'html': ('HTML files', compare_htmldata, refresh_htmlcompare),
@@ -150,8 +150,8 @@ def do_compare(leftpath, rightpath, selectiontype):
     try:
         data = compare_func(leftpath, rightpath)
         return True, data
-    except (MissingSectionHeaderError, ParseError):
-        error, msg, tb = sys.exc_info()
+    except (MissingSectionHeaderError, ParseError):  # specifieke exceptions horen eigenlijk in de
+        error, msg, tb = sys.exc_info()              # compare routine thuis
         # set data to info to show in message
         if error == MissingSectionHeaderError:
             info = "begint niet met een header"
