@@ -6,17 +6,25 @@ import pathlib
 from configparser import ConfigParser, MissingSectionHeaderError  # needed in main.py
 
 
-def sort_inifile(fn):
-    """define a generator that yields the sorted options
+# def build_options_list(fn):  -- wordt niet gebruikt !?
+#     """return a sorted list of options
+#     """
+#     result = []
+#     gen = sort_inifile(fn)
+#     while True:
+#         try:
+#             result.append(next(gen))
+#         except StopIteration:
+#             break
+#     return result
+
+
+def compare_configs_safe(fn1, fn2):
+    """compare two ini files, allowing for missing first headers
     """
-    test = ConfigParser(allow_no_value=True, interpolation=None)
-    try:
-        test.read(fn)
-    except UnicodeDecodeError:
-        test.read(fn, encoding='latin-1')  # fallback for MS Windows
-    for sect in sorted(test.sections()):
-        for opt in sorted(test.options(sect)):
-            yield sect, opt, test[sect][opt]
+    fn1 = check_inifile(fn1)
+    fn2 = check_inifile(fn2)
+    return compare_configs(fn1, fn2)
 
 
 def check_inifile(fn):
@@ -50,19 +58,6 @@ def check_inifile(fn):
     return str(hlpfn)
 
 
-def build_options_list(fn):
-    """return a sorted list of options
-    """
-    result = []
-    gen = sort_inifile(fn)
-    while True:
-        try:
-            result.append(next(gen))
-        except StopIteration:
-            break
-    return result
-
-
 def compare_configs(fn1, fn2):
     """compare two ini files
     """
@@ -70,15 +65,6 @@ def compare_configs(fn1, fn2):
     gen1 = sort_inifile(fn1)
     gen2 = sort_inifile(fn2)
 
-    def gen_next(gen):
-        "generator to get next item from file"
-        eof = False
-        try:
-            sect, opt, val = next(gen)
-        except StopIteration:
-            eof = True
-            sect = opt = val = ''
-        return eof, sect, opt, val
     eof_gen1, sect1, opt1, val1 = gen_next(gen1)
     eof_gen2, sect2, opt2, val2 = gen_next(gen2)
     # nog leuke trucjes met itertools mogelijk?
@@ -112,12 +98,28 @@ def compare_configs(fn1, fn2):
     return result
 
 
-def compare_configs_2(fn1, fn2):
-    """compare two ini files, allowing for missing headers
+def sort_inifile(fn):
+    """define a generator that yields the sorted options
     """
-    fn1 = check_inifile(fn1)
-    fn2 = check_inifile(fn2)
-    return compare_configs(fn1, fn2)
+    test = ConfigParser(allow_no_value=True, interpolation=None)
+    try:
+        test.read(fn)
+    except UnicodeDecodeError:
+        test.read(fn, encoding='latin-1')  # fallback for MS Windows
+    for sect in sorted(test.sections()):
+        for opt in sorted(test.options(sect)):
+            yield sect, opt, test[sect][opt]
+
+
+def gen_next(gen):
+    "generator to get next item from file"
+    eof = False
+    try:
+        sect, opt, val = next(gen)
+    except StopIteration:
+        eof = True
+        sect = opt = val = ''
+    return eof, sect, opt, val
 
 
 def refresh_inicompare(self):

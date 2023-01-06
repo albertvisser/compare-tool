@@ -19,49 +19,6 @@ def sort_xmldata(fn):
     """sorteert op elementnaam en daarbinnen op waarde van het eerste element
     (instelbaar maken zodat je kunt kiezen op welk attribuut geordend wordt)
     """
-    def getattrval(element):
-        """return value for "identifying" attribute
-        """
-        default = retval = ''
-        for attr, val in element.items():
-            if not default:
-                default = val
-            for name in ('id', 'name'):
-                if attr == name:
-                    retval = val
-                    break
-        if not retval:
-            retval = default
-        return retval
-
-    def process_subelements():
-        """recursive routine to walk through the XML DOM tree
-        """
-        nonlocal result, current_element_list
-        current_element = current_element_list[-1]
-        subelements = sorted(set(x.tag for x in list(current_element[0])))
-        for name in subelements:
-            ## print(name)
-            ## nodevalue = [x for x in current_element_list] + [name]
-            element_list = current_element[0].findall(name)
-            if len(element_list) > 1:
-                # nu eerst subelementen in volgorde leggen maw element_list herordenen
-                element_list = sorted(element_list, key=getattrval)
-            for ix, element in enumerate(element_list):
-                ## print(element.text, [x for x in element.items()])
-                nodevalue = [(x[0].tag, x[1]) for x in current_element_list]
-                nodevalue.append((name, ix))
-                attr_name = ''
-                datavalue = element.text
-                if datavalue is not None:
-                    datavalue = datavalue.strip()
-                result.append((nodevalue, attr_name, datavalue))
-                for attr in sorted(element.items()):
-                    attr_name, datavalue = attr
-                    result.append((nodevalue, attr_name, datavalue))
-                current_element_list.append((element, ix))
-                process_subelements()
-                current_element_list.pop()
     result = []
     tree = et.parse(fn)
     root = tree.getroot()
@@ -75,8 +32,54 @@ def sort_xmldata(fn):
         result.append((nodevalue, attr_name, datavalue))
     # get a sorted list of the subelement names
     current_element_list = [(root, 0), ]
-    process_subelements()
+    process_subelements(result, current_element_list)
     return result
+
+
+def process_subelements(result, current_element_list):
+    """recursive routine to walk through the XML DOM tree
+    """
+    current_element = current_element_list[-1]
+    subelements = sorted(set(x.tag for x in list(current_element[0])))
+    for name in subelements:
+        ## print(name)
+        ## nodevalue = [x for x in current_element_list] + [name]
+        element_list = current_element[0].findall(name)
+        if len(element_list) > 1:
+            # nu eerst subelementen in volgorde leggen maw element_list herordenen
+            element_list = sorted(element_list, key=getattrval)
+        for ix, element in enumerate(element_list):
+            ## print(element.text, [x for x in element.items()])
+            nodevalue = [(x[0].tag, x[1]) for x in current_element_list]
+            nodevalue.append((name, ix))
+            attr_name = ''
+            datavalue = element.text
+            if datavalue is not None:
+                datavalue = datavalue.strip()
+            result.append((nodevalue, attr_name, datavalue))
+            for attr in sorted(element.items()):
+                attr_name, datavalue = attr
+                result.append((nodevalue, attr_name, datavalue))
+            current_element_list.append((element, ix))
+            process_subelements(result, current_element_list)
+            current_element_list.pop()
+    # return result, current_element_list  # - wellicht werkt het al zonder dit
+
+
+def getattrval(element):
+    """return value for "identifying" attribute
+    """
+    default = retval = ''
+    for attr, val in element.items():
+        if not default:
+            default = val
+        for name in ('id', 'name'):
+            if attr == name:
+                retval = val
+                break
+    if not retval:
+        retval = default
+    return retval
 
 
 def compare_xmldata(fn1, fn2):
@@ -85,16 +88,6 @@ def compare_xmldata(fn1, fn2):
     result = []
     gen1 = (x for x in sort_xmldata(fn1))
     gen2 = (x for x in sort_xmldata(fn2))
-
-    def gen_next(gen):
-        "generator to get next values from data collection"
-        eof = False
-        try:
-            elem, attr, val = next(gen)
-        except StopIteration:
-            eof = True
-            elem = attr = val = ''
-        return eof, elem, attr, val
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
@@ -137,6 +130,17 @@ def compare_xmldata(fn1, fn2):
         if get_from_2:
             eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     return result
+
+
+def gen_next(gen):
+    "generator to get next values from data collection"
+    eof = False
+    try:
+        elem, attr, val = next(gen)
+    except StopIteration:
+        eof = True
+        elem = attr = val = ''
+    return eof, elem, attr, val
 
 
 def refresh_xmlcompare(self):

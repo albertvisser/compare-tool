@@ -25,16 +25,6 @@ def compare_htmldata(fn1, fn2):
     result = []
     gen1 = (x for x in get_htmldata(fn1))
     gen2 = (x for x in get_htmldata(fn2))
-
-    def gen_next(gen):
-        "generator to get next values from data collection"
-        eof = False
-        try:
-            elem, attr, val = next(gen)
-        except StopIteration:
-            eof = True
-            elem = attr = val = ''
-        return eof, elem, attr, val
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
@@ -86,7 +76,7 @@ def get_htmldata(filename, strip_newlines=True, fix_selfclosing=True):
     """
     with open(filename) as _in:
         data = _in.readlines()  # [x for x in _in]
-        if strip_newlines:
+        if strip_newlines:  # doet eigenlijk strip alles, maar het gaat om de newlines
             data = [x.strip() for x in data]
         html = ''.join(data)
         if fix_selfclosing:
@@ -94,6 +84,17 @@ def get_htmldata(filename, strip_newlines=True, fix_selfclosing=True):
         soup = bs.BeautifulSoup(html, 'lxml')
         # soup = bs.BeautifulSoup(_in, 'lxml')
     return get_next_level_data(soup)
+
+
+def gen_next(gen):
+    "generator to get next values from data collection"
+    eof = False
+    try:
+        elem, attr, val = next(gen)
+    except StopIteration:
+        eof = True
+        elem = attr = val = ''
+    return eof, elem, attr, val
 
 
 def get_next_level_data(element, level=0):

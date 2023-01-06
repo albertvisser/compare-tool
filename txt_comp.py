@@ -28,16 +28,6 @@ def compare_txtdata(fn1, fn2):
     result = []
     gen1 = (x.rstrip() for x in left_data if x.rstrip())
     gen2 = (x.rstrip() for x in right_data if x.rstrip())
-
-    def gen_next(gen):
-        "generator to get next item from file"
-        eof = False
-        try:
-            nextline = next(gen)
-        except StopIteration:
-            nextline = ''
-            eof = True
-        return eof, nextline
     eof1, line1 = gen_next(gen1)
     eof2, line2 = gen_next(gen2)
     while True:
@@ -61,6 +51,17 @@ def compare_txtdata(fn1, fn2):
             if not eof2:
                 eof2, line2 = gen_next(gen2)
     return result
+
+
+def gen_next(gen):
+    "generator to get next item from file"
+    eof = False
+    try:
+        nextline = next(gen)
+    except StopIteration:
+        nextline = ''
+        eof = True
+    return eof, nextline
 
 
 def refresh_txtcompare(self):
