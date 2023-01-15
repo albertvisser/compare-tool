@@ -55,7 +55,7 @@ class Comparer:
         self.comparetype = ''  # = method in wx version
         self.gui = gui.MainWindow(self)
         self.showcomp = ShowComparison(self)
-        print(fileargs)
+        # print(fileargs)
         self.lhs_path, self.rhs_path = get_input_paths(fileargs)
 
         self.ini = IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
@@ -75,7 +75,7 @@ class Comparer:
         else:
             self.about()
             if self.open():
-                print('in Comparer na open(): comparetype is ', self.comparetype)
+                # print('in Comparer na open(): comparetype is ', self.comparetype)
                 # self.comparetype = auto_determine_comparetype(self.lhs_path, self.rhs_path)
                 self.doit()
 
@@ -179,8 +179,8 @@ class AskOpenFiles:
         rhs_file = self.gui.add_ask_for_filename(size=(450, -1), label='Met:',
                                                  browse='Zoek', path='rechter',
                                                  tooltip=tooltip, title=title,
-                                                 history=self.parent.ini.mru_left,
-                                                 value=self.parent.lhs_path)
+                                                 history=self.parent.ini.mru_right,
+                                                 value=self.parent.rhs_path)
         self.gui.build_screen(lhs_file, rhs_file, 'Soort vergelijking:', comparetypes,
                               oktext=("&Gebruiken", "Klik hier om de vergelijking uit te voeren"),
                               canceltext=("&Afbreken", "Klik hier om zonder wijzigingen terug te"
