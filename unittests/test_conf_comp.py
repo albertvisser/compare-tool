@@ -13,10 +13,6 @@ def _test_check_inifile(monkeypatch, capsys):
     testee.check_inifile(fn)
 
 
-def _test_build_options_list(monkeypatch, capsys):
-    testee.build_options_list(fn)
-
-
 def _test_compare_configs(monkeypatch, capsys):
     testee.compare_configs(fn1, fn2)
 
