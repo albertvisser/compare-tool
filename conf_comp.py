@@ -6,19 +6,6 @@ import pathlib
 from configparser import ConfigParser, MissingSectionHeaderError  # needed in main.py
 
 
-# def build_options_list(fn):  -- wordt niet gebruikt !?
-#     """return a sorted list of options
-#     """
-#     result = []
-#     gen = sort_inifile(fn)
-#     while True:
-#         try:
-#             result.append(next(gen))
-#         except StopIteration:
-#             break
-#     return result
-
-
 def compare_configs_safe(fn1, fn2):
     """compare two ini files, allowing for missing first headers
     """
