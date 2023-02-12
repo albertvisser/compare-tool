@@ -358,3 +358,139 @@ def test_askopenfiles_check(monkeypatch, capsys):
     monkeypatch.setattr(main, 'comparetypes', {'z': {}})
     assert testobj.check_input('x', 'y', 'z') == ''
 
+class MockComparisonGui:
+    def __init__(self, *args, **kwargs):
+        print('called ShowComparisonGui.__init__() with args', args, kwargs)
+    def init_tree(self, *args, **kwargs):
+        print('called ShowComparisonGui.init_tree() with args', args, kwargs)
+    def setup_nodata_columns(self, *args, **kwargs):
+        print('called ShowComparisonGui.setup_nodata_columns() with args', args, kwargs)
+    def finish_init(self, *args, **kwargs):
+        print('called ShowComparisonGui.finish_init() with args', args, kwargs)
+    def refresh_tree(self):
+        print('called ShowComparisonGui.refresh_tree()')
+
+def test_showcomparison_init(monkeypatch, capsys):
+    def mock_refresh(self):
+        print('called ShowComparison.refresh()')
+    monkeypatch.setattr(main, 'Comparer', MockComparer)
+    testobjparent = main.Comparer('left', 'right', 'method')
+    testobjparent.gui = 'ComparerGui'
+    monkeypatch.setattr(main.gui, 'ShowComparisonGui', MockComparisonGui)
+    assert capsys.readouterr().out == (
+          'called MainWindow.__init__() with args ()\n'
+          'called IniFile.__init__() with arg inifilename\n'
+          'called ShowComparison.__init__() with args ()\n'
+          "called Comparer.__init__() with args ('left', 'right', 'method')\n")
+    testobjparent.data = []
+    testobj = main.ShowComparison(testobjparent)
+    assert capsys.readouterr().out == (
+          "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
+          "called ShowComparisonGui.init_tree() with args ('Document structure',"
+          " 'value in `lefthand-side` file', 'value in `righthand-side` file') {}\n"
+          "called ShowComparisonGui.setup_nodata_columns() with args ('geen bestanden geladen',"
+          " 'niks om te laten zien', 'hier ook niet') {}\n"
+          'called ShowComparisonGui.finish_init() with args () {}\n')
+    testobjparent.data = ['we have data']
+    monkeypatch.setattr(main.ShowComparison, 'refresh', mock_refresh)
+    testobj = main.ShowComparison(testobjparent)
+    assert capsys.readouterr().out == (
+          "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
+          "called ShowComparisonGui.init_tree() with args ('Document structure',"
+          " 'value in `lefthand-side` file', 'value in `righthand-side` file') {}\n"
+          'called ShowComparison.refresh()\n'
+          'called ShowComparisonGui.finish_init() with args () {}\n'
+          )
+
+def test_showcomparison_refresh(monkeypatch, capsys):
+    def mock_init(self, parent):
+        print('called ShowComparison.__init__() with args', parent)
+        self.parent = parent
+        self.gui = MockComparisonGui()
+    def mock_refresh(self, *args):
+        print('called comparetype.refresh_compare() with args', args)
+    monkeypatch.setattr(main, 'comparetypes', {'x': ('y', 'z', mock_refresh)})
+    monkeypatch.setattr(main.ShowComparison, '__init__', mock_init)
+    testobj = main.ShowComparison(types.SimpleNamespace(comparetype='x'))
+    assert capsys.readouterr().out == ("called ShowComparison.__init__() with args"
+                                       " namespace(comparetype='x')\n"
+                                        'called ShowComparisonGui.__init__() with args () {}\n')
+    testobj.refresh()
+    assert capsys.readouterr().out == ('called comparetype.refresh_compare() with args ()\n'
+                                       'called ShowComparisonGui.refresh_tree()\n')
+
+class MockParser:
+    def __init__(self):
+        print('called ConfigParser.__init__()')
+    def read(self, fname):
+        print(f'called ConfigParser.read with arg `{fname}`')
+    def has_section(self, name):
+        print(f'called ConfigParser.has_section with arg `{name}`')
+        return True
+    def options(self, name):
+        print(f'called ConfigParser.options with arg `{name}`')
+        return ['option1', 'option2']
+    def get(self, name, value):
+        print(f'called ConfigParser.get with args (`{name}`, `{value}`)')
+        return value
+    def add_section(self, name):
+        print(f'called ConfigParser.add_section with arg `{name}`')
+    def set(self, name, value, item):
+        print(f'called ConfigParser.set with args (`{name}`, `{value}`, `{item}`)')
+    def write(self, stream):
+        # stream is een io.TextIoWrapper object
+        outfilename = main.pathlib.Path(stream.name).name
+        print(f'called ConfigParser.write to file with name `{outfilename}`')
+
+def test_inifile_init(monkeypatch, capsys):
+    testobj = main.IniFile('testfile')
+    assert testobj.fname == 'testfile'
+
+def test_inifile_read(monkeypatch, capsys):
+    monkeypatch.setattr(main, 'ConfigParser', MockParser)
+    testobj = main.IniFile('testfile')
+    testobj.read()
+    assert testobj.mru_left == ['file1', 'file2']
+    assert testobj.mru_right == ['file1', 'file2']
+    assert testobj.horizontal
+    assert capsys.readouterr().out == ('called ConfigParser.__init__()\n'
+                                       'called ConfigParser.read with arg `testfile`\n'
+                                       'called ConfigParser.has_section with arg `leftpane`\n'
+                                       'called ConfigParser.options with arg `leftpane`\n'
+                                       'called ConfigParser.get with args (`leftpane`, `file1`)\n'
+                                       'called ConfigParser.get with args (`leftpane`, `file2`)\n'
+                                       'called ConfigParser.has_section with arg `rightpane`\n'
+                                       'called ConfigParser.options with arg `rightpane`\n'
+                                       'called ConfigParser.get with args (`rightpane`, `file1`)\n'
+                                       'called ConfigParser.get with args (`rightpane`, `file2`)\n')
+    monkeypatch.setattr(MockParser, 'has_section', lambda *x: False)
+    testobj.read()
+    assert testobj.mru_left == []
+    assert testobj.mru_right == []
+    assert testobj.horizontal
+    assert capsys.readouterr().out == ('called ConfigParser.__init__()\n'
+                                       'called ConfigParser.read with arg `testfile`\n')
+
+def test_inifile_write(monkeypatch, capsys, tmp_path):
+    monkeypatch.setattr(main, 'ConfigParser', MockParser)
+    testfilename = tmp_path / 'testfile'
+    testobj = main.IniFile(testfilename)
+    testobj.mru_left = []
+    testobj.mru_right = []
+    testobj.write()
+    assert capsys.readouterr().out == ('called ConfigParser.__init__()\n'
+                                       'called ConfigParser.write to file with name `testfile`\n')
+    testobj.mru_left = ['file1', 'file2']
+    testobj.mru_right = ['file3', 'file4']
+    testobj.write()
+    assert capsys.readouterr().out == (
+            'called ConfigParser.__init__()\n'
+            'called ConfigParser.add_section with arg `leftpane`\n'
+            'called ConfigParser.set with args (`leftpane`, `file1`, `file1`)\n'
+            'called ConfigParser.set with args (`leftpane`, `file2`, `file2`)\n'
+            'called ConfigParser.add_section with arg `rightpane`\n'
+            'called ConfigParser.set with args (`rightpane`, `file1`, `file3`)\n'
+            'called ConfigParser.set with args (`rightpane`, `file2`, `file4`)\n'
+            'called ConfigParser.write to file with name `testfile`\n')
+
+
