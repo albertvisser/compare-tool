@@ -9,6 +9,7 @@ logs/
 *.swo
 
 # data
+data/
 *.xml
 *.ini
 *.txt
