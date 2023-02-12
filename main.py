@@ -212,8 +212,8 @@ class ShowComparison:
         self.gui = gui.ShowComparisonGui(parent.gui)
         # self.gui.init_tree("Sectie / Optie:", f"waarde in {self.parent.lhs_path}",
         #                   f"waarde in {self.parent.rhs_path}")
-        self.gui.init_tree('Document structure', 'value in "lefthand-side" file',
-                           'value in "righthand-side" file')
+        self.gui.init_tree('Document structure', 'value in `lefthand-side` file',
+                           'value in `righthand-side` file')
         if not self.parent.data:
             self.gui.setup_nodata_columns('geen bestanden geladen', "niks om te laten zien",
                                           "hier ook niet")
@@ -224,7 +224,7 @@ class ShowComparison:
     def refresh(self):
         """(re)do the comparison
         """
-        print('in refresh_tree', self.parent.comparetype)
+        # print('in refresh_tree', self.parent.comparetype)
         comparetypes[self.parent.comparetype][2](self)
         self.gui.refresh_tree()
 
@@ -240,7 +240,7 @@ class IniFile:
         """
         self.mru_left = []
         self.mru_right = []
-        self.horizontal = True     # heet self.orient_vert in wx version
+        self.horizontal = True
 
         sett = ConfigParser()
         sett.read(self.fname)
