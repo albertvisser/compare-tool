@@ -23,8 +23,8 @@ def compare_htmldata(fn1, fn2):
     """compare two similar html documents
     """
     result = []
-    gen1 = (x for x in get_htmldata(fn1))
-    gen2 = (x for x in get_htmldata(fn2))
+    gen1 = (x for x in convert_levels_to_keys(get_htmldata(fn1)))
+    gen2 = (x for x in convert_levels_to_keys(get_htmldata(fn2)))
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
@@ -69,6 +69,17 @@ def compare_htmldata(fn1, fn2):
     return result
 
 
+def gen_next(gen):
+    "generator to get next values from data collection"
+    eof = False
+    try:
+        elem, attr, val = next(gen)
+    except StopIteration:
+        eof = True
+        elem = attr = val = ''
+    return eof, elem, attr, val
+
+
 def get_htmldata(filename, strip_newlines=True, fix_selfclosing=True):
     """read data from document using BeautifulSoup
 
@@ -86,19 +97,8 @@ def get_htmldata(filename, strip_newlines=True, fix_selfclosing=True):
     return get_next_level_data(soup)
 
 
-def gen_next(gen):
-    "generator to get next values from data collection"
-    eof = False
-    try:
-        elem, attr, val = next(gen)
-    except StopIteration:
-        eof = True
-        elem = attr = val = ''
-    return eof, elem, attr, val
-
-
 def get_next_level_data(element, level=0):
-    "read data under an element"
+    "read data under an element recursively"
     result = []
     for item in element.children:
         if isinstance(item, bs.Tag):
@@ -118,6 +118,36 @@ def get_next_level_data(element, level=0):
         else:
             result.append(["Oops, what's this?" + str(item), '', ''])
     return result
+
+
+def convert_levels_to_keys(data):
+    "expand level info (tuple of level number and element name) to make better comparison possible"
+    current_key = ''
+    for item in data:
+        prev_level, attrname = item[0], item[1]
+        if current_key:
+            item[0] = level2key(item[0], current_key)
+            first_time = False
+        else:
+            item[0] = level2key(item[0], current_key, item[1], prev_level, attrname)
+    return data
+
+
+def level2key(leveldata, old_key, attr_name='', prev_leveldata='', prev_attrname=''):
+    "add parent levels to level info"
+    if old_key == '':
+        return leveldata
+    oldlevel = prev_leveldata[0]
+    newlevel, element_name = leveldata
+    if newlevel > oldlevel:
+        old_key.append(leveldata)
+    elif newlevel < oldlevel:
+        old_key.pop(-1)
+    elif attrname and prev_attrname == '':
+        old_key.append('attrs')
+    elif attrname == '' and prev_attrname != '':
+        old_key.pop(-1)
+    return old_key
 
 
 def refresh_htmlcompare(self):
@@ -145,7 +175,7 @@ def refresh_htmlcompare(self):
             self.gui.set_node_text(new_node, 1, lvalue)
         if rvalue:
             self.gui.set_node_text(new_node, 2, rvalue)
-        if attr_name or not elem_name:
+        if attr_name or elem_name == '(text)':  # not elem_name:
             if lvalue == '':
                 rightonly = True
                 self.gui.colorize_child(new_node, rightonly, leftonly, difference)
@@ -155,5 +185,9 @@ def refresh_htmlcompare(self):
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
                 self.gui.colorize_child(new_node, rightonly, leftonly, difference)
-            # if my_parent:
-            #     self.gui.colorize_header(my_parent, rightonly, leftonly, difference)
+            # geen idee waarom dit uit stond maar dit kleurt de directe parent mee
+            # wat gebeurt er als er meer verschillen onder de parent zitten?
+            # (dan pakt-ie de kleur van het laatste child)
+            # zouden hoger liggende parents niet ook mee (of altijd rood) moeten kleuren?
+            if my_parent:
+                self.gui.colorize_header(my_parent, rightonly, leftonly, difference)
