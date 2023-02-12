@@ -21,27 +21,13 @@ def check_inifile(fn):
     """
     fn = pathlib.Path(fn)
     hlpfn = pathlib.Path('/tmp') / fn.name
-    try_again = False
-    with fn.open() as f_in, hlpfn.open('w') as f_out:
-        try:
-            first = True
-            for line in f_in:
-                if first:
-                    if not line.startswith('['):
-                        f_out.write('[  --- generated first header ---  ]\n')
-                    first = False
-                f_out.write(line)
-        except UnicodeDecodeError:  # fallback for Windows
-            try_again = True
-    if try_again:
-        with fn.open(encoding='latin-1') as f_in, hlpfn.open('w') as f_out:
-            first = True
-            for line in f_in:
-                if first:
-                    if not line.startswith('['):
-                        f_out.write('[  --- generated first header ---  ]\n')
-                    first = False
-                f_out.write(line)
+    try:
+        data = fn.read_text()
+    except UnicodeDecodeError:  # fallback for Windows
+        data = fn.read_text(encoding='latin-1')
+    if not data.startswith('['):
+        data = '[  --- generated first header ---  ]\n' + data
+    hlpfn.write_text(data)
     return str(hlpfn)
 
 
