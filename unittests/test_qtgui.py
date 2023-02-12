@@ -1,2 +1,2 @@
 import pytest
-import qt_gui
+import qt_gui as gui
