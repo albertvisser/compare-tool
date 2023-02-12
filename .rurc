@@ -1,0 +1,20 @@
+[testdir]
+unittests
+
+[testscripts]
+main: test_main.py
+qt: test_qtgui.py
+wx: test_wxgui,py
+conf: test_conf_comp.py
+html: test_html_comp.py
+txt: test_txt_comp.py
+xml: test_xml_comp.py
+
+[testees]
+main: main.py
+qt: qt_gui.py
+wx: wx_gui.py
+conf: conf_comp.py
+html: html_comp.py
+txt: txt_comp.py
+xml: xml_comp.py
