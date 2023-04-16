@@ -24,7 +24,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.resize(1024, 600)
         self.setWindowTitle(self.master.apptitel)  # 'Vergelijken van ini files')
-        self.setWindowIcon(gui.QIcon('inicomp.ico'))
+        self.setWindowIcon(gui.QIcon('inicomp_1.png'))
         # self.sb = self.statusBar()
         self.setup_menu()
 
