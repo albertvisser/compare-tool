@@ -39,8 +39,8 @@ class MainWindow(wx.Frame):
                 if not item:
                     menu.AppendSeparator()
                     continue
-                item_id, title, shortcut, text, callback = item
-                menu.Append(item_id, '\t'.join((title, shortcut)), text)
+                item_id, itemtitle, shortcut, text, callback = item
+                menu.Append(item_id, f'{itemtitle}\t{shortcut}', text)
                 self.Connect(item_id, wx.NewId(), wx.wxEVT_COMMAND_MENU_SELECTED, callback)
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)

@@ -2,8 +2,8 @@ import pytest
 import conf_comp as testee
 
 def test_gen_next():
-    assert testee.gen_next((x for x in [])) == (True, '', '', '')
-    assert testee.gen_next((x for x in [(1, 2, 3)])) == (False, 1, 2, 3)
+    assert testee.gen_next(x for x in []) == (True, '', '', '')
+    assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
 
 class MockParser(dict):
     def __init__(self, *args, **kwargs):
@@ -36,7 +36,7 @@ def test_sort_inifile(monkeypatch, capsys):
     assert next(testgen) == ('section2', 'option1', 'value3')
     assert next(testgen) == ('section2', 'option2', 'value4')
     try:
-        next(testgen) == ()
+        next(testgen)
         shouldnothappen = True
     except StopIteration:
         shouldnothappen = False
@@ -190,5 +190,5 @@ def test_compare_configs_safe(monkeypatch, capsys):
 
 
 def _test_refresh_inicompare(monkeypatch, capsys):
-    testee.refresh_inicompare(self)
+    assert testee.refresh_inicompare()
 

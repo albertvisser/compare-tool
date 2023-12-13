@@ -105,26 +105,24 @@ def compare_xmldata(fn1, fn2):
             result.append(((elem2, attr2), '', val2))
             if not eof_gen2:
                 get_from_2 = True
+        elif (eof_gen1, elem1) < (eof_gen2, elem2):
+            result.append(((elem1, attr1), val1, ''))
+            if not eof_gen1:
+                get_from_1 = True
+        elif (eof_gen1, elem1) > (eof_gen2, elem2):
+            result.append(((elem2, attr2), '', val2))
+            if not eof_gen2:
+                get_from_2 = True
+        elif attr1 < attr2:
+            result.append(((elem1, attr1), val1, ''))
+            get_from_1 = True
+        elif attr1 > attr2:
+            result.append(((elem2, attr2), '', val2))
+            get_from_2 = True
         else:
-            if (eof_gen1, elem1) < (eof_gen2, elem2):
-                result.append(((elem1, attr1), val1, ''))
-                if not eof_gen1:
-                    get_from_1 = True
-            elif (eof_gen1, elem1) > (eof_gen2, elem2):
-                result.append(((elem2, attr2), '', val2))
-                if not eof_gen2:
-                    get_from_2 = True
-            else:
-                if attr1 < attr2:
-                    result.append(((elem1, attr1), val1, ''))
-                    get_from_1 = True
-                elif attr1 > attr2:
-                    result.append(((elem2, attr2), '', val2))
-                    get_from_2 = True
-                else:
-                    result.append(((elem1, attr1), val1, val2))
-                    get_from_1 = True
-                    get_from_2 = True
+            result.append(((elem1, attr1), val1, val2))
+            get_from_1 = True
+            get_from_2 = True
         if get_from_1:
             eof_gen1, elem1, attr1, val1 = gen_next(gen1)
         if get_from_2:

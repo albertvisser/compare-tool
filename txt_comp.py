@@ -44,12 +44,10 @@ def compare_txtdata(fn1, fn2):
             result.append([line1, '', ''])
             get_from_1 = True
             get_from_2 = True
-        if get_from_1:
-            if not eof1:
-                eof1, line1 = gen_next(gen1)
-        if get_from_2:
-            if not eof2:
-                eof2, line2 = gen_next(gen2)
+        if get_from_1 and not eof1:
+            eof1, line1 = gen_next(gen1)
+        if get_from_2 and not eof2:
+            eof2, line2 = gen_next(gen2)
     return result
 
 

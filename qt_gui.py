@@ -47,8 +47,8 @@ class MainWindow(qtw.QMainWindow):
                 if not item:
                     menu.addSeparator()
                     continue
-                item_id, title, shortcut, text, callback = item
-                self.menuactions[item_id] = add_action_to_menu(title, callback, shortcut,
+                item_id, itemtitle, shortcut, text, callback = item
+                self.menuactions[item_id] = add_action_to_menu(itemtitle, callback, shortcut,
                                                                text, menu)
 
     def go(self):

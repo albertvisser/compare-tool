@@ -53,17 +53,16 @@ def compare_configs(fn1, fn2):
             result.append(((sect2, opt2), '', val2))
             if not eof_gen2:
                 get_from_2 = True
+        elif opt1 < opt2:
+            result.append(((sect1, opt1), val1, ''))
+            get_from_1 = True
+        elif opt1 > opt2:
+            result.append(((sect2, opt2), '', val2))
+            get_from_2 = True
         else:
-            if opt1 < opt2:
-                result.append(((sect1, opt1), val1, ''))
-                get_from_1 = True
-            elif opt1 > opt2:
-                result.append(((sect2, opt2), '', val2))
-                get_from_2 = True
-            else:
-                result.append(((sect1, opt1), val1, val2))
-                get_from_1 = True
-                get_from_2 = True
+            result.append(((sect1, opt1), val1, val2))
+            get_from_1 = True
+            get_from_2 = True
         if get_from_1:
             eof_gen1, sect1, opt1, val1 = gen_next(gen1)
         if get_from_2:

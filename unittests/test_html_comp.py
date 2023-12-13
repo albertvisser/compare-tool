@@ -24,7 +24,6 @@ def test_get_htmldata(monkeypatch, capsys, tmp_path):
             f"called Beautifulsoup with args ('{htmldata_stripped_1}', 'lxml')\n"
             f"called get_next_level_data with args ('{htmldata_stripped_1}',)\n")
     htmldata_stripped_2 = '<body>\n  <br />\n  <br />\n  <hr />\n  <hr />\n</body>'
-    htmldata_stripped_2_raw = r'<body>\n  <br />\n  <br />\n  <hr />\n  <hr />\n</body>'
     assert testee.get_htmldata(str(datafile), False, True) == htmldata_stripped_2
 
 
@@ -32,8 +31,8 @@ def _get_next_level_data(monkeypatch, capsys):
     pass
 
 def test_gen_next():
-    assert testee.gen_next((x for x in [])) == (True, '', '', '')
-    assert testee.gen_next((x for x in [(1, 2, 3)])) == (False, 1, 2, 3)
+    assert testee.gen_next(x for x in []) == (True, '', '', '')
+    assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
 
 def _test_compare_htmldata(monkeypatch, capsys):
     pass

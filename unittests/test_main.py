@@ -37,8 +37,9 @@ def test_do_compare(monkeypatch, capsys):
     assert main.do_compare('left', 'right', 'x') == (False, [
         'Tenminste één file begint niet met een header', [
             'Traceback (most recent call last):\n',
-            '  File "/home/albert/projects/compare-tool/main.py", line 151, in do_compare\n'
-            '    data = compare_func(leftpath, rightpath)\n',
+            '  File "/home/albert/projects/compare-tool/main.py", line 154, in do_compare\n'
+            '    data = compare_func(leftpath, rightpath)\n'
+            '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
             '  File "/home/albert/projects/compare-tool/unittests/test_main.py",'
             ' line 29, in mock_compare_miss\n'
             "    raise main.MissingSectionHeaderError('xxxx', 1, 1)\n",
@@ -50,8 +51,9 @@ def test_do_compare(monkeypatch, capsys):
     assert main.do_compare('left', 'right', 'x') == (
             False, ['Tenminste één file bevat geen correcte XML', [
                 'Traceback (most recent call last):\n',
-                '  File "/home/albert/projects/compare-tool/main.py", line 151, in do_compare\n'
-                '    data = compare_func(leftpath, rightpath)\n',
+                '  File "/home/albert/projects/compare-tool/main.py", line 154, in do_compare\n'
+                '    data = compare_func(leftpath, rightpath)\n'
+                '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
                 '  File "/home/albert/projects/compare-tool/unittests/test_main.py", line '
                 '32, in mock_compare_parse\n'
                 "    raise main.ParseError('yyyy')\n",
@@ -120,7 +122,7 @@ def test_comparer_init(monkeypatch, capsys):
     testobj = main.Comparer([], '')
     assert testobj.apptitel == "Albert's Compare Tool voor Ini Files"
     assert list(testobj.menudict.keys()) == ["&File", "&Help"]
-    assert len(testobj.menudict["&File"]) == 4
+    assert len(testobj.menudict["&File"]) == len(['Open', 'Go', '', 'Quit'])
     # laatste element is de callback, laat zich niet goed vergelijken dus laat maar
     assert testobj.menudict["&File"][0][:-1] == (main.ID_OPEN, "&Open/kies", "Ctrl+O",
                                                  "Bepaal de te vergelijken (ini) files")
@@ -129,7 +131,7 @@ def test_comparer_init(monkeypatch, capsys):
     assert testobj.menudict["&File"][2] == ()
     assert testobj.menudict["&File"][3][:-1] == (main.ID_EXIT, "E&xit", "Ctrl+Q",
                                                  "Terminate the program")
-    assert len(testobj.menudict["&Help"]) == 2
+    assert len(testobj.menudict["&Help"]) == len(['About', 'Colors'])
     assert testobj.menudict["&Help"][0][:-1] == (main.ID_ABOUT, "&About", "Ctrl+H",
                                                  "Information about this program")
     assert testobj.menudict["&Help"][1][:-1] == (main.ID_COLORS, "&Legenda", "F1",
@@ -267,7 +269,7 @@ def test_comparer_about(monkeypatch, capsys):
             "called Comparer.__init__() with args ('left', 'right', 'method')\n"
             "called MainWindow.meld() with args ('Met dit programma kun je twee (ini) files"
             " met elkaar vergelijken,\\nmaakt niet uit hoe door elkaar de secties en entries"
-            " ook zitten.\\n\\nHet is ook bruikbaar voor XML bestanden.',)\n")
+            " ook zitten.\\n\\nHet is ook bruikbaar voor XML en HTML bestanden.',)\n")
 
 def test_comparer_legend(monkeypatch, capsys):
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
@@ -384,6 +386,8 @@ def test_showcomparison_init(monkeypatch, capsys):
           "called Comparer.__init__() with args ('left', 'right', 'method')\n")
     testobjparent.data = []
     testobj = main.ShowComparison(testobjparent)
+    assert testobj.parent == testobjparent
+    # assert testobj.gui == testobjparent.gui
     assert capsys.readouterr().out == (
           "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
           "called ShowComparisonGui.init_tree() with args ('Document structure',"
@@ -394,13 +398,14 @@ def test_showcomparison_init(monkeypatch, capsys):
     testobjparent.data = ['we have data']
     monkeypatch.setattr(main.ShowComparison, 'refresh', mock_refresh)
     testobj = main.ShowComparison(testobjparent)
+    assert testobj.parent == testobjparent
+    # assert testobj.gui == testobjparent.gui
     assert capsys.readouterr().out == (
           "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
           "called ShowComparisonGui.init_tree() with args ('Document structure',"
           " 'value in `lefthand-side` file', 'value in `righthand-side` file') {}\n"
           'called ShowComparison.refresh()\n'
-          'called ShowComparisonGui.finish_init() with args () {}\n'
-          )
+          'called ShowComparisonGui.finish_init() with args () {}\n')
 
 def test_showcomparison_refresh(monkeypatch, capsys):
     def mock_init(self, parent):

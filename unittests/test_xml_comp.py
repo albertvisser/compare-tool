@@ -12,8 +12,8 @@ def _test_sort_xmldata(monkeypatch, capsys):
     pass
 
 def test_gen_next():
-    assert testee.gen_next((x for x in [])) == (True, '', '', '')
-    assert testee.gen_next((x for x in [(1, 2, 3)])) == (False, 1, 2, 3)
+    assert testee.gen_next(x for x in []) == (True, '', '', '')
+    assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
 
 def _test_compare_xmldata(monkeypatch, capsys):
     pass

@@ -23,6 +23,15 @@ comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
                 'html': ('HTML files', compare_htmldata, refresh_htmlcompare),
                 'txt': ('Simple text comparison', compare_txtdata, refresh_txtcompare)}
 catchables = (MissingSectionHeaderError, ParseError)
+abouttext = """\
+Met dit programma kun je twee (ini) files met elkaar vergelijken,
+maakt niet uit hoe door elkaar de secties en entries ook zitten.
+
+Het is ook bruikbaar voor XML en HTML bestanden."""
+colors_text = """\
+Rood: aan beide kanten aanwezig, verschillend
+Groen: alleen aanwezig in linkerfile
+Blauw: alleen aanwezig in rechterfile"""
 
 
 def auto_determine_comparetype(leftpath, rightpath):
@@ -112,19 +121,12 @@ class Comparer:
     def about(self, event=None):
         """opening blurb
         """
-        self.gui.meld('\n'.join((
-            "Met dit programma kun je twee (ini) files met elkaar vergelijken,",
-            "maakt niet uit hoe door elkaar de secties en entries ook zitten.",
-            "",
-            "Het is ook bruikbaar voor XML bestanden.")))
+        self.gui.meld(abouttext)
 
     def legend(self, event=None):
         """explanation of the colors used
         """
-        self.gui.meld('\n'.join((
-            "Rood: aan beide kanten aanwezig, verschillend",
-            "Groen: alleen aanwezig in linkerfile",
-            "Blauw: alleen aanwezig in rechterfile")))
+        self.gui.meld(colors_text)
 
     def exit(self):
         "quit"
@@ -133,13 +135,14 @@ class Comparer:
 
 def get_input_paths(fileargs):
     "split up incoming file arguments"
+    noargs, onearg, twoargs = (0, 1, 2)
     leftpath = rightpath = ''
     if fileargs:
-        if len(fileargs) > 0:
+        if len(fileargs) > noargs:
             leftpath = fileargs[0]
-        if len(fileargs) > 1:
+        if len(fileargs) > onearg:
             rightpath = fileargs[1]
-            if len(fileargs) > 2:
+            if len(fileargs) > twoargs:
                 print('excessive filename arguments truncated')
     return leftpath, rightpath
 

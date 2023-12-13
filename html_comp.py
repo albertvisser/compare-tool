@@ -42,26 +42,24 @@ def compare_htmldata(fn1, fn2):
             result.append(((elem2, attr2), '', val2))
             if not eof_gen2:
                 get_from_2 = True
+        elif (eof_gen1, elem1) < (eof_gen2, elem2):
+            result.append(((elem1, attr1), val1, ''))
+            if not eof_gen1:
+                get_from_1 = True
+        elif (eof_gen1, elem1) > (eof_gen2, elem2):
+            result.append(((elem2, attr2), '', val2))
+            if not eof_gen2:
+                get_from_2 = True
+        elif attr1 < attr2:
+            result.append(((elem1, attr1), val1, ''))
+            get_from_1 = True
+        elif attr1 > attr2:
+            result.append(((elem2, attr2), '', val2))
+            get_from_2 = True
         else:
-            if (eof_gen1, elem1) < (eof_gen2, elem2):
-                result.append(((elem1, attr1), val1, ''))
-                if not eof_gen1:
-                    get_from_1 = True
-            elif (eof_gen1, elem1) > (eof_gen2, elem2):
-                result.append(((elem2, attr2), '', val2))
-                if not eof_gen2:
-                    get_from_2 = True
-            else:
-                if attr1 < attr2:
-                    result.append(((elem1, attr1), val1, ''))
-                    get_from_1 = True
-                elif attr1 > attr2:
-                    result.append(((elem2, attr2), '', val2))
-                    get_from_2 = True
-                else:
-                    result.append(((elem1, attr1), val1, val2))
-                    get_from_1 = True
-                    get_from_2 = True
+            result.append(((elem1, attr1), val1, val2))
+            get_from_1 = True
+            get_from_2 = True
         if get_from_1:
             eof_gen1, elem1, attr1, val1 = gen_next(gen1)
         if get_from_2:
@@ -127,7 +125,6 @@ def convert_levels_to_keys(data):
         prev_level, attrname = item[0], item[1]
         if current_key:
             item[0] = level2key(item[0], current_key)
-            first_time = False
         else:
             item[0] = level2key(item[0], current_key, item[1], prev_level, attrname)
     return data
@@ -143,9 +140,9 @@ def level2key(leveldata, old_key, attr_name='', prev_leveldata='', prev_attrname
         old_key.append(leveldata)
     elif newlevel < oldlevel:
         old_key.pop(-1)
-    elif attrname and prev_attrname == '':
+    elif attr_name and prev_attrname == '':
         old_key.append('attrs')
-    elif attrname == '' and prev_attrname != '':
+    elif attr_name == '' and prev_attrname != '':
         old_key.pop(-1)
     return old_key
 

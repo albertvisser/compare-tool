@@ -2,8 +2,8 @@ import pytest
 import txt_comp as testee
 
 def test_gen_next():
-    assert testee.gen_next((x for x in [])) == (True, '')
-    assert testee.gen_next((x for x in ['next line'])) == (False, 'next line')
+    assert testee.gen_next(x for x in []) == (True, '')
+    assert testee.gen_next(x for x in ['next line']) == (False, 'next line')
 
 
 def test_get_file(monkeypatch, capsys, tmp_path):
