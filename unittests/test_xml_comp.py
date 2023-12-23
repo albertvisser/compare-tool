@@ -1,4 +1,3 @@
-import pytest
 import xml_comp as testee
 
 

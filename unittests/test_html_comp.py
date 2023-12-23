@@ -1,4 +1,3 @@
-import pytest
 import html_comp as testee
 
 def test_get_htmldata(monkeypatch, capsys, tmp_path):

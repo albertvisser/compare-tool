@@ -1,5 +1,4 @@
 import types
-import pytest
 import main
 
 def test_determine_comparetype(monkeypatch, capsys):
@@ -41,7 +40,7 @@ def test_do_compare(monkeypatch, capsys):
             '    data = compare_func(leftpath, rightpath)\n'
             '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
             '  File "/home/albert/projects/compare-tool/unittests/test_main.py",'
-            ' line 29, in mock_compare_miss\n'
+            ' line 28, in mock_compare_miss\n'
             "    raise main.MissingSectionHeaderError('xxxx', 1, 1)\n",
             'configparser.MissingSectionHeaderError: File contains no section headers.\n'
             "file: 'xxxx', line: 1\n"
@@ -55,7 +54,7 @@ def test_do_compare(monkeypatch, capsys):
                 '    data = compare_func(leftpath, rightpath)\n'
                 '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
                 '  File "/home/albert/projects/compare-tool/unittests/test_main.py", line '
-                '32, in mock_compare_parse\n'
+                '31, in mock_compare_parse\n'
                 "    raise main.ParseError('yyyy')\n",
                 'xml.etree.ElementTree.ParseError: yyyy\n']])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'

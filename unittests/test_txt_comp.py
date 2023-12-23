@@ -1,4 +1,3 @@
-import pytest
 import txt_comp as testee
 
 def test_gen_next():

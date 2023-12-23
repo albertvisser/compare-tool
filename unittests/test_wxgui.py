@@ -1,2 +1,1 @@
-import pytest
-import wx_gui as gui
+import wx_gui as testee
