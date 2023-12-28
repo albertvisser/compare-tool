@@ -87,4 +87,3 @@ def test_refresh_txtcompare(monkeypatch, capsys):
             "called ShowComparisonGui.set_node_text() with args ('node4', 2, '')\n"
             "called ShowComparisonGui.colorize_child() with args ('node4', False, False, False)\n"
             '')
-

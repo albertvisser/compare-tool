@@ -3,7 +3,7 @@
 sort sections and options before comparing
 """
 import pathlib
-from configparser import ConfigParser, MissingSectionHeaderError  # needed in main.py
+from configparser import ConfigParser
 
 
 def compare_configs_safe(fn1, fn2):

@@ -190,4 +190,3 @@ def test_compare_configs_safe(monkeypatch, capsys):
 
 def _test_refresh_inicompare(monkeypatch, capsys):
     assert testee.refresh_inicompare()
-

@@ -12,7 +12,6 @@ bij <x><y1 a1='1' a2='2'></y1><y2><z1>gragl</z1></y2></x>
 (((x, y2, z1), ),'gargl', '')
 """
 import xml.etree.ElementTree as et
-ParseError = et.ParseError   # needed in main.py
 
 
 def sort_xmldata(fn):

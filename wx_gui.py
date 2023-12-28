@@ -205,14 +205,13 @@ class ShowComparisonGui(wx.Panel):
         # self.Bind(wx.EVT_SIZE, self.on_size)
 
         # die show_tooltip switch zorgt ervoor dat de teksten onleesbaar worden
-        self.tree = gizmos.TreeListCtrl(self, -1, size=(1080, 600),
-                                        agwStyle=gizmos.TR_DEFAULT_STYLE |
-                                                 gizmos.TR_HAS_VARIABLE_ROW_HEIGHT |
-                                                 # 0x100000 | # wx.TR_TOOLTIP_ON_LONG_ITEMS |
-                                                 gizmos.TR_ELLIPSIZE_LONG_ITEMS |
-                                                 gizmos.TR_FULL_ROW_HIGHLIGHT)  # |
-                                                 # CTC.TR_TOOLTIP_ON_LONG_ITEMS |
-                                                 # HTL.TR_ELLIPSIZE_LONG_ITEMS)
+        self.tree = gizmos.TreeListCtrl(self, -1, size=(1080, 600), agwStyle=gizmos.TR_DEFAULT_STYLE
+                                        | gizmos.TR_HAS_VARIABLE_ROW_HEIGHT
+                                        # | 0x100000 | # wx.TR_TOOLTIP_ON_LONG_ITEMS
+                                        | gizmos.TR_ELLIPSIZE_LONG_ITEMS
+                                        | gizmos.TR_FULL_ROW_HIGHLIGHT)  #
+                                        # | CTC.TR_TOOLTIP_ON_LONG_ITEMS
+                                        # | HTL.TR_ELLIPSIZE_LONG_ITEMS)
         self.rightonly_colour = wx.Colour(wx.BLUE)
         self.leftonly_colour = wx.Colour(wx.GREEN)
         self.difference_colour = wx.Colour(wx.RED)

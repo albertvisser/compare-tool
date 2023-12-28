@@ -8,9 +8,6 @@ output naar hoofdprogramma: list van 3-tuples
 
 import bs4 as bs
 
-# hoofdroutine: compare_htmldata - kan misschien overgenomen worden uit xml vergelijking en dan
-# gefinetuned
-
 # lezen html bestand - m.b.v. BeautifulSoup - generator die afdalend in de boomstructuur
 # - in volgorde van het document de elementen opsomt die erin voorkomen (alleen de tagnaam)
 # - de bijbehorende attributen sorteert op naam en naam + waarde teruggeeft

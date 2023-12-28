@@ -6,9 +6,8 @@ import pathlib
 from configparser import ConfigParser
 import gui
 # import exception types so they can be caught in calling modules
-from conf_comp import (compare_configs, compare_configs_safe, refresh_inicompare,
-                       MissingSectionHeaderError)
-from xml_comp import compare_xmldata, refresh_xmlcompare, ParseError
+from conf_comp import compare_configs, compare_configs_safe, refresh_inicompare
+from xml_comp import compare_xmldata, refresh_xmlcompare
 from txt_comp import compare_txtdata, refresh_txtcompare
 from html_comp import compare_htmldata, refresh_htmlcompare
 ID_OPEN = 101
@@ -22,7 +21,6 @@ comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
                 'xml': ('XML files', compare_xmldata, refresh_xmlcompare),
                 'html': ('HTML files', compare_htmldata, refresh_htmlcompare),
                 'txt': ('Simple text comparison', compare_txtdata, refresh_txtcompare)}
-catchables = (MissingSectionHeaderError, ParseError)
 abouttext = """\
 Met dit programma kun je twee (ini) files met elkaar vergelijken,
 maakt niet uit hoe door elkaar de secties en entries ook zitten.
@@ -152,17 +150,14 @@ def do_compare(leftpath, rightpath, selectiontype):
     compare_func = comparetypes[selectiontype][1]
     try:
         data = compare_func(leftpath, rightpath)
-        return True, data
-    except (MissingSectionHeaderError, ParseError):  # specifieke exceptions horen eigenlijk in de
-        error, msg, tb = sys.exc_info()              # compare routine thuis
-        # set data to info to show in message
-        if error == MissingSectionHeaderError:
-            info = "begint niet met een header"
-        else:
-            info = "bevat geen correcte XML"
-        data = [f'Tenminste één file {info}']
-        data.append(traceback.format_exception(error, msg, tb))
-        return False, data
+        result = True
+    # except (MissingSectionHeaderError, ParseError):  # specifieke exceptions horen eigenlijk in de
+    #     error, msg, tb = sys.exc_info()              # compare routine thuis
+    except Exception:
+        error, msg, tb = sys.exc_info()
+        data = [traceback.format_exception(error, msg, tb)]
+        result = False
+    return result, data
 
 
 class AskOpenFiles:

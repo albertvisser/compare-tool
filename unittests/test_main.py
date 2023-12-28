@@ -25,7 +25,7 @@ def test_do_compare(monkeypatch, capsys):
         return ['compare output']
     def mock_compare_miss(left, right):
         print(f'called compare_method with args `{left}` and `{right}`')
-        raise main.MissingSectionHeaderError('xxxx', 1, 1)
+        raise ValueError('xxxx', 1, 1)
     def mock_compare_parse(left, right):
         print(f'called compare_method with args `{left}` and `{right}`')
         raise main.ParseError('yyyy')
@@ -33,32 +33,16 @@ def test_do_compare(monkeypatch, capsys):
     assert main.do_compare('left', 'right', 'x') == (True, ['compare output'])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
     monkeypatch.setattr(main, 'comparetypes', {'x': ('', mock_compare_miss, '')})
-    assert main.do_compare('left', 'right', 'x') == (False, [
-        'Tenminste één file begint niet met een header', [
+    assert main.do_compare('left', 'right', 'x') == (False, [[
             'Traceback (most recent call last):\n',
-            '  File "/home/albert/projects/compare-tool/main.py", line 154, in do_compare\n'
+            '  File "/home/albert/projects/compare-tool/main.py", line 152, in do_compare\n'
             '    data = compare_func(leftpath, rightpath)\n'
             '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
             '  File "/home/albert/projects/compare-tool/unittests/test_main.py",'
             ' line 28, in mock_compare_miss\n'
-            "    raise main.MissingSectionHeaderError('xxxx', 1, 1)\n",
-            'configparser.MissingSectionHeaderError: File contains no section headers.\n'
-            "file: 'xxxx', line: 1\n"
-            '1\n']])
+            "    raise ValueError('xxxx', 1, 1)\n",
+            "ValueError: ('xxxx', 1, 1)\n"]])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
-    monkeypatch.setattr(main, 'comparetypes', {'x': ('', mock_compare_parse, '')})
-    assert main.do_compare('left', 'right', 'x') == (
-            False, ['Tenminste één file bevat geen correcte XML', [
-                'Traceback (most recent call last):\n',
-                '  File "/home/albert/projects/compare-tool/main.py", line 154, in do_compare\n'
-                '    data = compare_func(leftpath, rightpath)\n'
-                '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
-                '  File "/home/albert/projects/compare-tool/unittests/test_main.py", line '
-                '31, in mock_compare_parse\n'
-                "    raise main.ParseError('yyyy')\n",
-                'xml.etree.ElementTree.ParseError: yyyy\n']])
-    assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
-
 
 class MockMainWindow:
     def __init__(self, *args):
@@ -496,5 +480,3 @@ def test_inifile_write(monkeypatch, capsys, tmp_path):
             'called ConfigParser.set with args (`rightpane`, `file1`, `file3`)\n'
             'called ConfigParser.set with args (`rightpane`, `file2`, `file4`)\n'
             'called ConfigParser.write to file with name `testfile`\n')
-
-
