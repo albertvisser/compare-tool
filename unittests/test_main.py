@@ -1,7 +1,11 @@
+"""unittests for ./main.py
+"""
 import types
 import main
 
-def test_determine_comparetype(monkeypatch, capsys):
+def test_determine_comparetype(monkeypatch):
+    """unittest for main.determine_comparetype
+    """
     monkeypatch.setattr(main, 'comparetypes', ['x'])
     assert main.auto_determine_comparetype('test1', 'test2') == ''
     assert main.auto_determine_comparetype('test1.x', 'test2.y') == ''
@@ -9,6 +13,8 @@ def test_determine_comparetype(monkeypatch, capsys):
 
 
 def test_get_input_paths(capsys):
+    """unittest for main.get_input_paths
+    """
     assert main.get_input_paths([]) == ('', '')
     assert capsys.readouterr().out == ''
     assert main.get_input_paths(['left'])
@@ -20,13 +26,21 @@ def test_get_input_paths(capsys):
 
 
 def test_do_compare(monkeypatch, capsys):
+    """unittest for main.do_compare
+    """
     def mock_compare(left, right):
+        """stub
+        """
         print(f'called compare_method with args `{left}` and `{right}`')
         return ['compare output']
     def mock_compare_miss(left, right):
+        """stub
+        """
         print(f'called compare_method with args `{left}` and `{right}`')
         raise ValueError('xxxx', 1, 1)
     def mock_compare_parse(left, right):
+        """stub
+        """
         print(f'called compare_method with args `{left}` and `{right}`')
         raise main.ParseError('yyyy')
     monkeypatch.setattr(main, 'comparetypes', {'x': ('', mock_compare, '')})
@@ -39,59 +53,99 @@ def test_do_compare(monkeypatch, capsys):
             '    data = compare_func(leftpath, rightpath)\n'
             '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
             '  File "/home/albert/projects/compare-tool/unittests/test_main.py",'
-            ' line 28, in mock_compare_miss\n'
+            ' line 40, in mock_compare_miss\n'
             "    raise ValueError('xxxx', 1, 1)\n",
             "ValueError: ('xxxx', 1, 1)\n"]])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
 
 class MockMainWindow:
+    """stub for gui.MainWindow
+    """
     def __init__(self, *args):
         print('called MainWindow.__init__() with args', args)
     def meld_input_fout(self, mld):
+        """stub
+        """
         print('called MainWindow.meld_input_fout() with arg', mld)
     def meld_vergelijking_fout(self, *args):
+        """stub
+        """
         print('called MainWindow.meld_vergelijking_fout() with args', args)
     def meld(self, *args):
+        """stub
+        """
         print('called MainWindow.meld() with args', args)
     def go(self):
+        """stub
+        """
         print('called MainWindow.go()')
     def exit(self):
+        """stub
+        """
         print('called MainWindow.exit()')
 
 class MockAskOpenFiles:
+    """stub for main.AskOpenFiles
+    """
     def __init__(self, *args):
         print('called AskOpenFiles.__init__() with args', args)
     def check_input(self, *args):
+        """stub
+        """
         print('called AskOpenFiles.check_input() with args', args)
 
 class MockShowComparison:
+    """stub for main.ShowComparison
+    """
     def __init__(self, *args):
         print('called ShowComparison.__init__() with args', args)
     def refresh(self):
+        """stub
+        """
         print('called ShowComparison.refresh()')
 
 class MockIniFile:
+    """stub for main.IniFile
+    """
     def __init__(self, arg):
         print('called IniFile.__init__() with arg', arg)
     def read(self):
+        """stub
+        """
         print('called IniFile.read()')
     def write(self):
+        """stub
+        """
         print('called IniFile.write()')
 
 def test_comparer_init(monkeypatch, capsys):
+    """unittest for main.Comparer.init
+    """
     def mock_get_paths(*args):
+        """stub
+        """
         print('called get_input_paths() with args', args)
         return 'left', 'right'
     def mock_determine_comparetype(*args):
+        """stub
+        """
         print('called auto_determine_comparetype() with args', args)
     def mock_doit(self):
+        """stub
+        """
         print('called comparer.doit()')
     def mock_about(self):
+        """stub
+        """
         print('called comparer.about()')
     def mock_open(self):
+        """stub
+        """
         print('called comparer.open()')
         return True
     def mock_meld_fout(self, *args):
+        """stub
+        """
         print('called gui.meld_input_fout() with args', args)
     monkeypatch.setattr(main.gui, 'MainWindow', MockMainWindow)
     monkeypatch.setattr(main, 'AskOpenFiles', MockAskOpenFiles)
@@ -186,6 +240,8 @@ def test_comparer_init(monkeypatch, capsys):
           "called MainWindow.go()\n")
 
 def mock_init(self, *args):
+    """stub for initializing main.Comparer object
+    """
     self.gui = MockMainWindow()
     self.ini = MockIniFile('inifilename')
     self.showcomp = MockShowComparison()
@@ -196,7 +252,11 @@ def mock_init(self, *args):
     print('called Comparer.__init__() with args', args)
 
 def test_comparer_open(monkeypatch, capsys):
+    """unittest for main.Comparer.open
+    """
     def mock_show_dialog(*args):
+        """stub
+        """
         print('called gui.show_dialog() with args', args)
         return True
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
@@ -213,11 +273,19 @@ def test_comparer_open(monkeypatch, capsys):
             f"called gui.show_dialog() with args ({testobj_get_input}, 'get_input_gui')\n")
 
 def test_comparer_doit(monkeypatch, capsys):
+    """unittest for main.Comparer.doit
+    """
     def mock_do_compare(*args):
+        """stub
+        """
         return True, ['data', 'more data']
     def mock_do_compare_notok(*args):
+        """stub
+        """
         return False, ['message', 'why']
     def mock_do_compare_nodata(*args):
+        """stub
+        """
         return True, []
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
     testobj = main.Comparer('left', 'right', 'method')
@@ -242,6 +310,8 @@ def test_comparer_doit(monkeypatch, capsys):
     assert capsys.readouterr().out == ('called IniFile.write()\ncalled ShowComparison.refresh()\n')
 
 def test_comparer_about(monkeypatch, capsys):
+    """unittest for main.Comparer.about
+    """
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
     testobj = main.Comparer('left', 'right', 'method')
     testobj.about()
@@ -255,6 +325,8 @@ def test_comparer_about(monkeypatch, capsys):
             " ook zitten.\\n\\nHet is ook bruikbaar voor XML en HTML bestanden.',)\n")
 
 def test_comparer_legend(monkeypatch, capsys):
+    """unittest for main.Comparer.legend
+    """
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
     testobj = main.Comparer('left', 'right', 'method')
     testobj.legend()
@@ -267,6 +339,8 @@ def test_comparer_legend(monkeypatch, capsys):
             "Groen: alleen aanwezig in linkerfile\\nBlauw: alleen aanwezig in rechterfile',)\n")
 
 def test_comparer_exit(monkeypatch, capsys):
+    """unittest for main.Comparer.exit
+    """
     monkeypatch.setattr(main.Comparer, '__init__', mock_init)
     testobj = main.Comparer('left', 'right', 'method')
     testobj.exit()
@@ -278,18 +352,28 @@ def test_comparer_exit(monkeypatch, capsys):
             "called MainWindow.exit()\n")
 
 class MockComparer:
+    """stub for main.Comparer
+    """
     def __init__(self, *args):
         mock_init(self, *args)
 
 class MockFilesGui:
+    """stub for gui.AskOpenFilesGui
+    """
     def __init__(self, *args, **kwargs):
         print('called AskOpenFilesGui.__init__() with args', args, kwargs)
     def add_ask_for_filename(self, *args, **kwargs):
+        """stub
+        """
         print('called AskOpenFilesGui.add_ask_for_filename() with args', args, kwargs)
     def build_screen(self, *args, **kwargs):
+        """stub
+        """
         print('called AskOpenFilesGui.build_screen() with args', args, kwargs)
 
 def test_askopenfiles_init(monkeypatch, capsys):
+    """unittest for main.AskOpenFiles.init
+    """
     monkeypatch.setattr(main, 'Comparer', MockComparer)
     testobjparent = main.Comparer('left', 'right', 'method')
     testobjparent.ini = types.SimpleNamespace(mru_left=['left'], mru_right=['right'])
@@ -318,10 +402,16 @@ def test_askopenfiles_init(monkeypatch, capsys):
             " hoofdscherm')}\n")
 
 def test_askopenfiles_check(monkeypatch, capsys):
+    """unittest for main.AskOpenFiles.check
+    """
     def mock_init(self, *args):
+        """stub
+        """
         print('called AskOpenFiles.__init__() with args', args)
     counter = 0
     def mock_exists(*args):
+        """stub
+        """
         nonlocal counter
         counter += 1
         if counter == 1:
@@ -344,19 +434,33 @@ def test_askopenfiles_check(monkeypatch, capsys):
     assert testobj.check_input('x', 'y', 'z') == ''
 
 class MockComparisonGui:
+    """stub for gui.ShowComparisonGui
+    """
     def __init__(self, *args, **kwargs):
         print('called ShowComparisonGui.__init__() with args', args, kwargs)
     def init_tree(self, *args, **kwargs):
+        """stub
+        """
         print('called ShowComparisonGui.init_tree() with args', args, kwargs)
     def setup_nodata_columns(self, *args, **kwargs):
+        """stub
+        """
         print('called ShowComparisonGui.setup_nodata_columns() with args', args, kwargs)
     def finish_init(self, *args, **kwargs):
+        """stub
+        """
         print('called ShowComparisonGui.finish_init() with args', args, kwargs)
     def refresh_tree(self):
+        """stub
+        """
         print('called ShowComparisonGui.refresh_tree()')
 
 def test_showcomparison_init(monkeypatch, capsys):
+    """unittest for main.ShowComparison.init
+    """
     def mock_refresh(self):
+        """stub
+        """
         print('called ShowComparison.refresh()')
     monkeypatch.setattr(main, 'Comparer', MockComparer)
     testobjparent = main.Comparer('left', 'right', 'method')
@@ -391,50 +495,76 @@ def test_showcomparison_init(monkeypatch, capsys):
           'called ShowComparisonGui.finish_init() with args () {}\n')
 
 def test_showcomparison_refresh(monkeypatch, capsys):
+    """unittest for main.ShowComparison.refresh
+    """
     def mock_init(self, parent):
+        """stub
+        """
         print('called ShowComparison.__init__() with args', parent)
         self.parent = parent
         self.gui = MockComparisonGui()
     def mock_refresh(self, *args):
+        """stub
+        """
         print('called comparetype.refresh_compare() with args', args)
     monkeypatch.setattr(main, 'comparetypes', {'x': ('y', 'z', mock_refresh)})
     monkeypatch.setattr(main.ShowComparison, '__init__', mock_init)
     testobj = main.ShowComparison(types.SimpleNamespace(comparetype='x'))
     assert capsys.readouterr().out == ("called ShowComparison.__init__() with args"
                                        " namespace(comparetype='x')\n"
-                                        'called ShowComparisonGui.__init__() with args () {}\n')
+                                       'called ShowComparisonGui.__init__() with args () {}\n')
     testobj.refresh()
     assert capsys.readouterr().out == ('called comparetype.refresh_compare() with args ()\n'
                                        'called ShowComparisonGui.refresh_tree()\n')
 
 class MockParser:
+    """stub for configparser.ConfigParser
+    """
     def __init__(self):
         print('called ConfigParser.__init__()')
     def read(self, fname):
+        """stub
+        """
         print(f'called ConfigParser.read with arg `{fname}`')
     def has_section(self, name):
+        """stub
+        """
         print(f'called ConfigParser.has_section with arg `{name}`')
         return True
     def options(self, name):
+        """stub
+        """
         print(f'called ConfigParser.options with arg `{name}`')
         return ['option1', 'option2']
     def get(self, name, value):
+        """stub
+        """
         print(f'called ConfigParser.get with args (`{name}`, `{value}`)')
         return value
     def add_section(self, name):
+        """stub
+        """
         print(f'called ConfigParser.add_section with arg `{name}`')
     def set(self, name, value, item):
+        """stub
+        """
         print(f'called ConfigParser.set with args (`{name}`, `{value}`, `{item}`)')
     def write(self, stream):
+        """stub
+        """
         # stream is een io.TextIoWrapper object
         outfilename = main.pathlib.Path(stream.name).name
         print(f'called ConfigParser.write to file with name `{outfilename}`')
 
-def test_inifile_init(monkeypatch, capsys):
+def test_inifile_init():
+    """unittest for main.IniFile.init
+    """
     testobj = main.IniFile('testfile')
     assert testobj.fname == 'testfile'
 
 def test_inifile_read(monkeypatch, capsys):
+    """unittest for main.IniFile.read
+    """
     monkeypatch.setattr(main, 'ConfigParser', MockParser)
     testobj = main.IniFile('testfile')
     testobj.read()
@@ -460,6 +590,8 @@ def test_inifile_read(monkeypatch, capsys):
                                        'called ConfigParser.read with arg `testfile`\n')
 
 def test_inifile_write(monkeypatch, capsys, tmp_path):
+    """unittest for main.IniFile.write
+    """
     monkeypatch.setattr(main, 'ConfigParser', MockParser)
     testfilename = tmp_path / 'testfile'
     testobj = main.IniFile(testfilename)

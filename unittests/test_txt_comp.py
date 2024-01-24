@@ -1,11 +1,17 @@
+"""unittests for ./txt_comp.py
+"""
 import txt_comp as testee
 
 def test_gen_next():
+    """unittest for txt_comp.gen_next
+    """
     assert testee.gen_next(x for x in []) == (True, '')
     assert testee.gen_next(x for x in ['next line']) == (False, 'next line')
 
 
-def test_get_file(monkeypatch, capsys, tmp_path):
+def test_get_file(tmp_path):
+    """unittest for txt_comp.get_file
+    """
     fname = 'filename'
     as_utf = tmp_path / f'{fname}_unicode'
     as_utf.write_text('this\nis\nsome\ntëxt\n', encoding='utf-8')
@@ -16,8 +22,12 @@ def test_get_file(monkeypatch, capsys, tmp_path):
 
 
 def test_compare_txtdata(monkeypatch, capsys):
+    """unittest for txt_comp.compare_txtdata
+    """
     getcounter = 0
     def mock_get(fname):
+        """stub
+        """
         nonlocal getcounter
         print(f'called get_file with fname `{fname}`')
         getcounter += 1
@@ -33,33 +43,49 @@ def test_compare_txtdata(monkeypatch, capsys):
 
 
 class MockComparer:
+    """stub for main.Comparer object
+    """
     def __init__(self):
         print('called Comparer.__init__()')
 
 
 class MockGui:
+    """stub for gui.ShowComparisonGui object
+    """
     def __init__(self):
         print('called ShowComparisonGui.__init__()')
         self.nodecounter = 0
     def init_tree(self, *args):
+        """stub
+        """
         print('called ShowComparisonGui.init_tree() with args', args)
     def build_header(self, *args):
+        """stub
+        """
         self.nodecounter += 1
         print('called ShowComparisonGui.build_header() with args', args)
         return f'node{self.nodecounter}'
     def set_node_text(self, *args):
+        """stub
+        """
         print('called ShowComparisonGui.set_node_text() with args', args)
     def colorize_child(self, *args):
+        """stub
+        """
         print('called ShowComparisonGui.colorize_child() with args', args)
 
 
 class MockShowComparison:
+    """stub for main.ShowComparison object
+    """
     def __init__(self):
         self.parent = MockComparer()
         self.gui = MockGui()
 
 
-def test_refresh_txtcompare(monkeypatch, capsys):
+def test_refresh_txtcompare(capsys):
+    """unittest for txt_comp.refresh_txtcompare
+    """
     testobj = MockShowComparison()
     testobj.parent.lhs_path = 'left'
     testobj.parent.rhs_path = 'right'

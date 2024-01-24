@@ -1,14 +1,22 @@
+"""unittests for ./conf_comp.py
+"""
 import conf_comp as testee
 
 def test_gen_next():
+    """unittest for conf_comp.gen_next
+    """
     assert testee.gen_next(x for x in []) == (True, '', '', '')
     assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
 
 class MockParser(dict):
+    """stub for configparser.ConfigParser
+    """
     def __init__(self, *args, **kwargs):
         print('called ConfigParser.__init__() with args', args, kwargs)
         self.counter = 0
     def read(self, *args, **kwargs):
+        """stub
+        """
         print('called ConfigParser.read() with args', args, kwargs)
         self.counter += 1
         if self.counter == 1:
@@ -16,15 +24,23 @@ class MockParser(dict):
         self['section2'] = {'option2': 'value4', 'option1': 'value3'}
         self['section1'] = {'option2': 'value2', 'option1': 'value1'}
     def sections(self):
+        """stub
+        """
         print('called ConfigParser.sections()')
         return ['section2', 'section1']
     def options(self, name):
+        """stub
+        """
         print(f'called ConfigParser.options() for section `{name}`')
         return ['option2', 'option1']
 
 
 def test_sort_inifile(monkeypatch, capsys):
+    """unittest for conf_comp.sort_inifile
+    """
     def mock_read_without_fail(self, *args, **kwargs):
+        """stub
+        """
         print('called ConfigParser.read() with args', args, kwargs)
         self['section2'] = {'option2': 'value4', 'option1': 'value3'}
         self['section1'] = {'option2': 'value2', 'option1': 'value1'}
@@ -61,8 +77,12 @@ def test_sort_inifile(monkeypatch, capsys):
 
 
 def test_check_inifile(monkeypatch, capsys):
+    """unittest for conf_comp.check_inifile
+    """
     counter = 0
     def mock_read(self, *args, **kwargs):
+        """stub
+        """
         nonlocal counter
         counter += 1
         print('called path.read() with args', str(self), args, kwargs)
@@ -70,8 +90,12 @@ def test_check_inifile(monkeypatch, capsys):
             raise UnicodeDecodeError('utf-8', b'\x00\x00', 1, 1, 'error')
         return 'zonder section header\n'
     def mock_read_2(self, *args, **kwargs):
+        """stub
+        """
         return '[met section header]\nen de rest\n'
     def mock_write(self, data):
+        """stub
+        """
         print(f'called path.write() with args `{self}` `{data}`')   # , str(), )
     monkeypatch.setattr(testee.pathlib.Path, 'read_text', mock_read)
     monkeypatch.setattr(testee.pathlib.Path, 'write_text', mock_write)
@@ -88,11 +112,17 @@ def test_check_inifile(monkeypatch, capsys):
 
 
 def test_compare_configs(monkeypatch, capsys):
+    """unittest for conf_comp.compare_configs
+    """
     counter = 0
     def mock_sort(fname):
+        """stub
+        """
         print(f'called sort_inifile with fname `{fname}`')
         return fname
     def mock_next(arg):
+        """stub
+        """
         nonlocal counter
         print('called gen_next with arg', arg)
         counter += 1
@@ -100,6 +130,8 @@ def test_compare_configs(monkeypatch, capsys):
             return True, '', '', ''
         return True, '', '', ''
     def mock_next_2(arg):
+        """stub
+        """
         nonlocal counter
         print('called gen_next with arg', arg)
         counter += 1
@@ -109,6 +141,8 @@ def test_compare_configs(monkeypatch, capsys):
             return False, 'a', 'b', 'c'
         return True, 'a', 'b', 'c'
     def mock_next_3(arg):
+        """stub
+        """
         nonlocal counter
         print('called gen_next with arg', arg)
         counter += 1
@@ -118,6 +152,8 @@ def test_compare_configs(monkeypatch, capsys):
             return True, 'x', 'y', 'z'
         return True, '', '', ''
     def mock_next_4(arg):
+        """stub
+        """
         print('called gen_next with arg', arg)
         nonlocal counter
         counter += 1
@@ -174,10 +210,16 @@ def test_compare_configs(monkeypatch, capsys):
 
 
 def test_compare_configs_safe(monkeypatch, capsys):
+    """unittest for conf_comp.compare_configs_safe
+    """
     def mock_check(fname):
+        """stub
+        """
         print(f'called check_inifile with arg `{fname}`')
         return fname
     def mock_compare(*args):
+        """stub
+        """
         print('called compare_configs with args', args)
         return 'configs_compared'
     monkeypatch.setattr(testee, 'check_inifile', mock_check)
@@ -189,4 +231,6 @@ def test_compare_configs_safe(monkeypatch, capsys):
 
 
 def _test_refresh_inicompare(monkeypatch, capsys):
+    """unittest for conf_comp.refresh_inicompare
+    """
     assert testee.refresh_inicompare()
