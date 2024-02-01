@@ -1,4 +1,4 @@
-"""unittests for ./xml_comp.py
+"""unittests for ./src/xml_comp.py
 """
 import xml_comp as testee
 

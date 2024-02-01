@@ -1,4 +1,4 @@
-"""unittests for ./txt_comp.py
+"""unittests for ./src/txt_comp.py
 """
 import txt_comp as testee
 

@@ -1,4 +1,4 @@
-"""unittests for ./html_comp.py
+"""unittests for ./src//html_comp.py
 """
 import html_comp as testee
 

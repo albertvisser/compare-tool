@@ -11,10 +11,10 @@ txt: test_txt_comp.py
 xml: test_xml_comp.py
 
 [testees]
-main: main.py
-qt: qt_gui.py
-wx: wx_gui.py
-conf: conf_comp.py
-html: html_comp.py
-txt: txt_comp.py
-xml: xml_comp.py
+main: src/main.py
+qt: src/qt_gui.py
+wx: src/wx_gui.py
+conf: src/conf_comp.py
+html: src/html_comp.py
+txt: src/txt_comp.py
+xml: src/xml_comp.py

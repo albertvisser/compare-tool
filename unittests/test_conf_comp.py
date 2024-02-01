@@ -1,4 +1,4 @@
-"""unittests for ./conf_comp.py
+"""unittests for ./src/conf_comp.py
 """
 import conf_comp as testee
 

@@ -1,4 +1,4 @@
-"""unittests for ./main.py
+"""unittests for ./src/main.py
 """
 import types
 import main
