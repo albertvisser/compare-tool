@@ -2,19 +2,20 @@
 unittests
 
 [testscripts]
-main: test_main.py
-qt: test_qtgui.py
-wx: test_wxgui.py
-conf: test_conf_comp.py
-html: test_html_comp.py
-txt: test_txt_comp.py
-xml: test_xml_comp.py
+main = test_main.py
+qtgui = test_qtgui.py
+wxgui = test_wxgui.py
+conf = test_conf_comp.py
+html = test_html_comp.py
+txt = test_txt_comp.py
+xml = test_xml_comp.py
 
 [testees]
-main: src/main.py
-qt: src/qt_gui.py
-wx: src/wx_gui.py
-conf: src/conf_comp.py
-html: src/html_comp.py
-txt: src/txt_comp.py
-xml: src/xml_comp.py
+main = src/main.py
+qtgui = src/qt_gui.py
+wxgui = src/wx_gui.py
+conf = src/conf_comp.py
+html = src/html_comp.py
+txt = src/txt_comp.py
+xml = src/xml_comp.py
+

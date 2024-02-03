@@ -1,4 +1,4 @@
-"""Presentation logic for Compare Tool - PyQT5 version
+"""Presentation logic for Compare Tool - Qt version
 """
 import sys
 import os.path
@@ -24,7 +24,7 @@ class MainWindow(qtw.QMainWindow):
 
         self.resize(1024, 600)
         self.setWindowTitle(self.master.apptitel)  # 'Vergelijken van ini files')
-        self.setWindowIcon(gui.QIcon('inicomp_1.png'))
+        self.setWindowIcon(gui.QIcon('inicomp.png'))
         # self.sb = self.statusBar()
         self.setup_menu()
 
@@ -172,7 +172,7 @@ class AskOpenFilesGui(qtw.QDialog):
         rechterpad = self.browse2.input.currentText()
         selectiontype = ''
         for ix, sel in enumerate(self.sel):
-            print('   ', ix)
+            # print('   ', ix)
             if sel[0].isChecked():
                 selectiontype = sel[1]
                 break
@@ -202,9 +202,11 @@ class ShowComparisonGui(qtw.QTreeWidget):
     def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
         "set header texts when there's no data to be shown"
         root = qtw.QTreeWidgetItem()
+        # root.setText(0, root_text)  # moet deze er ook nog niet bij?
         root.setText(1, leftcaption)
         root.setText(2, rightcaption)
         self.addTopLevelItem(root)
+        return root  # for testing
 
     def finish_init(self):
         "render the area"
