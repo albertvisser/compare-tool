@@ -4,12 +4,11 @@ import sys
 import traceback
 import pathlib
 from configparser import ConfigParser
-import gui
-# import exception types so they can be caught in calling modules
-from conf_comp import compare_configs, compare_configs_safe, refresh_inicompare
-from xml_comp import compare_xmldata, refresh_xmlcompare
-from txt_comp import compare_txtdata, refresh_txtcompare
-from html_comp import compare_htmldata, refresh_htmlcompare
+from . import gui
+from .conf_comp import compare_configs, compare_configs_safe, refresh_inicompare
+from .xml_comp import compare_xmldata, refresh_xmlcompare
+from .txt_comp import compare_txtdata, refresh_txtcompare
+from .html_comp import compare_htmldata, refresh_htmlcompare
 ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
@@ -65,7 +64,7 @@ class Comparer:
         # print(fileargs)
         self.lhs_path, self.rhs_path = get_input_paths(fileargs)
 
-        self.ini = IniFile(str(pathlib.Path(__file__).parent.resolve() / "actif.ini"))
+        self.ini = IniFile(str(pathlib.Path(__file__).parent.parent.resolve() / "actif.ini"))
         self.ini.read()
         self.get_input = AskOpenFiles(self)
 

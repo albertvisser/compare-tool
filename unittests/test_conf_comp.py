@@ -1,6 +1,6 @@
 """unittests for ./src/conf_comp.py
 """
-import conf_comp as testee
+from src import conf_comp as testee
 
 def test_gen_next():
     """unittest for conf_comp.gen_next

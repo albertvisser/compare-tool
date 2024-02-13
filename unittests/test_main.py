@@ -1,7 +1,7 @@
 """unittests for ./src/main.py
 """
 import types
-import main
+from src import main
 
 def test_determine_comparetype(monkeypatch):
     """unittest for main.determine_comparetype
@@ -47,15 +47,9 @@ def test_do_compare(monkeypatch, capsys):
     assert main.do_compare('left', 'right', 'x') == (True, ['compare output'])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
     monkeypatch.setattr(main, 'comparetypes', {'x': ('', mock_compare_miss, '')})
-    assert main.do_compare('left', 'right', 'x') == (False, [[
-            'Traceback (most recent call last):\n',
-            '  File "/home/albert/projects/compare-tool/main.py", line 152, in do_compare\n'
-            '    data = compare_func(leftpath, rightpath)\n'
-            '           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n',
-            '  File "/home/albert/projects/compare-tool/unittests/test_main.py",'
-            ' line 40, in mock_compare_miss\n'
-            "    raise ValueError('xxxx', 1, 1)\n",
-            "ValueError: ('xxxx', 1, 1)\n"]])
+    ok, traceback = main.do_compare('left', 'right', 'x')
+    assert not ok
+    assert traceback[-1][-1] == "ValueError: ('xxxx', 1, 1)\n"
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
 
 class MockMainWindow:

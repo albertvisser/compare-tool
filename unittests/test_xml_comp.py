@@ -1,6 +1,6 @@
 """unittests for ./src/xml_comp.py
 """
-import xml_comp as testee
+from src import xml_comp as testee
 
 
 def _test_getattrval(monkeypatch, capsys):

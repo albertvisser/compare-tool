@@ -1,6 +1,6 @@
 """unittests for ./src/txt_comp.py
 """
-import txt_comp as testee
+from src import txt_comp as testee
 
 def test_gen_next():
     """unittest for txt_comp.gen_next

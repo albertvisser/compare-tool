@@ -2,7 +2,7 @@
 """starter for Compare Tool
 """
 import argparse
-from src import import main
+from src import main
 
 parser = argparse.ArgumentParser(description=__doc__)
 parser.add_argument('-m', '--method', choices=main.comparetypes, help='comparison method')
