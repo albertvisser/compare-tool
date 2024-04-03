@@ -68,7 +68,7 @@ class TestMainWindow:
         testobj.setup_menu()
         assert len(testobj.menuactions) == 1
         assert isinstance(testobj.menuactions[11], testee.qtw.QAction)
-        assert capsys.readouterr().out == ("called mainWindow.menuBar\n"
+        assert capsys.readouterr().out == ("called MainWindow.menuBar\n"
                                            "called MenuBar.__init__\n"
                                            "called MenuBar.addMenu with arg  x\n"
                                            "called Menu.__init__ with args ('x',)\n"
@@ -193,13 +193,13 @@ def test_show_dialog(monkeypatch, capsys):
     monkeypatch.setattr(testee.qtw.QDialog, 'exec_', mockqtw.MockDialog.exec_)
     cls = testee.qtw.QDialog('xxx')
     assert not testee.show_dialog(mockparent, cls)
-    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx"
-                                       " () {}\ncalled Dialog.exec_\n")
+    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
+                                       "called Dialog.exec_\n")
     monkeypatch.setattr(testee.qtw.QDialog, 'exec_', mock_exec)
     cls = testee.qtw.QDialog('xxx')
     assert testee.show_dialog(mockparent, cls)
-    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx"
-                                       " () {}\ncalled Dialog.exec_\n")
+    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
+                                       "called Dialog.exec_\n")
 
 
 class TestAskOpenFilesGui:
@@ -288,7 +288,7 @@ class TestAskOpenFilesGui:
             f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
             "called Grid.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockRadioButton'>"
             " at (1, 1)\n"
-            "called PushButton.setChecked with arg `True`\n"
+            "called RadioButton.setChecked with arg `True`\n"
             "called HBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockGridLayout'>\n"
             "called HBox.addStretch\n"
             "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
