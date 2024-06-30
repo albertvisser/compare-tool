@@ -101,6 +101,8 @@ def refresh_inicompare(self):
     header = None
     current_section = ''
     rightonly = leftonly = difference = False
+    if not self.parent.data:
+        return
     for x in self.parent.data:
         node, lvalue, rvalue = x
         section, option = node
@@ -126,5 +128,4 @@ def refresh_inicompare(self):
             difference = True
             self.gui.colorize_child(child, rightonly, leftonly, difference)
         self.gui.set_node_text(child, 2, rvalue)
-    if self.parent.data:
-        self.gui.colorize_header(header, rightonly, leftonly, difference)
+    self.gui.colorize_header(header, rightonly, leftonly, difference)

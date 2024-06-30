@@ -1,5 +1,7 @@
 """unittests for ./src/conf_comp.py
 """
+import types
+import textwrap
 from src import conf_comp as testee
 
 def test_gen_next():
@@ -7,6 +9,7 @@ def test_gen_next():
     """
     assert testee.gen_next(x for x in []) == (True, '', '', '')
     assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
+
 
 class MockParser(dict):
     """stub for configparser.ConfigParser
@@ -92,6 +95,7 @@ def test_check_inifile(monkeypatch, capsys):
     def mock_read_2(self, *args, **kwargs):
         """stub
         """
+        print('called path.read() with args', str(self), args, kwargs)
         return '[met section header]\nen de rest\n'
     def mock_write(self, data):
         """stub
@@ -105,6 +109,12 @@ def test_check_inifile(monkeypatch, capsys):
             "called path.read() with args filename () {'encoding': 'latin-1'}\n"
             'called path.write() with args `/tmp/filename`'
             ' `[  --- generated first header ---  ]\nzonder section header\n`\n')
+    monkeypatch.setattr(testee.pathlib.Path, 'read_text', mock_read_2)
+    assert testee.check_inifile('filename') == '/tmp/filename'
+    assert capsys.readouterr().out == (
+            'called path.read() with args filename () {}\n'
+            'called path.write() with args `/tmp/filename`'
+            ' `[met section header]\nen de rest\n`\n')
     # conceptuele test: maak een config file zonder header
     # laat Configparser het lezen -> geeft fout
     # voer deze methode uit
@@ -120,93 +130,122 @@ def test_compare_configs(monkeypatch, capsys):
         """
         print(f'called sort_inifile with fname `{fname}`')
         return fname
+    counter = 0
     def mock_next(arg):
-        """stub
+        """stub: alleen rechts content
         """
         nonlocal counter
-        print('called gen_next with arg', arg)
+        _data = [(True, '', '', '', 'left'),
+                 (False, 'sectionA', 'keyX', 'value1', 'right'),
+                 (False, 'sectionB', 'keyX', 'value1', 'right'),
+                 (True, '', '', '', 'right')][counter]
+        result = ('EOF' if _data[0] else '', _data[1:-1])
+        print(f'called gen_next from {_data[-1]} side returning {result}')
         counter += 1
-        if counter == 1:
-            return True, '', '', ''
-        return True, '', '', ''
+        return _data[:-1]
     def mock_next_2(arg):
-        """stub
+        """stub: alleen links content
         """
         nonlocal counter
-        print('called gen_next with arg', arg)
+        _data = [(False, 'sectionA', 'keyX', 'value1', 'left'),
+                 (True, '', '', '', 'right'),
+                 (False, 'sectionB', 'keyX', 'value1', 'left'),
+                 (True, '', '', '', 'left')][counter]
+        result = ('EOF' if _data[0] else '', _data[1:-1])
+        print(f'called gen_next from {_data[-1]} side returning {result}')
         counter += 1
-        if counter == 1:
-            return True, '', '', ''
-        if counter == 2:
-            return False, 'a', 'b', 'c'
-        return True, 'a', 'b', 'c'
+        return _data[:-1]
     def mock_next_3(arg):
         """stub
         """
         nonlocal counter
-        print('called gen_next with arg', arg)
+        _data = [(False, 'sectionA', 'keyX', 'value1', 'left'),
+                 (False, 'sectionA', 'keyX', 'value1', 'right'),
+                 (False, 'sectionB', 'keyX', 'value1', 'left'),
+                 (False, 'sectionB', 'keyX', 'value1', 'right'),
+                 (True, '', '', '', 'left'),
+                 (True, '', '', '', 'right')][counter]
+        result = ('EOF' if _data[0] else '', _data[1:-1])
+        print(f'called gen_next from {_data[-1]} side returning {result}')
         counter += 1
-        if counter == 1:
-            return False, 'x', 'y', 'z'
-        if counter == 3:
-            return True, 'x', 'y', 'z'
-        return True, '', '', ''
+        return _data[:-1]
     def mock_next_4(arg):
         """stub
         """
-        print('called gen_next with arg', arg)
         nonlocal counter
+        _data = [(False, 'sectionA', 'keyS', 'value1', 'left'),
+                 (False, 'sectionA', 'keyX', 'value1', 'right'),
+                 (False, 'sectionA', 'keyV', 'value1', 'left'),
+                 (False, 'sectionA', 'keyX', 'value0', 'left'),
+                 (False, 'sectionA', 'keyZ', 'value1', 'right'),
+                 (False, 'sectionB', 'keyS', 'value1', 'right'),
+                 (False, 'sectionB', 'keyY', 'value1', 'left'),
+                 (False, 'sectionB', 'keyU', 'value1', 'right'),
+                 (False, 'sectionB', 'keyY', 'value1', 'right'),
+                 (True, '', '', '', 'left'),
+                 (True, '', '', '', 'right')][counter]
+        result = ('EOF' if _data[0] else '', _data[1:-1])
+        print(f'called gen_next from {_data[-1]} side returning {result}')
         counter += 1
-        if counter == 1:
-            return False, 'x', 'y', 'z'
-        if counter == 2:
-            return False, 'a', 'b', 'c'
-        if counter == 3:
-            return False, 'd', 'e', 'f'
-        if counter == 5:
-            return False, 'xx', 'yy', 'zz'
-        return True, '', '', ''
+        return _data[:-1]
     monkeypatch.setattr(testee, 'sort_inifile', mock_sort)
     monkeypatch.setattr(testee, 'gen_next', mock_next)
-    assert testee.compare_configs('fn1', 'fn2') == []
-    assert capsys.readouterr().out == ("called sort_inifile with fname `fn1`\n"
-                                       "called sort_inifile with fname `fn2`\n"
-                                       "called gen_next with arg fn1\n"
-                                       "called gen_next with arg fn2\n")
+    assert testee.compare_configs('fn1', 'fn2') == [(('sectionA', 'keyX'), '', 'value1'),
+                                                    (('sectionB', 'keyX'), '', 'value1')]
+    assert capsys.readouterr().out == (
+            "called sort_inifile with fname `fn1`\n"
+            "called sort_inifile with fname `fn2`\n"
+            "called gen_next from left side returning ('EOF', ('', '', ''))\n"
+            "called gen_next from right side returning ('', ('sectionA', 'keyX', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionB', 'keyX', 'value1'))\n"
+            "called gen_next from right side returning ('EOF', ('', '', ''))\n")
     counter = 0
     monkeypatch.setattr(testee, 'gen_next', mock_next_2)
-    assert testee.compare_configs('fn1', 'fn2') == [(('a', 'b'), '', 'c')]
-    assert capsys.readouterr().out == ("called sort_inifile with fname `fn1`\n"
-                                       "called sort_inifile with fname `fn2`\n"
-                                       "called gen_next with arg fn1\n"
-                                       "called gen_next with arg fn2\n"
-                                       "called gen_next with arg fn2\n")
+    assert testee.compare_configs('fn1', 'fn2') == [(('sectionA', 'keyX'), 'value1', ''),
+                                                    (('sectionB', 'keyX'), 'value1', '')]
+    assert capsys.readouterr().out == (
+            "called sort_inifile with fname `fn1`\n"
+            "called sort_inifile with fname `fn2`\n"
+            "called gen_next from left side returning ('', ('sectionA', 'keyX', 'value1'))\n"
+            "called gen_next from right side returning ('EOF', ('', '', ''))\n"
+            "called gen_next from left side returning ('', ('sectionB', 'keyX', 'value1'))\n"
+            "called gen_next from left side returning ('EOF', ('', '', ''))\n")
     counter = 0
     monkeypatch.setattr(testee, 'gen_next', mock_next_3)
-    assert testee.compare_configs('fn1', 'fn2') == [(('x', 'y'), 'z', '')]
-    assert capsys.readouterr().out == ("called sort_inifile with fname `fn1`\n"
-                                       "called sort_inifile with fname `fn2`\n"
-                                       "called gen_next with arg fn1\n"
-                                       "called gen_next with arg fn2\n"
-                                       "called gen_next with arg fn1\n")
+    assert testee.compare_configs('fn1', 'fn2') == [(('sectionA', 'keyX'), 'value1', 'value1'),
+                                                    (('sectionB', 'keyX'), 'value1', 'value1')]
+    assert capsys.readouterr().out == (
+            "called sort_inifile with fname `fn1`\n"
+            "called sort_inifile with fname `fn2`\n"
+            "called gen_next from left side returning ('', ('sectionA', 'keyX', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionA', 'keyX', 'value1'))\n"
+            "called gen_next from left side returning ('', ('sectionB', 'keyX', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionB', 'keyX', 'value1'))\n"
+            "called gen_next from left side returning ('EOF', ('', '', ''))\n"
+            "called gen_next from right side returning ('EOF', ('', '', ''))\n")
     counter = 0
     monkeypatch.setattr(testee, 'gen_next', mock_next_4)
-    assert testee.compare_configs('fn1', 'fn2') == [(('a', 'b'), '', 'c'),
-                                                    (('d', 'e'), '', 'f'),
-                                                    (('x', 'y'), 'z', ''),
-                                                    (('xx', 'yy'), 'zz', '')]
-    assert capsys.readouterr().out == ("called sort_inifile with fname `fn1`\n"
-                                       "called sort_inifile with fname `fn2`\n"
-                                       "called gen_next with arg fn1\n"
-                                       "called gen_next with arg fn2\n"
-                                       "called gen_next with arg fn2\n"
-                                       "called gen_next with arg fn2\n"
-                                       "called gen_next with arg fn1\n"
-                                       "called gen_next with arg fn1\n")
-    # andere mogelijkheden
-    # sect01, opt01, val01 = sect01, opt01, val01
-    # sect01, opt02, val00 < sect01, opt02, val01
-    # sect01, opt03, val01 > sect01, opt03, val00,
+    assert testee.compare_configs('fn1', 'fn2') == [(('sectionA', 'keyS'), 'value1', ''),
+                                                    (('sectionA', 'keyV'), 'value1', ''),
+                                                    (('sectionA', 'keyX'), 'value0', 'value1'),
+                                                    (('sectionA', 'keyZ'), 'value1', ''),
+                                                    (('sectionB', 'keyS'), '', 'value1'),
+                                                    (('sectionB', 'keyU'), '', 'value1'),
+                                                    (('sectionB', 'keyY'), 'value1', 'value1')]
+    assert capsys.readouterr().out == (
+            "called sort_inifile with fname `fn1`\n"
+            "called sort_inifile with fname `fn2`\n"
+            "called gen_next from left side returning ('', ('sectionA', 'keyS', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionA', 'keyX', 'value1'))\n"
+            "called gen_next from left side returning ('', ('sectionA', 'keyV', 'value1'))\n"
+            "called gen_next from left side returning ('', ('sectionA', 'keyX', 'value0'))\n"
+            "called gen_next from right side returning ('', ('sectionA', 'keyZ', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionB', 'keyS', 'value1'))\n"
+            "called gen_next from left side returning ('', ('sectionB', 'keyY', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionB', 'keyU', 'value1'))\n"
+            "called gen_next from right side returning ('', ('sectionB', 'keyY', 'value1'))\n"
+            "called gen_next from left side returning ('EOF', ('', '', ''))\n"
+            "called gen_next from right side returning ('EOF', ('', '', ''))\n")
 
 
 def test_compare_configs_safe(monkeypatch, capsys):
@@ -230,7 +269,109 @@ def test_compare_configs_safe(monkeypatch, capsys):
                                        "called compare_configs with args ('left', 'right')\n")
 
 
-def _test_refresh_inicompare(monkeypatch, capsys):
+def test_refresh_inicompare(capsys):
     """unittest for conf_comp.refresh_inicompare
     """
-    assert testee.refresh_inicompare()
+    class MockCompareGui:
+        """stub
+        """
+        def __init__(self, arg):
+            print('called ComparerGui.__init__')
+        def init_tree(self, *args):
+            print('called ComparerGui.init_tree with args', args)
+        def build_header(self, section):
+            print('called ComparerGui.build_header with arg', section)
+            return f"header for '{section}'"
+        def colorize_header(self, *args):
+            print('called ComparerGui.colorize_header with args', args)
+        def build_child(self, *args):
+            print('called ComparerGui.build_child with args', args)
+            option = args[1]
+            return f"child for '{option}'"
+        def colorize_child(self, *args):
+            print('called ComparerGui.colorize_child with args', args)
+        def set_node_text(self, *args):
+            print('called ComparerGui.set_node_text with args', args)
+    class MockComparer:
+        """stub
+        """
+        def __init__(self):
+            print('called Comparer.__init__')
+            self.gui = MockCompareGui(self)
+            self.parent = types.SimpleNamespace()
+    comparer = MockComparer()
+    assert capsys.readouterr().out == "called Comparer.__init__\ncalled ComparerGui.__init__\n"
+    comparer.parent.lhs_path = 'old file'
+    comparer.parent.rhs_path = 'new file'
+    comparer.parent.data = []
+    testee.refresh_inicompare(comparer)
+    assert capsys.readouterr().out == ("called ComparerGui.init_tree with args"
+                                       " ('Section/Option', 'old file', 'new file')\n")
+    comparer.parent.data = [(('SectionA', 'OptionX'), 'ValueL1', 'ValueR1'),
+                            (('SectionA', 'OptionY'), 'ValueL2', 'ValueR2'),
+                            (('SectionB', 'OptionX'), None, 'ValueR3'),
+                            (('SectionB', 'OptionY'), '', 'ValueR4'),
+                            (('SectionC', 'OptionS'), None, None),
+                            (('SectionC', 'OptionU'), '', None),
+                            (('SectionC', 'OptionX'), None, ''),
+                            (('SectionC', 'OptionY'), '', ''),
+                            (('SectionD', 'OptionX'), 'ValueL3', None),
+                            (('SectionD', 'OptionY'), 'ValueL4', ''),
+                            (('SectionE', 'OptionY'), 'Value', 'Value')]
+    testee.refresh_inicompare(comparer)
+    assert capsys.readouterr().out == textwrap.dedent("""\
+        called ComparerGui.init_tree with args ('Section/Option', 'old file', 'new file')
+        called ComparerGui.build_header with arg SectionA
+        called ComparerGui.build_child with args ("header for 'SectionA'", 'OptionX')
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 1, 'ValueL1')
+        called ComparerGui.colorize_child with args ("child for 'OptionX'", False, False, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 2, 'ValueR1')
+        called ComparerGui.build_child with args ("header for 'SectionA'", 'OptionY')
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 1, 'ValueL2')
+        called ComparerGui.colorize_child with args ("child for 'OptionY'", False, False, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 2, 'ValueR2')
+        called ComparerGui.colorize_header with args ("header for 'SectionA'", False, False, True)
+        called ComparerGui.build_header with arg SectionB
+        called ComparerGui.build_child with args ("header for 'SectionB'", 'OptionX')
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 1, '(no value)')
+        called ComparerGui.colorize_child with args ("child for 'OptionX'", False, False, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 2, 'ValueR3')
+        called ComparerGui.build_child with args ("header for 'SectionB'", 'OptionY')
+        called ComparerGui.colorize_child with args ("child for 'OptionY'", True, False, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 1, '')
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 2, 'ValueR4')
+        called ComparerGui.colorize_header with args ("header for 'SectionB'", True, False, True)
+        called ComparerGui.build_header with arg SectionC
+        called ComparerGui.build_child with args ("header for 'SectionC'", 'OptionS')
+        called ComparerGui.set_node_text with args ("child for 'OptionS'", 1, '(no value)')
+        called ComparerGui.set_node_text with args ("child for 'OptionS'", 2, '(no value)')
+        called ComparerGui.build_child with args ("header for 'SectionC'", 'OptionU')
+        called ComparerGui.colorize_child with args ("child for 'OptionU'", True, False, False)
+        called ComparerGui.set_node_text with args ("child for 'OptionU'", 1, '')
+        called ComparerGui.set_node_text with args ("child for 'OptionU'", 2, '(no value)')
+        called ComparerGui.build_child with args ("header for 'SectionC'", 'OptionX')
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 1, '(no value)')
+        called ComparerGui.colorize_child with args ("child for 'OptionX'", True, True, False)
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 2, '')
+        called ComparerGui.build_child with args ("header for 'SectionC'", 'OptionY')
+        called ComparerGui.colorize_child with args ("child for 'OptionY'", True, True, False)
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 1, '')
+        called ComparerGui.colorize_child with args ("child for 'OptionY'", True, True, False)
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 2, '')
+        called ComparerGui.colorize_header with args ("header for 'SectionC'", True, True, False)
+        called ComparerGui.build_header with arg SectionD
+        called ComparerGui.build_child with args ("header for 'SectionD'", 'OptionX')
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 1, 'ValueL3')
+        called ComparerGui.colorize_child with args ("child for 'OptionX'", False, False, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionX'", 2, '(no value)')
+        called ComparerGui.build_child with args ("header for 'SectionD'", 'OptionY')
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 1, 'ValueL4')
+        called ComparerGui.colorize_child with args ("child for 'OptionY'", False, True, True)
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 2, '')
+        called ComparerGui.colorize_header with args ("header for 'SectionD'", False, True, True)
+        called ComparerGui.build_header with arg SectionE
+        called ComparerGui.build_child with args ("header for 'SectionE'", 'OptionY')
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 1, 'Value')
+        called ComparerGui.set_node_text with args ("child for 'OptionY'", 2, 'Value')
+        called ComparerGui.colorize_header with args ("header for 'SectionE'", False, False, False)
+        """)
