@@ -21,7 +21,7 @@ def test_get_file(tmp_path):
     assert testee.get_file(as_latin) == ['is\n', 'some\n', 'this\n', 'tëxt\n']
 
 
-def test_compare_txtdata(monkeypatch, capsys):
+def test_compare_txtdata_old(monkeypatch, capsys):
     """unittest for txt_comp.compare_txtdata
     """
     getcounter = 0
@@ -40,6 +40,104 @@ def test_compare_txtdata(monkeypatch, capsys):
                                                     ['', '', 'waarde4'], ['', 'waarde5', '']]
     assert capsys.readouterr().out == ('called get_file with fname `fn1`\n'
                                        'called get_file with fname `fn2`\n')
+
+
+def test_compare_txtdata(monkeypatch, capsys):
+    """unittest for txt_comp.compare_txtdata
+    """
+    def mock_get(fname):
+        """stub
+        """
+        print(f'called get_file with fname `{fname}`')
+        return ['data']
+    counter = 0
+    def mock_next(gen):
+        nonlocal counter
+        _data = [(False, 'xxx', 'left'), (True, '', 'right'), (True, '', 'left')][counter]
+        result = ('EOF' if _data[0] else '', _data[1])
+        print(f'called gen_next from {_data[2]} side returning {result}')
+        counter += 1
+        return _data[:2]
+    def mock_next_2(gen):
+        nonlocal counter
+        _data = [(True, '', 'left'), (False, 'xxx', 'right'), (True, '', 'right')][counter]
+        result = ('EOF' if _data[0] else '', _data[1])
+        print(f'called gen_next from {_data[2]} side returning {result}')
+        counter += 1
+        return _data[:2]
+    def mock_next_3(gen):
+        nonlocal counter
+        _data = [(False, 'aaa', 'left'), (False, 'bbb', 'right'), (False, 'bbb', 'left'),
+                 (False, 'ggg', 'left'), (False, 'eee', 'right'),
+                 (False, 'fff', 'right'), (False, 'hhh', 'right'),
+                 (True, '', 'left'), (False, 'iii', 'right'), (True, '', 'right')][counter]
+        result = ('EOF' if _data[0] else '', _data[1])
+        print(f'called gen_next from {_data[2]} side returning {result}')
+        counter += 1
+        return _data[:2]
+    def mock_next_4(gen):
+        nonlocal counter
+        _data = [(False, 'bbb', 'left'), (False, 'aaa', 'right'), (False, 'bbb', 'right'),
+                 (False, 'eee', 'left'), (False, 'ggg', 'right'),
+                 (False, 'fff', 'left'), (False, 'hhh', 'left'),
+                 (True, '', 'right'), (False, 'iii', 'left'), (True, '', 'left')][counter]
+        result = ('EOF' if _data[0] else '', _data[1])
+        print(f'called gen_next from {_data[2]} side returning {result}')
+        counter += 1
+        return _data[:2]
+    monkeypatch.setattr(testee, 'get_file', mock_get)
+    monkeypatch.setattr(testee, 'gen_next', mock_next)
+    assert testee.compare_txtdata('fn1', 'fn2') == [['', 'xxx', '']]
+    assert capsys.readouterr().out == ("called get_file with fname `fn1`\n"
+                                       "called get_file with fname `fn2`\n"
+                                       "called gen_next from left side returning ('', 'xxx')\n"
+                                       "called gen_next from right side returning ('EOF', '')\n"
+                                       "called gen_next from left side returning ('EOF', '')\n")
+    counter = 0
+    monkeypatch.setattr(testee, 'gen_next', mock_next_2)
+    assert testee.compare_txtdata('fn1', 'fn2') == [['', '', 'xxx']]
+    assert capsys.readouterr().out == ("called get_file with fname `fn1`\n"
+                                       "called get_file with fname `fn2`\n"
+                                       "called gen_next from left side returning ('EOF', '')\n"
+                                       "called gen_next from right side returning ('', 'xxx')\n"
+                                       "called gen_next from right side returning ('EOF', '')\n")
+    counter = 0
+    monkeypatch.setattr(testee, 'gen_next', mock_next_3)
+    assert testee.compare_txtdata('fn1', 'fn2') == [['', 'aaa', ''], ['bbb', '', ''],
+                                                    ['', '', 'eee'], ['', '', 'fff'],
+                                                    ['', 'ggg', ''], ['', '', 'hhh'],
+                                                    ['', '', 'iii']]
+    assert capsys.readouterr().out == ("called get_file with fname `fn1`\n"
+                                       "called get_file with fname `fn2`\n"
+                                       "called gen_next from left side returning ('', 'aaa')\n"
+                                       "called gen_next from right side returning ('', 'bbb')\n"
+                                       "called gen_next from left side returning ('', 'bbb')\n"
+                                       "called gen_next from left side returning ('', 'ggg')\n"
+                                       "called gen_next from right side returning ('', 'eee')\n"
+                                       "called gen_next from right side returning ('', 'fff')\n"
+                                       "called gen_next from right side returning ('', 'hhh')\n"
+                                       "called gen_next from left side returning ('EOF', '')\n"
+                                       "called gen_next from right side returning ('', 'iii')\n"
+                                       "called gen_next from right side returning ('EOF', '')\n"
+                                       )
+    counter = 0
+    monkeypatch.setattr(testee, 'gen_next', mock_next_4)
+    assert testee.compare_txtdata('fn1', 'fn2') == [['', '', 'aaa'], ['bbb', '', ''],
+                                                    ['', 'eee', ''], ['', 'fff', ''],
+                                                    ['', '', 'ggg'], ['', 'hhh', ''],
+                                                    ['', 'iii', '']]
+    assert capsys.readouterr().out == ("called get_file with fname `fn1`\n"
+                                       "called get_file with fname `fn2`\n"
+                                       "called gen_next from left side returning ('', 'bbb')\n"
+                                       "called gen_next from right side returning ('', 'aaa')\n"
+                                       "called gen_next from right side returning ('', 'bbb')\n"
+                                       "called gen_next from left side returning ('', 'eee')\n"
+                                       "called gen_next from right side returning ('', 'ggg')\n"
+                                       "called gen_next from left side returning ('', 'fff')\n"
+                                       "called gen_next from left side returning ('', 'hhh')\n"
+                                       "called gen_next from right side returning ('EOF', '')\n"
+                                       "called gen_next from left side returning ('', 'iii')\n"
+                                       "called gen_next from left side returning ('EOF', '')\n")
 
 
 class MockComparer:
