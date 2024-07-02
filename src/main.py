@@ -154,7 +154,7 @@ def do_compare(leftpath, rightpath, selectiontype):
     #     error, msg, tb = sys.exc_info()              # compare routine thuis
     except Exception:
         error, msg, tb = sys.exc_info()
-        data = [traceback.format_exception(error, msg, tb)]
+        data = ['Something went wrong:', traceback.format_exception(error, msg, tb)]
         result = False
     return result, data
 
