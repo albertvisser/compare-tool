@@ -66,7 +66,8 @@ def process_subelements(result, current_element_list):
 
 
 def getattrval(element):
-    """return value for "identifying" attribute
+    """return value of "identifying" attribute
+
     """
     default = retval = ''
     for attr, val in element.items():
