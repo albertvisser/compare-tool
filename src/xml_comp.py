@@ -23,20 +23,25 @@ def sort_xmldata(fn):
     root = tree.getroot()
     # build the root element for the comparison list
     nodevalue = [(root.tag, 0)]         # elements
-    if root.items():
-        for attr_name, datavalue in sorted(root.items()):
+    if subitems := root.items():
+        for attr_name, datavalue in sorted(subitems):
             result.append((nodevalue, attr_name, datavalue))
     else:
         attr_name = datavalue = ''
         result.append((nodevalue, attr_name, datavalue))
     # get a sorted list of the subelement names
-    current_element_list = [(root, 0), ]
+    current_element_list = [(root, 0)]
     process_subelements(result, current_element_list)
     return result
 
 
 def process_subelements(result, current_element_list):
     """recursive routine to walk through the XML DOM tree
+
+    incoming are two lists that also function as implicit results (i.e. as they are mutable, they
+    do not need to be explicitely `return`ed)
+    In the first on the full data for the comparison is built, the second contains a sequence of the
+    element we are currently in and its parents (top-to-bottom from left to right)
     """
     current_element = current_element_list[-1]
     subelements = sorted(set(x.tag for x in list(current_element[0])))
@@ -67,7 +72,6 @@ def process_subelements(result, current_element_list):
 
 def getattrval(element):
     """return value of "identifying" attribute
-
     """
     default = retval = ''
     for attr, val in element.items():
@@ -90,6 +94,9 @@ def compare_xmldata(fn1, fn2):
     gen2 = (x for x in sort_xmldata(fn2))
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
+    if elem1 != elem2:
+        raise ValueError('deze applicatie voorziet vooralsnog nog niet in het vergelijken'
+                         ' van xmls met verschillende root elementen')
     while True:
         if eof_gen1 and eof_gen2:
             break
@@ -105,20 +112,24 @@ def compare_xmldata(fn1, fn2):
             result.append(((elem2, attr2), '', val2))
             if not eof_gen2:
                 get_from_2 = True
-        elif (eof_gen1, elem1) < (eof_gen2, elem2):
-            result.append(((elem1, attr1), val1, ''))
-            if not eof_gen1:
-                get_from_1 = True
-        elif (eof_gen1, elem1) > (eof_gen2, elem2):
-            result.append(((elem2, attr2), '', val2))
-            if not eof_gen2:
-                get_from_2 = True
-        elif attr1 < attr2:
-            result.append(((elem1, attr1), val1, ''))
-            get_from_1 = True
-        elif attr1 > attr2:
-            result.append(((elem2, attr2), '', val2))
-            get_from_2 = True
+        # elif (eof_gen1, elem1) < (eof_gen2, elem2):
+        #     # kun je hier wel komen gezien de eerste if?
+        #     result.append(((elem1, attr1), val1, ''))
+        #     if not eof_gen1:
+        #         get_from_1 = True
+        # elif (eof_gen1, elem1) > (eof_gen2, elem2):
+        #     # kun je hier wel komen gezien de tweede if?
+        #     result.append(((elem2, attr2), '', val2))
+        #     if not eof_gen2:
+        #         get_from_2 = True
+        # elif attr1 < attr2:
+        #     # kun je hier wel komen gezien de eerste if?
+        #     result.append(((elem1, attr1), val1, ''))
+        #     get_from_1 = True
+        # elif attr1 > attr2:
+        #     # kun je hier wel komen gezien de tweede if?
+        #     result.append(((elem2, attr2), '', val2))
+        #     get_from_2 = True
         else:
             result.append(((elem1, attr1), val1, val2))
             get_from_1 = True
@@ -152,7 +163,7 @@ def refresh_xmlcompare(self):
         elems, attr = node
         if elems != current_elems:
             if not current_elems:
-                header = self.gui.build_header('<>' + elems[-1][0])
+                header = self.gui.build_header('<> ' + elems[-1][0])
             else:
                 self.gui.colorize_header(header, rightonly, leftonly, difference)
                 if len(elems) > len(current_elems):
