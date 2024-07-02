@@ -20,8 +20,10 @@ def compare_htmldata(fn1, fn2):
     """compare two similar html documents
     """
     result = []
-    gen1 = (x for x in convert_levels_to_keys(get_htmldata(fn1)))
-    gen2 = (x for x in convert_levels_to_keys(get_htmldata(fn2)))
+    # gen1 = (x for x in convert_levels_to_keys(get_htmldata(fn1)))
+    gen1 = (x for x in get_htmldata(fn1))
+    # gen2 = (x for x in convert_levels_to_keys(get_htmldata(fn2)))
+    gen2 = (x for x in get_htmldata(fn2))
     eof_gen1, elem1, attr1, val1 = gen_next(gen1)
     eof_gen2, elem2, attr2, val2 = gen_next(gen2)
     while True:
@@ -111,7 +113,7 @@ def get_next_level_data(element, level=0):
         elif isinstance(item, bs.NavigableString):
             result.append([(level, '(text)'), '', item.string])
         else:
-            result.append(["Oops, what's this?" + str(item), '', ''])
+            result.append([f"Oops, what's this? {item}", '', ''])
     return result
 
 
@@ -119,28 +121,33 @@ def convert_levels_to_keys(data):
     "expand level info (tuple of level number and element name) to make better comparison possible"
     current_key = ''
     for item in data:
-        prev_level, attrname = item[0], item[1]
-        if current_key:
-            item[0] = level2key(item[0], current_key)
+        leveldata, attrname = item[0], item[1]
+        if not current_key:
+            item[0] = current_key = level2key(leveldata, current_key)
         else:
-            item[0] = level2key(item[0], current_key, item[1], prev_level, attrname)
+            item[0] = current_key = level2key(leveldata, current_key, attrname,
+                                              prev_leveldata, prev_attrname)
+        prev_leveldata, prev_attrname = leveldata, attrname
     return data
 
 
 def level2key(leveldata, old_key, attr_name='', prev_leveldata='', prev_attrname=''):
     "add parent levels to level info"
     if old_key == '':
-        return leveldata
-    oldlevel = prev_leveldata[0]
+        return [leveldata]
     newlevel, element_name = leveldata
+    oldlevel = prev_leveldata[0] if prev_leveldata else newlevel
+    if old_key[-1][1].startswith('(attr'):
+        old_key.pop(-1)
     if newlevel > oldlevel:
         old_key.append(leveldata)
     elif newlevel < oldlevel:
-        old_key.pop(-1)
-    elif attr_name and prev_attrname == '':
-        old_key.append('attrs')
-    elif attr_name == '' and prev_attrname != '':
-        old_key.pop(-1)
+        while oldlevel - newlevel >= 0:
+            old_key.pop(-1)
+            oldlevel -= 1
+        old_key.append(leveldata)
+    elif attr_name:
+        old_key.append((newlevel, f'(attr:{attr_name})'))
     return old_key
 
 
