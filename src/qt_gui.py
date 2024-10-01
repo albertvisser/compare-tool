@@ -2,13 +2,13 @@
 """
 import sys
 import os.path
-import PyQt5.QtWidgets as qtw
-import PyQt5.QtGui as gui
-import PyQt5.QtCore as core
+import PyQt6.QtWidgets as qtw
+import PyQt6.QtGui as gui
+import PyQt6.QtCore as core
 
-rightonly_colour = gui.QBrush(core.Qt.blue)
-leftonly_colour = gui.QBrush(core.Qt.darkGreen)
-difference_colour = gui.QBrush(core.Qt.red)
+rightonly_colour = gui.QBrush(core.Qt.GlobalColor.blue)
+leftonly_colour = gui.QBrush(core.Qt.GlobalColor.darkGreen)
+difference_colour = gui.QBrush(core.Qt.GlobalColor.red)
 ## inversetext_colour = core.Qt.white
 
 
@@ -34,7 +34,7 @@ class MainWindow(qtw.QMainWindow):
         def add_action_to_menu(name, callback, shortcut, statustext, menu):
             """build a menu line
             """
-            act = qtw.QAction(name, self)
+            act = gui.QAction(name, self)
             act.triggered.connect(callback)
             act.setShortcut(shortcut)
             act.setStatusTip(statustext)
@@ -56,7 +56,7 @@ class MainWindow(qtw.QMainWindow):
         self.win = self.master.showcomp.gui
         self.setCentralWidget(self.win)
         self.show()
-        sys.exit(self.app.exec_())
+        sys.exit(self.app.exec())
 
     def meld_input_fout(self, mld):
         "show invalid input message"
@@ -82,7 +82,7 @@ class MainWindow(qtw.QMainWindow):
     def keyPressEvent(self, evt):
         """reimplemented standard event handler: Make it possible to use Esc to quit the application
         """
-        if evt.key() == core.Qt.Key_Escape:
+        if evt.key() == core.Qt.Key.Key_Escape:
             self.close()
         else:
             super().keyPressEvent(evt)
@@ -97,8 +97,8 @@ def show_dialog(parent, cls):
 
     parent argument is voor compatibiliteit met wx versie
     """
-    ok = cls.exec_()
-    return ok == qtw.QDialog.Accepted
+    ok = cls.exec()
+    return ok == qtw.QDialog.DialogCode.Accepted
 
 
 class AskOpenFilesGui(qtw.QDialog):
@@ -154,8 +154,8 @@ class AskOpenFilesGui(qtw.QDialog):
 
         # eigenlijk hier ook die oktext en canceltext gebruiken
         buttonbox = qtw.QDialogButtonBox()
-        buttonbox.addButton(qtw.QDialogButtonBox.Ok)
-        buttonbox.addButton(qtw.QDialogButtonBox.Cancel)
+        buttonbox.addButton(qtw.QDialogButtonBox.StandardButton.Ok)
+        buttonbox.addButton(qtw.QDialogButtonBox.StandardButton.Cancel)
         buttonbox.accepted.connect(self.accept)
         buttonbox.rejected.connect(self.reject)
         hsizer = qtw.QHBoxLayout()
@@ -272,7 +272,7 @@ class ShowComparisonGui(qtw.QTreeWidget):
         self is only used for API's sake
         """
         node.setText(column, value)
-        node.setTextAlignment(column, core.Qt.AlignTop)
+        node.setTextAlignment(column, core.Qt.AlignmentFlag.AlignTop)
         node.setToolTip(column, value)
 
     def get_parent(self, node):
@@ -291,7 +291,7 @@ class FileBrowseButton(qtw.QFrame):
         if items is None:
             items = []
         super().__init__(parent)
-        self.setFrameStyle(qtw.QFrame.Panel | qtw.QFrame.Raised)
+        self.setFrameStyle(qtw.QFrame.Shape.Panel | qtw.QFrame.Shadow.Raised)
         vbox = qtw.QVBoxLayout()
         box = qtw.QHBoxLayout()
         ## self.input = gui.QLineEdit(text, self)

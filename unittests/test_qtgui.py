@@ -60,14 +60,14 @@ class TestMainWindow:
         """
         monkeypatch.setattr(testee.qtw, 'QMenuBar', mockqtw.MockMenuBar)
         monkeypatch.setattr(testee.qtw, 'QMenu', mockqtw.MockMenu)
-        monkeypatch.setattr(testee.qtw, 'QAction', mockqtw.MockAction)
+        monkeypatch.setattr(testee.gui, 'QAction', mockqtw.MockAction)
         monkeypatch.setattr(testee.qtw.QMainWindow, 'menuBar', mockqtw.MockMainWindow.menuBar)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.master.menudict = {'x': [(11, 'xx', 'yy', 'zz', 'fun1'), ()]}
         testobj.menuactions = {}
         testobj.setup_menu()
         assert len(testobj.menuactions) == 1
-        assert isinstance(testobj.menuactions[11], testee.qtw.QAction)
+        assert isinstance(testobj.menuactions[11], testee.gui.QAction)
         assert capsys.readouterr().out == ("called MainWindow.menuBar\n"
                                            "called MenuBar.__init__\n"
                                            "called MenuBar.addMenu with arg  x\n"
@@ -94,7 +94,7 @@ class TestMainWindow:
         assert capsys.readouterr().out == (
                 "called MainWidget.setCentralWindow with arg of type `<class 'str'>`\n"
                 "called MainWindow.show\n"
-                "called Application.exec_\n")
+                "called Application.exec\n")
 
     def test_meld_input_fout(self, monkeypatch, capsys):
         """unittest for MainWindow.meld_input_fout
@@ -151,7 +151,7 @@ class TestMainWindow:
         """
         class KeyEvent1:
             def key(self):
-                return testee.core.Qt.Key_Escape
+                return testee.core.Qt.Key.Key_Escape
             def __str__(self):
                 return 'EscapeKey'
         class KeyEvent2:
@@ -186,20 +186,20 @@ def test_show_dialog(monkeypatch, capsys):
     """unittest for qt_gui.show_dialog
     """
     def mock_exec(cls):
-        print('called Dialog.exec_')
+        print('called Dialog.exec')
         return True
     mockparent = 'parent'
     monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
-    monkeypatch.setattr(testee.qtw.QDialog, 'exec_', mockqtw.MockDialog.exec_)
+    monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
     cls = testee.qtw.QDialog('xxx')
     assert not testee.show_dialog(mockparent, cls)
     assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
-                                       "called Dialog.exec_\n")
-    monkeypatch.setattr(testee.qtw.QDialog, 'exec_', mock_exec)
+                                       "called Dialog.exec\n")
+    monkeypatch.setattr(testee.qtw.QDialog, 'exec', mock_exec)
     cls = testee.qtw.QDialog('xxx')
     assert testee.show_dialog(mockparent, cls)
     assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
-                                       "called Dialog.exec_\n")
+                                       "called Dialog.exec\n")
 
 
 class TestAskOpenFilesGui:
@@ -541,7 +541,8 @@ class TestShowComparisonGui:
         testobj.set_node_text(node, 1, 'text')
         assert capsys.readouterr().out == (
                 "called TreeItem.setText with arg `text` for col 1\n"
-                f"called TreeItem.setTextAlignment with args (1, {testee.core.Qt.AlignTop})\n"
+                "called TreeItem.setTextAlignment with args"
+                f" (1, {testee.core.Qt.AlignmentFlag.AlignTop!r})\n"
                 "called TreeItem.setTooltip with args (1, 'text')\n")
 
     def test_get_parent(self, monkeypatch, capsys):
@@ -563,8 +564,8 @@ class TestFileBrowseButton:
         monkeypatch.setattr(testee.qtw.QFrame, '__init__', mockqtw.MockFrame.__init__)
         monkeypatch.setattr(testee.qtw.QFrame, 'setFrameStyle', mockqtw.MockFrame.setFrameStyle)
         monkeypatch.setattr(testee.qtw.QFrame, 'setLayout', mockqtw.MockFrame.setLayout)
-        monkeypatch.setattr(testee.qtw.QFrame, 'Panel', 2)
-        monkeypatch.setattr(testee.qtw.QFrame, 'Raised', 16)
+        # monkeypatch.setattr(testee.qtw.QFrame.Shape, 'Panel', 2)
+        # monkeypatch.setattr(testee.qtw.QFrame.Shadow, 'Raised', 16)
         monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
         monkeypatch.setattr(testee.qtw, 'QComboBox', mockqtw.MockComboBox)
@@ -573,7 +574,7 @@ class TestFileBrowseButton:
         testobj = testee.FileBrowseButton('parent')
         assert capsys.readouterr().out == (
             "called Frame.__init__\n"
-            "called Frame.setFrameStyle with arg `18`\n"
+            "called Frame.setFrameStyle with arg `34`\n"
             "called VBox.__init__\n"
             "called HBox.__init__\n"
             "called ComboBox.__init__\n"
@@ -596,7 +597,7 @@ class TestFileBrowseButton:
                                           items=['a', 'b'])
         assert capsys.readouterr().out == (
             "called Frame.__init__\n"
-            "called Frame.setFrameStyle with arg `18`\n"
+            "called Frame.setFrameStyle with arg `34`\n"
             "called VBox.__init__\n"
             "called HBox.__init__\n"
             "called ComboBox.__init__\n"
@@ -638,7 +639,7 @@ class TestFileBrowseButton:
         testobj.browse()
         assert capsys.readouterr().out == (
             "called ComboBox.currentText\n"
-            f"called FileDialog.getOpenFilename with args {testobj}"
+            f"called FileDialog.getOpenFileName with args {testobj}"
             " ('Kies een bestand', 'current text') {}\n")
         monkeypatch.setattr(testee.qtw.QFileDialog, 'getOpenFileName', mock_get)
         testobj.browse()
