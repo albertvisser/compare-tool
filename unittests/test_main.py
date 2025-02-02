@@ -295,12 +295,21 @@ def test_comparer_doit(monkeypatch, capsys):
     testobj.doit()
     assert capsys.readouterr().out == ("called MainWindow.meld_vergelijking_fout()"
                                        " with args ('Vergelijking mislukt', [])\n")
-    testobj.ini.mru_left = [testobj.lhs_path]
-    testobj.ini.mru_right = [testobj.rhs_path]
+    testobj.ini.mru_left = []
+    testobj.ini.mru_right = []
     monkeypatch.setattr(main, 'do_compare', mock_do_compare)
     testobj.doit()
     assert testobj.data == ['data', 'more data']
     assert testobj.selected_option == 'data'
+    assert testobj.ini.mru_left == [testobj.lhs_path]
+    assert testobj.ini.mru_right == [testobj.rhs_path]
+    assert capsys.readouterr().out == ('called IniFile.write()\ncalled ShowComparison.refresh()\n')
+    monkeypatch.setattr(main, 'do_compare', mock_do_compare)
+    testobj.doit()
+    assert testobj.data == ['data', 'more data']
+    assert testobj.selected_option == 'data'
+    assert testobj.ini.mru_left == [testobj.lhs_path]
+    assert testobj.ini.mru_right == [testobj.rhs_path]
     assert capsys.readouterr().out == ('called IniFile.write()\ncalled ShowComparison.refresh()\n')
 
 def test_comparer_about(monkeypatch, capsys):

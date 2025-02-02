@@ -37,6 +37,7 @@ def test_get_htmldata(monkeypatch, capsys, tmp_path):
     assert testee.get_htmldata(str(datafile), False, True) == htmldata_stripped_2
 
 
+# 104->110
 def test_get_next_level_data(monkeypatch, capsys):
     """unittest for html_comp.get_next_level_data
     """
@@ -143,8 +144,12 @@ def test_level2key(monkeypatch, capsys):
     old_leveldata, leveldata = leveldata, (2, '<hr>')
     old_key = testee.level2key(leveldata, old_key, prev_leveldata=old_leveldata)
     assert old_key == [(0, 'html'), (1, 'body'), (2, '<hr>')]
+    old_leveldata, leveldata = leveldata, (2, '<br>')
+    old_key = testee.level2key(leveldata, old_key, prev_leveldata=old_leveldata)
+    assert old_key == [(0, 'html'), (1, 'body'), (2, '<hr>')]
 
 
+# 193->159
 def test_refresh_htmlcompare(monkeypatch, capsys):
     """unittest for html_comp.refresh_htmlcompare
     """

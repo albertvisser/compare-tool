@@ -121,6 +121,7 @@ def test_check_inifile(monkeypatch, capsys):
     # laat Configparser de gecorrigeerde versie lezen -> geeft geen fout
 
 
+# 50->66, 54->66
 def test_compare_configs(monkeypatch, capsys):
     """unittest for conf_comp.compare_configs
     """

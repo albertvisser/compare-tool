@@ -22,6 +22,7 @@ def test_getattrval():
     assert testee.getattrval(MockElement({'name': 'xxx', 'value': 'yyy'})) == 'xxx'
 
 
+# 61->63
 def test_process_subelements(monkeypatch, capsys):
     """unittest for xml_comp.process_subelements
     """
@@ -137,6 +138,7 @@ def test_gen_next():
     assert testee.gen_next(x for x in [(1, 2, 3)]) == (False, 1, 2, 3)
 
 
+# 109->137, 113->137
 def test_compare_xmldata(monkeypatch, capsys):
     """unittest for xml_comp.compare_xmldata
     """
@@ -227,6 +229,7 @@ def test_compare_xmldata(monkeypatch, capsys):
             "called gen_next from left side returning ('EOF', (True, '', '', ''))\n")
 
 
+# 204->exit
 def test_refresh_xmlcompare(capsys):
     """unittest for xml_comp.refresh_xmlcompare
     """

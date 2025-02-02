@@ -50,7 +50,7 @@ class TestMainWindow:
         assert capsys.readouterr().out == ('called Application.__init__\n'
                                            "called MainWindow.__init__ with args (None,)\n"
                                            "called MainWindow.resize with args (1024, 600)\n"
-                                           "called MainWindow.setWindowTitle to `Comparer`\n"
+                                           "called MainWindow.setWindowTitle with arg `Comparer`\n"
                                            "called Icon.__init__ with arg `inicomp.png`\n"
                                            "called MainWindow.setWindowIcon\n"
                                            "called MainWindow.setup_menu\n")
@@ -349,12 +349,25 @@ class TestAskOpenFilesGui:
                 f"called MessageBox.critical with args `{testobj}` `Comparer` `A message`\n")
         testobj.master.check_input = mock_check_ok
         testobj.accept()
+        assert testobj.master.parent.lhs_path == 'current text'
+        assert testobj.master.parent.rhs_path == 'current text'
+        assert testobj.master.parent.comparetype == 'yyy'
         assert capsys.readouterr().out == (
                 "called ComboBox.currentText\n"
                 "called ComboBox.currentText\n"
                 "called CheckBox.isChecked\n"
                 "called CheckBox.isChecked\n"
                 "called Comparer.check_input with args ('current text', 'current text', 'yyy')\n"
+                "called Dialog.accept\n")
+        testobj.sel = []
+        testobj.accept()
+        assert testobj.master.parent.lhs_path == 'current text'
+        assert testobj.master.parent.rhs_path == 'current text'
+        assert testobj.master.parent.comparetype == ''
+        assert capsys.readouterr().out == (
+                "called ComboBox.currentText\n"
+                "called ComboBox.currentText\n"
+                "called Comparer.check_input with args ('current text', 'current text', '')\n"
                 "called Dialog.accept\n")
 
 

@@ -140,6 +140,9 @@ class TestReadPyfile:
         testobj.handle_function = True
         testobj.process()
         assert capsys.readouterr().out == "called testobj.do_function_line with arg '    xxxx'\n"
+        testobj.handle_function = False
+        testobj.process()
+        assert capsys.readouterr().out == ""
 
     def test_do_docstring_line(self, monkeypatch, capsys):
         """unittest for ReadPyfile.do_docstring_line
