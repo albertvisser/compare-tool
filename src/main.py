@@ -135,8 +135,8 @@ def get_input_paths(fileargs):
     noargs, onearg, twoargs = (0, 1, 2)
     leftpath = rightpath = ''
     if fileargs:
-        if len(fileargs) > noargs:
-            leftpath = fileargs[0]
+        # if len(fileargs) > noargs:
+        leftpath = fileargs[0]
         if len(fileargs) > onearg:
             rightpath = fileargs[1]
             if len(fileargs) > twoargs:
