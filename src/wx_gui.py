@@ -14,11 +14,11 @@ class MainWindow(wx.Frame):
         self.app = wx.App()
         self.master = master
         parent = None
-        super().__init__(self, parent, wx.ID_ANY, self.master.apptitel, size=(1080, 600),
+        super().__init__(parent, wx.ID_ANY, self.master.apptitel, size=(1080, 600),
                          style=wx.DEFAULT_FRAME_STYLE | wx.NO_FULL_REPAINT_ON_RESIZE)
 
         self.setup_menu()
-        self.setup_gui()
+        # self.setup_gui()
 
     def setup_gui(self):
         "(re)build the screen"
@@ -41,7 +41,7 @@ class MainWindow(wx.Frame):
                     continue
                 item_id, itemtitle, shortcut, text, callback = item
                 menu.Append(item_id, f'{itemtitle}\t{shortcut}', text)
-                self.Connect(item_id, wx.NewId(), wx.wxEVT_COMMAND_MENU_SELECTED, callback)
+                self.Connect(item_id, wx.ID_ANY, wx.wxEVT_COMMAND_MENU_SELECTED, callback)
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)
 
@@ -76,7 +76,7 @@ class MainWindow(wx.Frame):
         self.win.Destroy()
         self.setup_gui()
 
-    def exit(self, event):
+    def exit(self):
         "quit"
         self.Close(True)
 
@@ -100,10 +100,10 @@ class AskOpenFilesGui(wx.Dialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, parent, title, size):
-        self.logical_parent = parent
-        physical_parent = parent.gui
-        super().__init__(self, physical_parent, pos=wx.DefaultPosition, title=title, size=size,
+    def __init__(self, master, size):
+        self.master = master
+        physical_parent = master.parent.gui
+        super().__init__(physical_parent, pos=wx.DefaultPosition, title="", size=size,
                          style=wx.DEFAULT_DIALOG_STYLE)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
@@ -139,7 +139,7 @@ class AskOpenFilesGui(wx.Dialog):
             text = choices[type_][0]
             rb = wx.RadioButton(self, label=text)
             gbox.Add(rb)
-            if self.logical_parent.comparetype == type_:
+            if self.master.parent.comparetype == type_:
                 rb.SetValue(True)
             self.sel.append((rb, type_))
         box.Add(gbox, 0, wx.ALL, 9)

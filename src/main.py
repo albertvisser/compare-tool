@@ -125,7 +125,7 @@ class Comparer:
         """
         self.gui.meld(colors_text)
 
-    def exit(self):
+    def exit(self, event=None):
         "quit"
         self.gui.exit()
 
