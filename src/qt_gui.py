@@ -69,7 +69,7 @@ class MainWindow(qtw.QMainWindow):
         box.setText(message)
         if data:
             box.setInformativeText(f'<pre>{"".join(data)}</pre>')
-        box.exec_()
+        box.exec()
 
     def meld(self, melding):
         "show a message"

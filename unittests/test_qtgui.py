@@ -75,6 +75,7 @@ class TestMainWindow:
                                            f"called Action.__init__ with args ('xx', {testobj})\n"
                                            "called Signal.connect with args ('fun1',)\n"
                                            "called Action.setShortcut with arg `yy`\n"
+                                           "called Action.setStatusTip with arg 'zz'\n"
                                            "called Menu.addAction\n"
                                            "called Menu.addSeparator\n"
                                            "called Action.__init__ with args ('-----', None)\n")
@@ -117,14 +118,14 @@ class TestMainWindow:
                 f"called MessageBox.__init__ with args ({testobj},) {{}}\n"
                 "called MessageBox.setWindowTitle with arg `Comparer`\n"
                 "called MessageBox.setText with arg `A message`\n"
-                "called MessageBox.exec_\n")
+                "called MessageBox.exec\n")
         testobj.meld_vergelijking_fout('A message', ['with', 'text'])
         assert capsys.readouterr().out == (
                 f"called MessageBox.__init__ with args ({testobj},) {{}}\n"
                 "called MessageBox.setWindowTitle with arg `Comparer`\n"
                 "called MessageBox.setText with arg `A message`\n"
                 "called MessageBox.setInformativeText with arg `<pre>withtext</pre>`\n"
-                "called MessageBox.exec_\n")
+                "called MessageBox.exec\n")
 
     def test_meld(self, monkeypatch, capsys):
         """unittest for MainWindow.meld
@@ -407,8 +408,8 @@ class TestShowComparisonGui:
         assert capsys.readouterr().out == ("called ShowComparisonGui.__init__ with args ('parent',)\n"
                                            "called Tree.setColumnCount with arg `3`\n"
                                            "called Tree.header\ncalled Header.__init__\n"
-                                           "called Header.resizeSection for col 0 width 200\n"
-                                           "called Header.resizeSection for col 1 width 350\n")
+                                           "called Header.resizeSection with args (0, 200)\n"
+                                           "called Header.resizeSection with args (1, 350)\n")
 
     def test_setup_nodata_columns(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.setup_nodata_columns
@@ -421,8 +422,8 @@ class TestShowComparisonGui:
         root = testobj.setup_nodata_columns('root_text', 'leftcaption', 'rightcaption')
         assert capsys.readouterr().out == (
                 "called TreeItem.__init__ with args ()\n"
-                "called TreeItem.setText with arg `leftcaption` for col 1\n"
-                "called TreeItem.setText with arg `rightcaption` for col 2\n"
+                "called TreeItem.setText with args (1, 'leftcaption')\n"
+                "called TreeItem.setText with args (2, 'rightcaption')\n"
                 f'called ShowComparisonGui.addTopLevelItem with arg {root}\n')
 
     def test_finish_init(self, monkeypatch, capsys):
@@ -553,7 +554,7 @@ class TestShowComparisonGui:
         assert capsys.readouterr().out == "called TreeItem.__init__ with args ()\n"
         testobj.set_node_text(node, 1, 'text')
         assert capsys.readouterr().out == (
-                "called TreeItem.setText with arg `text` for col 1\n"
+                "called TreeItem.setText with args (1, 'text')\n"
                 "called TreeItem.setTextAlignment with args"
                 f" (1, {testee.core.Qt.AlignmentFlag.AlignTop!r})\n"
                 "called TreeItem.setTooltip with args (1, 'text')\n")
