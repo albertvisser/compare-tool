@@ -93,7 +93,7 @@ class TestMainWindow:
         with pytest.raises(SystemExit):
             testobj.go()
         assert capsys.readouterr().out == (
-                "called MainWidget.setCentralWindow with arg of type `<class 'str'>`\n"
+                "called MainWidget.setCentralWindow with arg `str`\n"
                 "called MainWindow.show\n"
                 "called Application.exec\n")
 
@@ -272,27 +272,27 @@ class TestAskOpenFilesGui:
         assert capsys.readouterr().out == (
             "called VBox.__init__\n"
             "called HBox.__init__\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockComboBox'>\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
+            "called HBox.addWidget with arg MockComboBox\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
             "called HBox.__init__\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockComboBox'>\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
+            "called HBox.addWidget with arg MockComboBox\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
             "called HBox.__init__\n"
             "called HBox.addSpacing\n"
             "called Grid.__init__\n"
             "called Label.__init__ with args ('comparetext',)\n"
-            "called Grid.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockLabel'>"
+            "called Grid.addWidget with arg MockLabel"
             " at (0, 0)\n"
             f"called RadioButton.__init__ with args ('xxx', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockRadioButton'>"
+            "called Grid.addWidget with arg MockRadioButton"
             " at (0, 1)\n"
             f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockRadioButton'>"
+            "called Grid.addWidget with arg MockRadioButton"
             " at (1, 1)\n"
             "called RadioButton.setChecked with arg `True`\n"
-            "called HBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockGridLayout'>\n"
+            "called HBox.addLayout with arg MockGridLayout\n"
             "called HBox.addStretch\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
             "called ButtonBox.__init__ with args ()\n"
             "called ButtonBox.addButton with args (1,)\n"
             "called ButtonBox.addButton with args (2,)\n"
@@ -300,9 +300,9 @@ class TestAskOpenFilesGui:
             f"called Signal.connect with args ({testobj.reject},)\n"
             "called HBox.__init__\n"
             "called HBox.addStretch\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockButtonBox'>\n"
+            "called HBox.addWidget with arg MockButtonBox\n"
             "called HBox.addStretch\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
             "called Dialog.setLayout\n")
 
     def test_accept(self, monkeypatch, capsys):
@@ -599,13 +599,13 @@ class TestFileBrowseButton:
             "called Label.__init__ with args ('',)\n"
             "called Label.setMinimumWidth with arg `120`\n"
             "called Label.setMaximumWidth with arg `120`\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockLabel'>\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockComboBox'>\n"
+            "called HBox.addWidget with arg MockLabel\n"
+            "called HBox.addWidget with arg MockComboBox\n"
             f"called PushButton.__init__ with args ('', {testobj}) {{'clicked': {testobj.browse}}}\n"
             "called PushButton.setMaximumWidth with arg `68`\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockPushButton'>\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
-            "called Frame.setLayout with arg of type <class 'mockgui.mockqtwidgets.MockVBoxLayout'>"
+            "called HBox.addWidget with arg MockPushButton\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
+            "called Frame.setLayout with arg MockVBoxLayout"
             "\n")
         testobj = testee.FileBrowseButton('parent', caption="xxx", button="yyy", text="zzz",
                                           items=['a', 'b'])
@@ -622,14 +622,14 @@ class TestFileBrowseButton:
             "called Label.__init__ with args ('xxx',)\n"
             "called Label.setMinimumWidth with arg `120`\n"
             "called Label.setMaximumWidth with arg `120`\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockLabel'>\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockComboBox'>\n"
+            "called HBox.addWidget with arg MockLabel\n"
+            "called HBox.addWidget with arg MockComboBox\n"
             f"called PushButton.__init__ with args ('yyy', {testobj})"
             f" {{'clicked': {testobj.browse}}}\n"
             "called PushButton.setMaximumWidth with arg `68`\n"
-            "called HBox.addWidget with arg of type <class 'mockgui.mockqtwidgets.MockPushButton'>\n"
-            "called VBox.addLayout with arg of type <class 'mockgui.mockqtwidgets.MockHBoxLayout'>\n"
-            "called Frame.setLayout with arg of type <class 'mockgui.mockqtwidgets.MockVBoxLayout'>"
+            "called HBox.addWidget with arg MockPushButton\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n"
+            "called Frame.setLayout with arg MockVBoxLayout"
             "\n")
 
     def test_browse(self, monkeypatch, capsys):
