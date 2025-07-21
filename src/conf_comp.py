@@ -94,38 +94,38 @@ def gen_next(gen):
     return eof, sect, opt, val
 
 
-def refresh_inicompare(self):
+def refresh_inicompare(comparer):
     """(re)do comparing the ini files
     """
-    self.gui.init_tree('Section/Option', self.parent.lhs_path, self.parent.rhs_path)
+    comparer.gui.init_tree('Section/Option', comparer.parent.lhs_path, comparer.parent.rhs_path)
     header = None
     current_section = ''
     rightonly = leftonly = difference = False
-    if not self.parent.data:
+    if not comparer.parent.data:
         return
-    for x in self.parent.data:
+    for x in comparer.parent.data:
         node, lvalue, rvalue = x
         section, option = node
         if section != current_section:
             if current_section:
-                self.gui.colorize_header(header, rightonly, leftonly, difference)
-            header = self.gui.build_header(section)
+                comparer.gui.colorize_header(header, rightonly, leftonly, difference)
+            header = comparer.gui.build_header(section)
             current_section = section
             rightonly = leftonly = difference = False
-        child = self.gui.build_child(header, option)
+        child = comparer.gui.build_child(header, option)
         if lvalue is None:
             lvalue = '(no value)'
         if lvalue == '':
             rightonly = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
-        self.gui.set_node_text(child, 1, lvalue)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+        comparer.gui.set_node_text(child, 1, lvalue)
         if rvalue is None:
             rvalue = '(no value)'
         if rvalue == '':
             leftonly = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
         if lvalue and rvalue and lvalue != rvalue:
             difference = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
-        self.gui.set_node_text(child, 2, rvalue)
-    self.gui.colorize_header(header, rightonly, leftonly, difference)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+        comparer.gui.set_node_text(child, 2, rvalue)
+    comparer.gui.colorize_header(header, rightonly, leftonly, difference)

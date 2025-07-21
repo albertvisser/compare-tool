@@ -151,12 +151,12 @@ def level2key(leveldata, old_key, attr_name='', prev_leveldata='', prev_attrname
     return old_key
 
 
-def refresh_htmlcompare(self):
+def refresh_htmlcompare(comparer):
     """(re)do the HTML compare
      """
-    self.gui.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
+    comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     parents = {-1: None}
-    for item, lvalue, rvalue in self.parent.data:
+    for item, lvalue, rvalue in comparer.parent.data:
         node, attr_name = item
         level, elem_name = node
         if not attr_name:
@@ -167,28 +167,28 @@ def refresh_htmlcompare(self):
             node_text = ' ' + attr_name
         rightonly = leftonly = difference = False
         if my_parent:
-            new_node = self.gui.build_child(my_parent, node_text)
+            new_node = comparer.gui.build_child(my_parent, node_text)
         else:
-            new_node = self.gui.build_header(node_text)
+            new_node = comparer.gui.build_header(node_text)
         if not attr_name:
             parents[level] = new_node
         if lvalue:
-            self.gui.set_node_text(new_node, 1, lvalue)
+            comparer.gui.set_node_text(new_node, 1, lvalue)
         if rvalue:
-            self.gui.set_node_text(new_node, 2, rvalue)
+            comparer.gui.set_node_text(new_node, 2, rvalue)
         if attr_name or elem_name == '(text)':  # not elem_name:
             if lvalue == '':
                 rightonly = True
-                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
+                comparer.gui.colorize_child(new_node, rightonly, leftonly, difference)
             if rvalue == '':
                 leftonly = True
-                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
+                comparer.gui.colorize_child(new_node, rightonly, leftonly, difference)
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
-                self.gui.colorize_child(new_node, rightonly, leftonly, difference)
+                comparer.gui.colorize_child(new_node, rightonly, leftonly, difference)
             # geen idee waarom dit uit stond maar dit kleurt de directe parent mee
             # wat gebeurt er als er meer verschillen onder de parent zitten?
             # (dan pakt-ie de kleur van het laatste child)
             # zouden hoger liggende parents niet ook mee (of altijd rood) moeten kleuren?
             if my_parent:
-                self.gui.colorize_header(my_parent, rightonly, leftonly, difference)
+                comparer.gui.colorize_header(my_parent, rightonly, leftonly, difference)

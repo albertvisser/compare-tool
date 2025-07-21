@@ -152,32 +152,32 @@ def gen_next(gen):
     return eof, elem, attr, val
 
 
-def refresh_xmlcompare(self):
+def refresh_xmlcompare(comparer):
     """(re)do the XML compare
      """
-    self.gui.init_tree('Element/Attribute', self.parent.lhs_path, self.parent.rhs_path)
+    comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     current_elems = []
     rightonly = leftonly = difference = False
-    for x in self.parent.data:
+    for x in comparer.parent.data:
         node, lvalue, rvalue = x
         elems, attr = node
         if elems != current_elems:
             if not current_elems:
-                header = self.gui.build_header('<> ' + elems[-1][0])
+                header = comparer.gui.build_header('<> ' + elems[-1][0])
             else:
-                self.gui.colorize_header(header, rightonly, leftonly, difference)
+                comparer.gui.colorize_header(header, rightonly, leftonly, difference)
                 if len(elems) > len(current_elems):
                     parent = header
                 elif len(elems) < len(current_elems):
-                    parent = self.gui.get_parent(self.gui.get_parent(header))
+                    parent = comparer.gui.get_parent(comparer.gui.get_parent(header))
                 else:
-                    parent = self.gui.get_parent(header)
-                header = self.gui.build_child(parent, '<> ' + elems[-1][0])
+                    parent = comparer.gui.get_parent(header)
+                header = comparer.gui.build_child(parent, '<> ' + elems[-1][0])
             current_elems = elems
             rightonly = leftonly = difference = False
         if attr == '':
-            self.gui.set_node_text(header, 1, lvalue)
-            self.gui.set_node_text(header, 2, rvalue)
+            comparer.gui.set_node_text(header, 1, lvalue)
+            comparer.gui.set_node_text(header, 2, rvalue)
             if lvalue == '':
                 rightonly = True
             if rvalue == '':
@@ -185,21 +185,21 @@ def refresh_xmlcompare(self):
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
             continue
-        child = self.gui.build_child(header, attr)
+        child = comparer.gui.build_child(header, attr)
         if lvalue is None:
             lvalue = '(no value)'
         if lvalue == '':
             rightonly = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
-        self.gui.set_node_text(child, 1, lvalue)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+        comparer.gui.set_node_text(child, 1, lvalue)
         if rvalue is None:
             rvalue = '(no value)'
         if rvalue == '':
             leftonly = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
         if lvalue and rvalue and lvalue != rvalue:
             difference = True
-            self.gui.colorize_child(child, rightonly, leftonly, difference)
-        self.gui.set_node_text(child, 2, rvalue)
-    if self.parent.data:
-        self.gui.colorize_header(header, rightonly, leftonly, difference)
+            comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+        comparer.gui.set_node_text(child, 2, rvalue)
+    if comparer.parent.data:
+        comparer.gui.colorize_header(header, rightonly, leftonly, difference)

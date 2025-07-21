@@ -62,18 +62,18 @@ def gen_next(gen):
     return eof, nextline
 
 
-def refresh_txtcompare(self):
+def refresh_txtcompare(comparer):
     """(re)do the text compare
     """
-    self.gui.init_tree('Text in both files', self.parent.lhs_path, self.parent.rhs_path)
-    for x in self.parent.data:
+    comparer.gui.init_tree('Text in both files', comparer.parent.lhs_path, comparer.parent.rhs_path)
+    for x in comparer.parent.data:
         bvalue, lvalue, rvalue = x
         rightonly = leftonly = difference = False
-        node = self.gui.build_header(bvalue)
-        self.gui.set_node_text(node, 1, lvalue)
-        self.gui.set_node_text(node, 2, rvalue)
+        node = comparer.gui.build_header(bvalue)
+        comparer.gui.set_node_text(node, 1, lvalue)
+        comparer.gui.set_node_text(node, 2, rvalue)
         if lvalue:
             leftonly = True
         if rvalue:
             rightonly = True
-        self.gui.colorize_child(node, rightonly, leftonly, difference)
+        comparer.gui.colorize_child(node, rightonly, leftonly, difference)
