@@ -1,141 +1,130 @@
-"""Python "vergelijking" - eerste aanzet
-in deze versie wordt slechts een source file gelezen en heel globaal geanalyseerd weergegeven
-"""
 import sys
+import os
+import difflib
 import pprint
 
-class ReadPyfile:
-    def __init__(self, filename):
-        with open(filename) as pyfile:
-            self.pylines = pyfile.readlines()
-        self.contents = {'filename': filename, 'docstring': [], 'imports': [],
-                         'module-level code': [], 'symbols': [], 'functions': [], 'classes': []}
-        self.in_docstring = self.handle_construct = self.handle_function = self.handle_class = False
-        self.docstring_delim = ''
 
-    def process(self):
-        "main line"
-        # breakpoint()
-        for line in self.pylines:
-            line = line.rstrip()
-            if not line:
-                continue
-            if self.in_docstring and not (self.handle_function or self.handle_class):
-                line = self.do_docstring_line(line)
-                if line:
-                    self.contents['docstring'].append(line)
-                continue
-            if line.lstrip() == line:  # not indented
-                if self.is_line_module_docstring_start(line):
-                    continue
-                if line.startswith(('import', 'from')):   # TODO: import over meer regels
-                    self.contents['imports'].append(line)
-                elif line.startswith('def'):
-                    self.do_function_start(line)
-                elif line.startswith('class'):
-                    self.do_class_start(line)
+def read_pyfile(filename):
+    """read and input file and reorder the lines
+
+    gather lines for module level and under:
+    first the code on the level itself (in the order as they appear in the input)
+    then all defs on this level in alphabetical order
+    then all classes on this level in alphabetical order
+    """
+    def calc_indent(line):
+        return len(line) - len(line.lstrip())
+    with open(filename) as pyfile:
+        pylines = pyfile.readlines()
+    # breakpoint()
+    contents = {'': []}
+    # defs = {}
+    # classes = {}
+    current = {}  # 'name': '', 'contents': []}
+    current_indent = 0
+    current_construct = []
+    construct_dict = {(): []}
+    in_construct = False
+    for line in pylines:
+        if not line.strip() or line.strip().startswith('#'):
+            continue
+        if line.strip() == line.rstrip():
+            indent = 0
+            if current:
+                contents[current['name']] = current['contents']
+                current = {}
+            if line.startswith('def'):
+                current_construct = [line.split('(')[0]]
+                construct_dict[tuple(current_construct)] = [line.rstrip()]
+                in_construct = True
+            elif line.startswith('class'):
+                if '(' in line:
+                    current_construct = [line.rsplit('(')[0]]
                 else:
-                    if self.handle_construct:
-                        self.save_prev_construct()
-                    self.do_construct(line)
+                    current_construct = [line.rsplit(':')[0]]
+                construct_dict[tuple(current_construct)] = [line.rstrip()]
+                in_construct = True
             else:
-                if self.handle_class:
-                    self.do_class_line(line)
-                elif self.handle_construct:
-                    self.add_to_construct(line)
-                elif self.handle_function:
-                    self.do_function_line(line)
-        if self.handle_construct:
-            self.save_prev_construct()
-
-    def do_docstring_line(self, line):
-        """handle a line in a docstring, also handle the end of the docstring
-        """
-        if self.docstring_delim in line:
-            self.in_docstring = False
-            line = line.removesuffix(self.docstring_delim)
-            self.docstring_delim = ''
-        return line
-
-    def is_line_module_docstring_start(self, line):
-        """check for the start of a docstring
-        """
-        for docstring_delim in ('"""', "'''", '"', "'"):
-            if line.startswith(docstring_delim):
-                self.in_docstring = True
-                self.docstring_delim = docstring_delim
-                self.contents['docstring'].append(line.removeprefix(docstring_delim))
-                return True
-        return False
-
-    def do_function_start(self, line):
-        """handle the start of a function definition
-        """
-        self.handle_function = True
-        self.handle_construct = self.handle_class = False
-        self.function_docstring = []
-        self.function_body = []
-        self.contents['functions'].append((line, self.function_docstring, self.function_body))
-
-    def do_class_start(self, line):
-        """handle the start of a class definition
-        """
-        self.handle_class = True
-        self.handle_construct = self.handle_function = False
-        self.class_docstring = []
-        self.class_body = []
-        self.contents['classes'].append((line, self.class_docstring, self.class_body))
-
-    def do_construct(self, line):
-        """handle the start of a new non-class / non-function definition
-        """
-        self.handle_construct = True
-        self.handle_function = self.handle_class = False
-        self.construct = [line]
-
-    def save_prev_construct(self):
-        """add the previous definition to the appropriate collection
-        """
-        if len(self.construct) == 1:
-            self.contents['symbols'].append(self.construct[0])
+                current_construct = []
+                construct_dict[tuple(current_construct)].append(line.rstrip())
+                in_construct = False
+        elif in_construct:
+            current_indent = calc_indent(line)  # len(line) - len(line.lstrip())
+            if current_indent < indent and current_construct:
+                while current_indent <= calc_indent(current_construct[-1]):
+                # len(current_construct[-1]) - len(current_construct[-1].lstrip())
+                    current_construct.pop()
+            indent = current_indent
+            if line.lstrip().startswith('def'):
+                current_construct.append(line.split('(')[0])
+                construct_dict[tuple(current_construct)] = [line.rstrip()]
+            elif line.lstrip().startswith('class'):
+                if '(' in line:
+                    current_construct.append(line.rsplit('(')[0])
+                else:
+                    current_construct.append(line.rsplit(':')[0])
+                construct_dict[tuple(current_construct)] = [line.rstrip()]
+            else:
+                construct_dict[tuple(current_construct)].append(line.rstrip())
         else:
-            self.contents['module-level code'].append(self.construct)
+            construct_dict[tuple(current_construct)].append(line.rstrip())
+    if in_construct:
+        construct_dict[tuple(current_construct)].append(line.rstrip())
+    else:
+        construct_dict[()].append(line.rstrip())
+    contents = []
+    for key in sorted(construct_dict):
+        contents.extend(construct_dict[key])
+    return contents
 
-    def add_to_construct(self, line):
-        """handle a line for a non-class / non-function definition
-        """
-        self.construct.append(line)
 
-    def do_function_line(self, line):
-        """handle a line for a function definition
-        """
-        if self.in_docstring:
-            line = self.do_docstring_line(line)
-            if line:
-                self.contents['functions'][-1][1].append(line)
-            return
-        for docstring_delim in ('"""', "'''", '"', "'"):
-            if line.lstrip().startswith(docstring_delim):
-                self.in_docstring = True
-                self.docstring_delim = docstring_delim
-                self.contents['functions'][-1][1].append(line.lstrip().removeprefix(docstring_delim))
-                return
-        self.contents['functions'][-1][2].append(line)
+def compare_pydata(oldfile, newfile):
+    """reorder the input files and build the comparison output
+    """
+    diff = difflib.Differ()
+    oldfile_lines = read_pyfile(oldfile)
+    newfile_lines = read_pyfile(newfile)
+    return diff.compare(oldfile_lines, newfile_lines)
 
-    def do_class_line(self, line):
-        """handle a line for a class definition
-        """
-        if self.in_docstring:
-            line = self.do_docstring_line(line)
-            if line:
-                self.contents['classes'][-1][1].append(line)
-            return
-        for docstring_delim in ('"""', "'''", '"', "'"):
-            if line.lstrip().startswith(docstring_delim):
-                self.in_docstring = True
-                self.docstring_delim = docstring_delim
-                self.contents['classes'][-1][1].append(line.lstrip().removeprefix(docstring_delim))
-                return
-        # maar nou wil ik in de class ook de methoden apart dus het volgende is niet voldoende
-        # ik kan hier de indicatoren voor function en construct natuurlijk hergebruiken
-        self.contents['classes'][-1][2].append(line)
+def refresh_pycompare(comparer):
+    """redo the comparison
+    """
+    comparer.gui.init_tree('code in both', f'code in {comparer.parent.lhs_path}',
+                           f'code in {comparer.parent.rhs_path}')
+    prev_indent = 0
+    prev_node = ''
+    # parents = {-1: None}
+    parents = []
+    for line in  comparer.parent.data:
+        line_prefix = line[:2]
+        line_data = line[2:]
+        nodevalue = lvalue = rvalue = ''
+        if line_prefix == '  ':
+            nodevalue = line_data
+        elif line_prefix == '- ':
+            lvalue = line_data
+        elif line_prefix == '+ ':
+            rvalue = line_data
+        else:  # bv. '? '
+            continue
+        indent = len(line_data) - len(line_data.strip())
+        if indent == 0:
+            prev_node = comparer.gui.build_header(nodevalue)
+            if lvalue:
+                comparer.gui.set_node_text(prev_node, 0, lvalue)
+                comparer.gui.set_node_text(prev_node, 1, lvalue)
+            if rvalue:
+                comparer.gui.set_node_text(prev_node, 0, rvalue)
+                comparer.gui.set_node_text(prev_node, 2, rvalue)
+            parents = []
+        else:
+            if indent > prev_indent:
+                parents.append(prev_node)
+            elif indent < prev_indent:
+                parents.pop()
+            prev_node = comparer.gui.build_child(parents[-1], nodevalue)
+            if lvalue:
+                comparer.gui.set_node_text(prev_node, 1, lvalue)
+            if rvalue:
+                comparer.gui.set_node_text(prev_node, 2, rvalue)
+        prev_indent = indent

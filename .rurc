@@ -10,6 +10,7 @@ html = test_html_comp.py
 txt = test_txt_comp.py
 xml = test_xml_comp.py
 py = test_python_comp.py
+json = test_json_comp.py
 
 [testees]
 main = src/main.py
@@ -20,4 +21,5 @@ html = src/html_comp.py
 txt = src/txt_comp.py
 xml = src/xml_comp.py
 py = src/python_comp.py
+json = src/json_comp.py
 

@@ -9,6 +9,9 @@ from .conf_comp import compare_configs, compare_configs_safe, refresh_inicompare
 from .xml_comp import compare_xmldata, refresh_xmlcompare
 from .txt_comp import compare_txtdata, refresh_txtcompare
 from .html_comp import compare_htmldata, refresh_htmlcompare
+from .python_comp import compare_pydata, refresh_pycompare
+from .json_comp import compare_jsondata, refresh_jsoncompare
+
 ID_OPEN = 101
 ID_DOIT = 102
 ID_EXIT = 109
@@ -19,7 +22,9 @@ comparetypes = {'ini': ('ini files', compare_configs, refresh_inicompare),
                          refresh_inicompare),
                 'xml': ('XML files', compare_xmldata, refresh_xmlcompare),
                 'html': ('HTML files', compare_htmldata, refresh_htmlcompare),
-                'txt': ('Simple text comparison', compare_txtdata, refresh_txtcompare)}
+                'txt': ('Simple text comparison', compare_txtdata, refresh_txtcompare),
+                'py': ('Python modules', compare_pydata, refresh_pycompare),
+                'json': ('JSON files', compare_jsondata, refresh_jsoncompare)}
 abouttext = """\
 Met dit programma kun je twee (ini) files met elkaar vergelijken,
 maakt niet uit hoe door elkaar de secties en entries ook zitten.
@@ -57,7 +62,6 @@ class Comparer:
                                    (ID_COLORS, "&Legenda", "F1", "What do the colors indicate?",
                                     self.legend), )}
         self.data = {}
-        self.selected_option = ''
         self.comparetype = ''  # = method in wx version
         self.gui = gui.MainWindow(self)
         self.showcomp = ShowComparison(self)
@@ -112,7 +116,6 @@ class Comparer:
         self.ini.mru_right.insert(0, self.rhs_path)
         self.ini.write()
         self.data = data
-        self.selected_option = self.data[0]
         self.showcomp.refresh()
 
     def about(self, event=None):
