@@ -152,7 +152,7 @@ def level2key(leveldata, old_key, attr_name='', prev_leveldata='', prev_attrname
 
 
 def refresh_htmlcompare(comparer):
-    """(re)do the HTML compare
+    """(re)do the HTML compare (visually)
      """
     comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     parents = {-1: None}

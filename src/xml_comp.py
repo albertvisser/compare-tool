@@ -153,7 +153,7 @@ def gen_next(gen):
 
 
 def refresh_xmlcompare(comparer):
-    """(re)do the XML compare
+    """(re)do the XML compare (visually)
      """
     comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     current_elems = []
