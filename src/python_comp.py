@@ -72,59 +72,141 @@ def read_pyfile(filename):
         construct_dict[tuple(current_construct)].append(line.rstrip())
     else:
         construct_dict[()].append(line.rstrip())
-    contents = []
-    for key in sorted(construct_dict):
-        contents.extend(construct_dict[key])
-    return contents
+    return construct_dict
+    # contents = []
+    # for key in sorted(construct_dict):
+    #     contents.extend(construct_dict[key])
+    # for key, item in construct_dict.items():
+    #     print(f'{key=}\n  {item=}')
+    # return contents
 
 
 def compare_pydata(oldfile, newfile):
     """reorder the input files and build the comparison output
     """
-    diff = difflib.Differ()
-    oldfile_lines = read_pyfile(oldfile)
-    newfile_lines = read_pyfile(newfile)
-    return diff.compare(oldfile_lines, newfile_lines)
+    # diff = difflib.Differ()yy
+    # oldfile_lines = read_pyfile(oldfile)
+    # newfile_lines = read_pyfile(newfile)
+    # return diff.compare(oldfile_lines, newfile_lines)
+    # ordenen per key; alleen diffen wat links en rechts onder dezelfde key zit
+    # breakpoint()
+    result = []
+    # wat we gaan vergelijken is alleen de keys
+    leftdict = read_pyfile(oldfile)
+    rightdict = read_pyfile(newfile)
+    leftgen = (x for x in leftdict)
+    rightgen = (x for x in rightdict)
+    eof_gen1, leftitems = gen_next(leftgen)
+    eof_gen2, rightitems = gen_next(rightgen)
+    while True:
+        if eof_gen1 and eof_gen2:
+            break
+        get_from_1 = get_from_2 = False
+        if (eof_gen1, leftitems) < (eof_gen2, rightitems):
+            result.append((leftitems, leftdict[leftitems], []))
+            if not eof_gen1:
+                get_from_1 = True
+        elif (eof_gen1, leftitems) > (eof_gen2, rightitems):
+            result.append((rightitems, [], rightdict[rightitems]))
+            if not eof_gen2:
+                get_from_2 = True
+        else:
+            result.append((leftitems, leftdict[leftitems], rightdict[rightitems]))
+            get_from_1 = True
+            get_from_2 = True
+        if get_from_1:
+            eof_gen1, leftitems = gen_next(leftgen)
+        if get_from_2:
+            eof_gen2, rightitems = gen_next(rightgen)
+    return result
+
 
 def refresh_pycompare(comparer):
-    """redo the comparison
+    """redo the comparison (visually)
     """
-    comparer.gui.init_tree('code in both', f'code in {comparer.parent.lhs_path}',
+    # voorbewerking
+    newdata = []
+    dataitem = []
+    # breakpoint()
+    for item in sorted(comparer.parent.data):
+        newkey = item[0] != dataitem[0] if dataitem else True
+        if dataitem and newkey:
+            newdata.append(tuple(dataitem))
+        if newkey:
+            dataitem = [item[0], [], []]
+        if item[1]:
+            dataitem[1] = item[1]
+        if item[2]:
+            dataitem[2] = item[2]
+    newdata.append(tuple(dataitem))
+
+
+
+    diff = difflib.Differ()
+    comparer.gui.init_tree('construct', f'code in {comparer.parent.lhs_path}',
                            f'code in {comparer.parent.rhs_path}')
     prev_indent = 0
     prev_node = ''
     # parents = {-1: None}
     parents = []
-    for line in  comparer.parent.data:
-        line_prefix = line[:2]
-        line_data = line[2:]
-        nodevalue = lvalue = rvalue = ''
-        if line_prefix == '  ':
-            nodevalue = line_data
-        elif line_prefix == '- ':
-            lvalue = line_data
-        elif line_prefix == '+ ':
-            rvalue = line_data
-        else:  # bv. '? '
-            continue
-        indent = len(line_data) - len(line_data.strip())
-        if indent == 0:
-            prev_node = comparer.gui.build_header(nodevalue)
-            if lvalue:
-                comparer.gui.set_node_text(prev_node, 0, lvalue)
-                comparer.gui.set_node_text(prev_node, 1, lvalue)
-            if rvalue:
-                comparer.gui.set_node_text(prev_node, 0, rvalue)
-                comparer.gui.set_node_text(prev_node, 2, rvalue)
-            parents = []
-        else:
-            if indent > prev_indent:
-                parents.append(prev_node)
-            elif indent < prev_indent:
-                parents.pop()
-            prev_node = comparer.gui.build_child(parents[-1], nodevalue)
-            if lvalue:
-                comparer.gui.set_node_text(prev_node, 1, lvalue)
-            if rvalue:
-                comparer.gui.set_node_text(prev_node, 2, rvalue)
-        prev_indent = indent
+    # in de nieuwe variant hebben we per item:
+    #   een sleutel, regels voor de linkerkant, en regels voor de rechterkant
+    # parents aanmaken net als bij jsoncompare
+    # als alleen links of rechts: alle regels aanmaken als children
+    # als beide: difflib loslaten op de sets met regels, resultaat aanmaken als children
+    parentdict = {}
+    for line in newdata:
+        # print(line, flush=True)
+        elements, lvalues, rvalues = line
+        if not elements:
+            elements = ['module level']
+        keylist = []
+        # breakpoint()
+        for level in elements:
+            keylist.append(level)
+            key = tuple(keylist)
+            if key not in parentdict:
+                if len(key) == 1:
+                    node = comparer.gui.build_header(key[-1])
+                    # comparer.gui.colorize_header(node, side == 'right', side == 'left', False)
+                else:
+                    parentlist = keylist[:-1]
+                    parentkey = tuple(parentlist)
+                    node = comparer.gui.build_child(parentdict[parentkey], key[-1])
+                    # comparer.gui.colorize_child(node, side == 'right', side == 'left', False)
+                parentdict[key] = node
+        if lvalues and not rvalues:
+            for line in lvalues:
+                node = comparer.gui.build_child(parentdict[key], '')
+                comparer.gui.set_node_text(node, 1, line)
+                comparer.gui.colorize_child(node, False, True, False)
+        elif rvalues and not lvalues:
+            for line in rvalues:
+                node = comparer.gui.build_child(parentdict[key], '')
+                comparer.gui.set_node_text(node, 2, line)
+                comparer.gui.colorize_child(node, True, False, False)
+        elif lvalues and rvalues:
+            difflines = diff.compare(lvalues, rvalues)
+            for line in difflines:
+                if line[:2] == '? ':
+                    continue
+                leftonly = line[:2] == '- '
+                rightonly = line[:2] == '+ '
+                value = line[2:]
+                node = comparer.gui.build_child(parentdict[key], '')
+                if not leftonly:
+                    comparer.gui.set_node_text(node, 2, value)
+                if not rightonly:
+                    comparer.gui.set_node_text(node, 1, value)
+                comparer.gui.colorize_child(node, rightonly, leftonly, False)
+
+
+def gen_next(gen):
+    "generator to get next values from data collection"
+    eof = False
+    try:
+        items = next(gen)
+    except StopIteration:
+        eof = True
+        items = []
+    return eof, items
