@@ -97,6 +97,7 @@ def show_dialog(parent, cls):
 
     parent argument is voor compatibiliteit met wx versie
     """
+    cls.update_typeselector()
     ok = cls.exec()
     return ok == qtw.QDialog.DialogCode.Accepted
 
@@ -141,13 +142,14 @@ class AskOpenFilesGui(qtw.QDialog):
         gsizer = qtw.QGridLayout()
         gsizer.addWidget(qtw.QLabel(comparetext), 0, 0)
         self.sel = []
-        for ix, type_ in enumerate(sorted(choices)):
-            text = choices[type_][0]
+        for ix, cmptype in enumerate(sorted(choices)):
+            text = choices[cmptype][0]
             rb = qtw.QRadioButton(text, self)
             gsizer.addWidget(rb, ix, 1)
-            if self.master.parent.comparetype == type_:
-                rb.setChecked(True)
-            self.sel.append((rb, type_))
+            # dit heeft hier nog geen nut, omdat comparetype nog niet bepaald is
+            # if self.master.parent.comparetype == cmptype:
+            #     rb.setChecked(True)
+            self.sel.append((rb, cmptype))
         hsizer.addLayout(gsizer)
         hsizer.addStretch()
         self.sizer.addLayout(hsizer)
@@ -165,16 +167,24 @@ class AskOpenFilesGui(qtw.QDialog):
         self.sizer.addLayout(hsizer)
         self.setLayout(self.sizer)
 
+    def update_typeselector(self):
+    # def _exec(self):
+        "gebruikte vergelijkingsmethode aangeven bij uitsturen"
+        for rb, cmptype in self.sel:
+            rb.setChecked(False)
+            if cmptype == self.master.parent.comparetype:
+                rb.setChecked(True)
+    #    super().exec()
+
     def accept(self):
         """transmit the chosen data
         """
         linkerpad = self.browse1.input.currentText()
         rechterpad = self.browse2.input.currentText()
         selectiontype = ''
-        for ix, sel in enumerate(self.sel):
-            # print('   ', ix)
-            if sel[0].isChecked():
-                selectiontype = sel[1]
+        for rb, cmptype in self.sel:
+            if rb.isChecked():
+                selectiontype = cmptype
                 break
         mld = self.master.check_input(linkerpad, rechterpad, selectiontype)
         if mld:

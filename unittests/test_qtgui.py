@@ -189,17 +189,23 @@ def test_show_dialog(monkeypatch, capsys):
     def mock_exec(cls):
         print('called Dialog.exec')
         return True
+    def mock_update():
+        print('called dialog.update_typeselector')
     mockparent = 'parent'
     monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
     monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
     cls = testee.qtw.QDialog('xxx')
+    cls.update_typeselector = mock_update
     assert not testee.show_dialog(mockparent, cls)
     assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
+                                       'called dialog.update_typeselector\n'
                                        "called Dialog.exec\n")
     monkeypatch.setattr(testee.qtw.QDialog, 'exec', mock_exec)
     cls = testee.qtw.QDialog('xxx')
+    cls.update_typeselector = mock_update
     assert testee.show_dialog(mockparent, cls)
     assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
+                                       'called dialog.update_typeselector\n'
                                        "called Dialog.exec\n")
 
 
@@ -281,15 +287,12 @@ class TestAskOpenFilesGui:
             "called HBox.addSpacing\n"
             "called Grid.__init__\n"
             "called Label.__init__ with args ('comparetext',)\n"
-            "called Grid.addWidget with arg MockLabel"
-            " at (0, 0)\n"
+            "called Grid.addWidget with arg MockLabel at (0, 0)\n"
             f"called RadioButton.__init__ with args ('xxx', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg MockRadioButton"
-            " at (0, 1)\n"
+            "called Grid.addWidget with arg MockRadioButton at (0, 1)\n"
             f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg MockRadioButton"
-            " at (1, 1)\n"
-            "called RadioButton.setChecked with arg `True`\n"
+            "called Grid.addWidget with arg MockRadioButton at (1, 1)\n"
+            # "called RadioButton.setChecked with arg `True`\n"
             "called HBox.addLayout with arg MockGridLayout\n"
             "called HBox.addStretch\n"
             "called VBox.addLayout with arg MockHBoxLayout\n"
@@ -303,7 +306,25 @@ class TestAskOpenFilesGui:
             "called HBox.addWidget with arg MockButtonBox\n"
             "called HBox.addStretch\n"
             "called VBox.addLayout with arg MockHBoxLayout\n"
-            "called Dialog.setLayout\n")
+            "called Dialog.setLayout with arg MockVBoxLayout\n")
+
+    def test_update_typeselector(self, monkeypatch, capsys):
+        """unittest for AskOpenFilesGui.upate_typeselector
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        check1 = mockqtw.MockCheckBox()
+        check2 = mockqtw.MockCheckBox()
+        check3 = mockqtw.MockCheckBox()
+        assert capsys.readouterr().out == ("called CheckBox.__init__\n"
+                                           "called CheckBox.__init__\n"
+                                           "called CheckBox.__init__\n")
+        testobj.sel = ((check1, 'type1'), (check2, 'type2'), (check3, 'type3'))
+        testobj.master = types.SimpleNamespace(parent=types.SimpleNamespace(comparetype='type2'))
+        testobj.update_typeselector()
+        assert capsys.readouterr().out == ("called CheckBox.setChecked with arg False\n"
+                                           "called CheckBox.setChecked with arg False\n"
+                                           "called CheckBox.setChecked with arg True\n"
+                                           "called CheckBox.setChecked with arg False\n")
 
     def test_accept(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.accept

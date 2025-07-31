@@ -94,7 +94,9 @@ class Comparer:
     def open(self):
         "show open dialog"
         ok = gui.show_dialog(self.get_input, self.get_input.gui)
-        return ok
+        if ok:
+            self.doit()
+        # return ok
 
     def doit(self, event=None):   # , first_time=False):
         """perform action
