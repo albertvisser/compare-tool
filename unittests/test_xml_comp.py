@@ -229,7 +229,6 @@ def test_compare_xmldata(monkeypatch, capsys):
             "called gen_next from left side returning ('EOF', (True, '', '', ''))\n")
 
 
-# 204->exit
 def test_refresh_xmlcompare(capsys):
     """unittest for xml_comp.refresh_xmlcompare
     """
@@ -277,6 +276,10 @@ def test_refresh_xmlcompare(capsys):
     assert capsys.readouterr().out == "called Comparer.__init__\ncalled ComparerGui.__init__\n"
     comparer.parent.lhs_path = 'old file'
     comparer.parent.rhs_path = 'new file'
+    comparer.parent.data = []
+    testee.refresh_xmlcompare(comparer)
+    assert capsys.readouterr().out == (
+            "called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')\n")
     comparer.parent.data = [
             (([('top', 0)], ''), '', ''),
             (([('top', 0), ('daaro', 0)], ''), '', ''),
