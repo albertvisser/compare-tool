@@ -39,31 +39,10 @@ def compare_jsondata(oldfile, newfile):
 def refresh_jsoncompare(comparer):
     """redo the comparison (visually)
     """
-    # print(comparer.parent.data)
-    # voorbewerking
-    newdata = []
-    prev_line = ''
-    prev_line_data = ([], '', '')  # (prev_elements, prev_value, prev_side)
-    line_to_append = []
-    for line in comparer.parent.data:
-        elements, side = line
-        if prev_line and elements[:-1] != prev_line_data[0]:
-            newdata.append(line_to_append)
-            line_to_append = []
-        value = elements.pop()
-        if not line_to_append:
-            line_to_append = [elements, '', '']
-        if side in ('left', 'both'):
-            line_to_append[1] = value
-        if side in ('right', 'both'):
-            line_to_append[2] = value
-        prev_line = line
-        prev_line_data = (elements, value, side)
-    newdata.append(line_to_append)
     # print(newdata, flush=True)
     comparer.gui.init_tree('key/value', comparer.parent.lhs_path, comparer.parent.rhs_path)
     parentdict = {}
-    for item in newdata:
+    for item in prepare_values(comparer.parent.data):
         elements, lvalue, rvalue = item
         keylist = []
         for level in elements:
@@ -87,39 +66,31 @@ def refresh_jsoncompare(comparer):
                                     lvalue and rvalue and lvalue != rvalue)
 
 
-def refresh_jsoncompare_working(comparer):
-    """redo the comparison (visually)
+def prepare_values(data):
+    """preprocess the comparison data
     """
-    # print('in refresh_jsoncompare')
-    comparer.gui.init_tree('key/value', comparer.parent.lhs_path, comparer.parent.rhs_path)
-    print(comparer.parent.data)
-    parentdict = {}
-    # breakpoint()
-    for item in comparer.parent.data:
-        elements, side = item
+    newdata = []
+    prev_line = ''
+    prev_line_data = ([], '', '')  # (prev_elements, prev_value, prev_side)
+    line_to_append = []
+    for line in data:
+        elements, side = line
+        if prev_line and elements[:-1] != prev_line_data[0]:
+            newdata.append(line_to_append)
+            line_to_append = []
         value = elements.pop()
-        keylist = []
-        for level in elements:
-            keylist.append(level)
-            key = tuple(keylist)
-            if key not in parentdict:
-                if len(key) == 1:
-                    node = comparer.gui.build_header(key[-1])
-                    # comparer.gui.colorize_header(node, side == 'right', side == 'left', False)
-                else:
-                    parentlist = keylist[:-1]
-                    parentkey = tuple(parentlist)
-                    node = comparer.gui.build_child(parentdict[parentkey], key[-1])
-                    # comparer.gui.colorize_child(node, side == 'right', side == 'left', False)
-                parentdict[key] = node
+        if not line_to_append:
+            line_to_append = [elements, '', '']
         if side in ('left', 'both'):
-            comparer.gui.set_node_text(node, 1, value)
+            line_to_append[1] = value
         if side in ('right', 'both'):
-            comparer.gui.set_node_text(node, 2, value)
-    # de onderste waarde kan ingekleurd worden zoals deze moet zijn
-    # mogelijk de bovenliggende waarden ook?
-    # "both" is makkelijk, die kan ik negeren
-    # maar hoe detecteer ik een left en right direct achter elkaar
+            line_to_append[2] = value
+        prev_line = line
+        prev_line_data = (elements, value, side)
+    if prev_line:
+        newdata.append(line_to_append)
+    return newdata
+
 
 def readjson(filename):
     """read a json file to produce a "data collection"
