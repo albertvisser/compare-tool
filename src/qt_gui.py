@@ -64,11 +64,15 @@ class MainWindow(qtw.QMainWindow):
 
     def meld_vergelijking_fout(self, message, data):
         "show comparison error(s)"
+        # print(data)
         box = qtw.QMessageBox(self)
         box.setWindowTitle(self.master.apptitel)
         box.setText(message)
         if data:
-            box.setInformativeText(f'<pre>{"".join(data)}</pre>')
+            # box.setTextFormat(core.Qt.TextFormat.PlainText)
+            # box.setInformativeText(f'<pre>{"".join(data)}</pre>')
+            box.setTextFormat(core.Qt.TextFormat.MarkdownText)
+            box.setInformativeText(f'```\n{"".join(data)}```\n')
         box.exec()
 
     def meld(self, melding):

@@ -124,7 +124,8 @@ class TestMainWindow:
                 f"called MessageBox.__init__ with args ({testobj},) {{}}\n"
                 "called MessageBox.setWindowTitle with arg `Comparer`\n"
                 "called MessageBox.setText with arg `A message`\n"
-                "called MessageBox.setInformativeText with arg `<pre>withtext</pre>`\n"
+                "called MessageBox.setTextFormat with arg `TextFormat.MarkdownText`\n"
+                "called MessageBox.setInformativeText with arg ````\nwithtext```\n`\n"
                 "called MessageBox.exec\n")
 
     def test_meld(self, monkeypatch, capsys):
