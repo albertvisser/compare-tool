@@ -29,14 +29,14 @@ def test_compare_jsondata(monkeypatch, capsys):
         result = ['', (True, ''), (False, 'xxx'), (True, '')][counter]
         print(f'called gen_next from {which} with result {result}')
         return result
-    def mock_gen_3(arg):
-        "stub"
-        nonlocal counter
-        counter += 1
-        which = 'right' if counter == 1 else 'left'
-        result = ['', (False, 'xxx'), (True, ''), (True, '')][counter]
-        print(f'called gen_next from {which} with result {result}')
-        return result
+    # def mock_gen_3(arg):
+    #     "stub"
+    #     nonlocal counter
+    #     counter += 1
+    #     which = 'right' if counter == 1 else 'left'
+    #     result = ['', (False, 'xxx'), (True, ''), (True, '')][counter]
+    #     print(f'called gen_next from {which} with result {result}')
+    #     return result
     monkeypatch.setattr(testee, 'readjson', mock_read)
     monkeypatch.setattr(testee, 'gen_next', mock_gen)
     counter = 0
@@ -74,6 +74,8 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
         print(f'called prepare_values with arg {data}')
         return data
     class MockGui:
+        """testdouble for gui.ShowComparisomnGui object
+        """
         def init_tree(self, *args):
             print('called comparergui.init_tree with args', args)
         def build_header(self, *args):
@@ -126,12 +128,11 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
             "called comparergui.colorize_child with args (None, '', True, '')\n")
 
 
-def test_prepare_values(monkeypatch, capsys):
+def test_prepare_values():
     """unittest for json_comp.prepare_values
     """
     data = []
     assert testee.prepare_values(data) == []
-    assert capsys.readouterr().out == ""
     data = [(['x'], 'both'), (['w', 'x'], 'left'), (['x', 'z'], 'both'), (['x', 'y', 'z'], 'left'),
             (['x', 'y', 'z'], 'right'), (['x', 'q'], 'right')]
     assert testee.prepare_values(data) == [[[], 'x', 'x'],
@@ -152,7 +153,7 @@ def test_readjson(monkeypatch, capsys, tmp_path):
         return 'data was read'
     monkeypatch.setattr(testee.json, 'load', mock_load)
     monkeypatch.setattr(testee, 'read_dict', mock_read)
-    filepath = tmp_path /'mydata.json'
+    filepath = tmp_path / 'mydata.json'
     filename = str(filepath)
     with pytest.raises(FileNotFoundError):
         testee.readjson(filename)

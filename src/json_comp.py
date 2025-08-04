@@ -1,8 +1,11 @@
-import sys
+"""compare logic for json files
+
+output naar hoofdprogramma: list van 3-tuples
+1e waarde: node (list of parent elements)
+2e waarde: entry in linkerfile
+3e waarde: entry in rechterfile
+"""
 import json
-import pathlib
-import difflib
-import pprint
 
 
 def compare_jsondata(oldfile, newfile):
@@ -67,7 +70,7 @@ def refresh_jsoncompare(comparer):
 
 
 def prepare_values(data):
-    """preprocess the comparison data
+    """preprocess the comparison data, combining values from left and right side where applicable
     """
     newdata = []
     prev_line = ''
