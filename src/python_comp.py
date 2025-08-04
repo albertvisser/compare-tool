@@ -1,7 +1,11 @@
-import sys
-import os
+"""compare logic for html files
+
+output naar hoofdprogramma: list van 3-tuples
+1e waarde: node (list of construct names)
+2e waarde: list of code lines in linkerfile
+3e waarde: list of code lines in rechterfile
+"""
 import difflib
-import pprint
 
 
 def read_pyfile(filename):
@@ -12,15 +16,10 @@ def read_pyfile(filename):
     then all defs on this level in alphabetical order
     then all classes on this level in alphabetical order
     """
-    def calc_indent(line):
-        return len(line) - len(line.lstrip())
     with open(filename) as pyfile:
         pylines = pyfile.readlines()
-    # breakpoint()
-    contents = {'': []}
-    # defs = {}
-    # classes = {}
-    current = {}  # 'name': '', 'contents': []}
+    # contents = {'': []}
+    # current = {}
     current_indent = 0
     current_construct = []
     construct_dict = {(): []}
@@ -30,18 +29,11 @@ def read_pyfile(filename):
             continue
         if line.strip() == line.rstrip():
             indent = 0
-            if current:
-                contents[current['name']] = current['contents']
-                current = {}
-            if line.startswith('def'):
-                current_construct = [line.split('(')[0]]
-                construct_dict[tuple(current_construct)] = [line.rstrip()]
-                in_construct = True
-            elif line.startswith('class'):
-                if '(' in line:
-                    current_construct = [line.rsplit('(')[0]]
-                else:
-                    current_construct = [line.rsplit(':')[0]]
+            # if current:
+            #     contents[current['name']] = current['contents']
+            #     current = {}
+            if line.startswith(('def', 'class')):
+                current_construct = [get_construct_name(line)]
                 construct_dict[tuple(current_construct)] = [line.rstrip()]
                 in_construct = True
             else:
@@ -49,47 +41,34 @@ def read_pyfile(filename):
                 construct_dict[tuple(current_construct)].append(line.rstrip())
                 in_construct = False
         elif in_construct:
-            current_indent = calc_indent(line)  # len(line) - len(line.lstrip())
+            current_indent = calc_indent(line)
             if current_indent < indent and current_construct:
                 while current_indent <= calc_indent(current_construct[-1]):
-                # len(current_construct[-1]) - len(current_construct[-1].lstrip())
                     current_construct.pop()
             indent = current_indent
-            if line.lstrip().startswith('def'):
-                current_construct.append(line.split('(')[0])
-                construct_dict[tuple(current_construct)] = [line.rstrip()]
-            elif line.lstrip().startswith('class'):
-                if '(' in line:
-                    current_construct.append(line.rsplit('(')[0])
-                else:
-                    current_construct.append(line.rsplit(':')[0])
+            if line.lstrip().startswith(('def', 'class')):
+                current_construct.append(get_construct_name(line))
                 construct_dict[tuple(current_construct)] = [line.rstrip()]
             else:
                 construct_dict[tuple(current_construct)].append(line.rstrip())
         else:
             construct_dict[tuple(current_construct)].append(line.rstrip())
-    if in_construct:
-        construct_dict[tuple(current_construct)].append(line.rstrip())
-    else:
-        construct_dict[()].append(line.rstrip())
     return construct_dict
-    # contents = []
-    # for key in sorted(construct_dict):
-    #     contents.extend(construct_dict[key])
-    # for key, item in construct_dict.items():
-    #     print(f'{key=}\n  {item=}')
-    # return contents
+
+
+def calc_indent(line):
+    "calculeate number of leading spaces on line"
+    return len(line) - len(line.lstrip())
+
+
+def get_construct_name(line):
+    "determine name of class or function def"
+    return line.rsplit('(')[0] if '(' in line else line.rsplit(':')[0]
 
 
 def compare_pydata(oldfile, newfile):
     """reorder the input files and build the comparison output
     """
-    # diff = difflib.Differ()yy
-    # oldfile_lines = read_pyfile(oldfile)
-    # newfile_lines = read_pyfile(newfile)
-    # return diff.compare(oldfile_lines, newfile_lines)
-    # ordenen per key; alleen diffen wat links en rechts onder dezelfde key zit
-    # breakpoint()
     result = []
     # wat we gaan vergelijken is alleen de keys
     leftdict = read_pyfile(oldfile)
@@ -124,11 +103,35 @@ def compare_pydata(oldfile, newfile):
 def refresh_pycompare(comparer):
     """redo the comparison (visually)
     """
-    # voorbewerking
+    diff = difflib.Differ()
+    comparer.gui.init_tree('construct', f'code in {comparer.parent.lhs_path}',
+                           f'code in {comparer.parent.rhs_path}')
+    parentdict = {}
+    for line in prepare_values(comparer.parent.data):
+        elements, lvalues, rvalues = line
+        if not elements:
+            elements = ['module level']
+        keylist = []
+        for level in elements:
+            keylist.append(level)
+            key = tuple(keylist)
+            if key not in parentdict:
+                parentdict[key] = add_new_parentnode(comparer, parentdict, key)
+        if lvalues and not rvalues:
+            add_functionbody_nodes_one_side(comparer, parentdict[key], lvalues, 'left')
+        elif rvalues and not lvalues:
+            add_functionbody_nodes_one_side(comparer, parentdict[key], rvalues, 'right')
+        elif lvalues and rvalues:
+            difflines = diff.compare(lvalues, rvalues)
+            add_functionbody_nodes_both_sides(comparer, parentdict[key], difflines)
+
+
+def prepare_values(data):
+    """preprocess comparison data, combining values from left and right side where applicable
+    """
     newdata = []
     dataitem = []
-    # breakpoint()
-    for item in sorted(comparer.parent.data):
+    for item in sorted(data):
         newkey = item[0] != dataitem[0] if dataitem else True
         if dataitem and newkey:
             newdata.append(tuple(dataitem))
@@ -138,67 +141,58 @@ def refresh_pycompare(comparer):
             dataitem[1] = item[1]
         if item[2]:
             dataitem[2] = item[2]
-    newdata.append(tuple(dataitem))
+    if dataitem:
+        newdata.append(tuple(dataitem))
+    return newdata
 
 
+def add_new_parentnode(comparer, parentdict, key):
+    """add a node for a construct if it doesn't exist yet
+    """
+    if len(key) == 1:
+        node = comparer.gui.build_header(key[-1])
+        # comparer.gui.colorize_header(node, side == 'right', side == 'left', False)
+    else:
+        # parentlist = keylist[:-1]
+        # parentkey = tuple(parentlist)
+        parentkey = key[:-1]
+        node = comparer.gui.build_child(parentdict[parentkey], key[-1].lstrip())
+        # comparer.gui.colorize_child(node, side == 'right', side == 'left', False)
+    return node
 
-    diff = difflib.Differ()
-    comparer.gui.init_tree('construct', f'code in {comparer.parent.lhs_path}',
-                           f'code in {comparer.parent.rhs_path}')
-    prev_indent = 0
-    prev_node = ''
-    # parents = {-1: None}
-    parents = []
-    # in de nieuwe variant hebben we per item:
-    #   een sleutel, regels voor de linkerkant, en regels voor de rechterkant
-    # parents aanmaken net als bij jsoncompare
-    # als alleen links of rechts: alle regels aanmaken als children
-    # als beide: difflib loslaten op de sets met regels, resultaat aanmaken als children
-    parentdict = {}
-    for line in newdata:
-        # print(line, flush=True)
-        elements, lvalues, rvalues = line
-        if not elements:
-            elements = ['module level']
-        keylist = []
-        # breakpoint()
-        for level in elements:
-            keylist.append(level)
-            key = tuple(keylist)
-            if key not in parentdict:
-                if len(key) == 1:
-                    node = comparer.gui.build_header(key[-1])
-                    # comparer.gui.colorize_header(node, side == 'right', side == 'left', False)
-                else:
-                    parentlist = keylist[:-1]
-                    parentkey = tuple(parentlist)
-                    node = comparer.gui.build_child(parentdict[parentkey], key[-1])
-                    # comparer.gui.colorize_child(node, side == 'right', side == 'left', False)
-                parentdict[key] = node
-        if lvalues and not rvalues:
-            for line in lvalues:
-                node = comparer.gui.build_child(parentdict[key], '')
-                comparer.gui.set_node_text(node, 1, line)
-                comparer.gui.colorize_child(node, False, True, False)
-        elif rvalues and not lvalues:
-            for line in rvalues:
-                node = comparer.gui.build_child(parentdict[key], '')
-                comparer.gui.set_node_text(node, 2, line)
-                comparer.gui.colorize_child(node, True, False, False)
-        elif lvalues and rvalues:
-            difflines = diff.compare(lvalues, rvalues)
-            for line in difflines:
-                if line[:2] == '? ':
-                    continue
-                leftonly = line[:2] == '- '
-                rightonly = line[:2] == '+ '
-                value = line[2:]
-                node = comparer.gui.build_child(parentdict[key], '')
-                if not leftonly:
-                    comparer.gui.set_node_text(node, 2, value)
-                if not rightonly:
-                    comparer.gui.set_node_text(node, 1, value)
-                comparer.gui.colorize_child(node, rightonly, leftonly, False)
+
+def add_functionbody_nodes_one_side(comparer, parent, values, side):
+    """add nodes for the function body when it's only on one side
+    """
+    top = comparer.gui.build_child(parent, 'function body')
+    if side == 'left':
+        pos, leftonly, rightonly = 1, True, False
+    else:
+        pos, leftonly, rightonly = 2, False, True
+    # comparer.gui.set_node_text(top, pos, '')
+    comparer.gui.colorize_child(top, rightonly, leftonly, False)
+    for line in values:
+        node = comparer.gui.build_child(top, '')
+        comparer.gui.set_node_text(node, pos, line)
+        comparer.gui.colorize_child(node, rightonly, leftonly, False)
+
+
+def add_functionbody_nodes_both_sides(comparer, parent, difflines):
+    """add nodes for the function body after comparing the lines
+    """
+    top = comparer.gui.build_child(parent, 'function body')
+    for line in difflines:
+        if line[:2] == '? ':
+            continue
+        leftonly = line[:2] == '- '
+        rightonly = line[:2] == '+ '
+        value = line[2:]
+        node = comparer.gui.build_child(top, '')
+        if not leftonly:
+            comparer.gui.set_node_text(node, 2, value)
+        if not rightonly:
+            comparer.gui.set_node_text(node, 1, value)
+        comparer.gui.colorize_child(node, rightonly, leftonly, False)
 
 
 def gen_next(gen):

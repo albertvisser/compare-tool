@@ -1,377 +1,292 @@
 """unittests for ./src/python_comp.py
 """
+import types
 from src import python_comp as testee
 
 
-class TestReadPyfile:
-    """unittest for python_comp.ReadPyfile
+def test_read_pyfile(tmp_path):
+    """unittest for python_comp.read_pyfile
     """
-    def setup_testobj(self, monkeypatch, capsys):
-        """stub for python_comp.ReadPyfile object
+    filepath = tmp_path / 'filename.py'
+    filename = str(filepath)
+    filepath.touch()
+    assert testee.read_pyfile(filename) == {(): []}
+    filepath.write_text('"""docstring\n'
+                        '"""\n'
+                        "\n"
+                        "import x\n"
+                        "from y import x\n"
+                        "# this is a comment\n"
+                        "def qqq(rrr):\n"
+                        '    """a function"""\n'
+                        "    def inner():\n"
+                        "        print('qqq')\n"
+                        '    print("rrr")\n'
+                        "\n"
+                        "class Abc:\n"
+                        "    abccount = 0\n"
+                        "    def __init__(self):\n"
+                        "        self.count = 0\n"
+                        "        self.abccount += 1\n"
+                        "\n"
+                        "if __name__ == '__main__':\n"
+                        "   qqq('hello')\n")
+    assert testee.read_pyfile(filename) == {
+            (): ['"""docstring', '"""', 'import x', 'from y import x',
+                 "if __name__ == '__main__':", "   qqq('hello')"],
+            ('def qqq',): ['def qqq(rrr):', '    """a function"""', '    print("rrr")'],
+            ('def qqq', '    def inner'): ['    def inner():', "        print('qqq')"],
+            ('class Abc',): ['class Abc:', '    abccount = 0'],
+            ('class Abc', '    def __init__'): ['    def __init__(self):',
+                                                '        self.count = 0',
+                                                '        self.abccount += 1']}
+    filepath.write_text("def qqq():\n"
+                        "    print('ququ', end='')\n"
+                        "    print('lequ')\n")
+    assert testee.read_pyfile(filename) == {
+            (): [],
+            ('def qqq',): ['def qqq():', "    print('ququ', end='')", "    print('lequ')"]}
 
-        create the object skipping the normal initialization
-        intercept messages during creation
-        return the object so that other methods can be monkeypatched in the caller
-        """
-        def mock_init(self, *args):
-            """stub
-            """
-            print('called ReadPyfile.__init__ with args', args)
-        monkeypatch.setattr(testee.ReadPyfile, '__init__', mock_init)
-        testobj = testee.ReadPyfile()
-        assert capsys.readouterr().out == 'called ReadPyfile.__init__ with args ()\n'
-        return testobj
 
-    def test_init(self, tmp_path):
-        """unittest for ReadPyfile.__init__
-        """
-        testfile = tmp_path / 'sample_data'
-        testfile.write_text('xxx\nyyy\nzzz\n')
-        testobj = testee.ReadPyfile(testfile)
-        assert testobj.pylines == ['xxx\n', 'yyy\n', 'zzz\n']
-        assert testobj.contents == {'filename': testfile, 'docstring': [], 'imports': [],
-                                    'module-level code': [], 'symbols': [], 'functions': [],
-                                    'classes': []}
-        assert not testobj.in_docstring
-        assert not testobj.handle_construct
-        assert not testobj.handle_function
-        assert not testobj.handle_class
-        assert testobj.docstring_delim == ''
+def test_calc_indent():
+    """unittest for python_comp.calc_indent
+    """
+    assert testee.calc_indent('') == 0
+    assert testee.calc_indent('xxxxx') == 0
+    assert testee.calc_indent('    xxxxx') == 4
 
-    def test_process(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.process
-        """
-        def mock_do_docstr(line):
-            print(f"called testobj.do_docstring_line with arg {line}")
-            return ''
-        def mock_do_docstr_2(line):
-            print(f"called testobj.do_docstring_line with arg {line}")
-            return line
-        def mock_is_docstr(line):
-            print(f"called testobj.is_line_module_docstring_start with arg {line}")
-            return True
-        def mock_is_docstr_2(line):
-            print(f"called testobj.is_line_module_docstring_start with arg {line}")
-            return False
-        def mock_fun_start(line):
-            print(f"called testobj.do_function_start with arg {line}")
-        def mock_cls_start(line):
-            print(f"called testobj.do_class_start with arg {line}")
-        def mock_save():
-            print("called testobj.save_prev_construct")
-        def mock_construct(line):
-            print(f"called testobj.do_construct with arg {line}")
-        def mock_add(line):
-            print(f"called testobj.add_to_construct with arg '{line}'")
-        def mock_fun_line(line):
-            print(f"called testobj.do_function_line with arg '{line}'")
-        def mock_cls_line(line):
-            print(f"called testobj.do_class_line with arg '{line}'")
 
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.do_docstring_line = mock_do_docstr
-        testobj.is_line_module_docstring_start = mock_is_docstr
-        testobj.do_function_start = mock_fun_start
-        testobj.do_class_start = mock_cls_start
-        testobj.save_prev_construct = mock_save
-        testobj.do_construct = mock_construct
-        testobj.add_to_construct = mock_add
-        testobj.do_function_line = mock_fun_line
-        testobj.do_class_line = mock_cls_line
-        testobj.handle_construct = False
-        testobj.pylines = ['', '\n']
-        testobj.process()
-        assert capsys.readouterr().out == ""
+def test_get_construct_name():
+    """unittest for python_comp.get_construct_name
+    """
+    assert testee.get_construct_name('def fun(x, y):') == "def fun"
+    assert testee.get_construct_name('class Gargl:') == "class Gargl"
+    assert testee.get_construct_name('class Gargl(Argl):') == "class Gargl"
+    assert testee.get_construct_name('    def fun(x, y):') == "    def fun"
+    assert testee.get_construct_name('    class Gargl:') == "    class Gargl"
+    assert testee.get_construct_name('    class Gargl(Argl):') == "    class Gargl"
 
-        testobj.contents = {'docstring': []}
-        testobj.in_docstring = True
-        testobj.handle_function = False
-        testobj.handle_class = False
-        testobj.pylines = ['xxxx', 'yyyy']
-        testobj.process()
-        assert not testobj.contents['docstring']
-        assert capsys.readouterr().out == ("called testobj.do_docstring_line with arg xxxx\n"
-                                           "called testobj.do_docstring_line with arg yyyy\n")
-        testobj.do_docstring_line = mock_do_docstr_2
-        testobj.process()
-        assert testobj.contents['docstring'] == ['xxxx', 'yyyy']
-        assert capsys.readouterr().out == ("called testobj.do_docstring_line with arg xxxx\n"
-                                           "called testobj.do_docstring_line with arg yyyy\n")
 
-        testobj.contents = {'imports': []}
-        testobj.in_docstring = False
-        testobj.pylines = ['xxxx']
-        testobj.process()
-        assert capsys.readouterr().out == (
-                "called testobj.is_line_module_docstring_start with arg xxxx\n")
-        testobj.is_line_module_docstring_start = mock_is_docstr_2
-        testobj.pylines = ['import this', 'from chaos import order', 'def function', 'class Class']
-        testobj.process()
-        assert capsys.readouterr().out == (
-                "called testobj.is_line_module_docstring_start with arg import this\n"
-                "called testobj.is_line_module_docstring_start with arg from chaos import order\n"
-                "called testobj.is_line_module_docstring_start with arg def function\n"
-                "called testobj.do_function_start with arg def function\n"
-                "called testobj.is_line_module_docstring_start with arg class Class\n"
-                "called testobj.do_class_start with arg class Class\n")
-        testobj.pylines = ['xxxx']
-        testobj.process()
-        assert capsys.readouterr().out == (
-                "called testobj.is_line_module_docstring_start with arg xxxx\n"
-                "called testobj.do_construct with arg xxxx\n")
-        testobj.handle_construct = True
-        testobj.pylines = ['xxxx']
-        testobj.process()
-        assert capsys.readouterr().out == (
-                "called testobj.is_line_module_docstring_start with arg xxxx\n"
-                "called testobj.save_prev_construct\n"
-                "called testobj.do_construct with arg xxxx\n"
-                "called testobj.save_prev_construct\n")
+def test_compare_pydata(monkeypatch, capsys):
+    """unittest for python_comp.compare_pydata
+    """
+    def mock_read(arg):
+        "stub"
+        print(f'called read_pyfile with arg {arg}')
+        return {'x': f'{arg}x', 'y': f'{arg}y', 'z': f'{arg}z'}
+    def mock_gen(arg):
+        "stub"
+        nonlocal count
+        count += 1
+        gen = 'leftgen' if count % 2 == 1 else 'rightgen'
+        result = True, ''
+        print(f'called gen_next for {gen} giving result {result}')
+        return result
+    def mock_gen_2(arg):
+        "stub"
+        nonlocal count
+        count += 1
+        gen = 'leftgen' if count % 2 == 1 else 'rightgen'
+        result = [(False, 'x'), (False, 'x'), (False, 'z'), (False, 'y'),
+                  (False, 'y'), (False, 'z'), (True, ()), (True, ())][count]
+        print(f'called gen_next for {gen} giving result {result}')
+        return result
+    def mock_gen_3(arg):
+        "stub"
+        nonlocal count
+        count += 1
+        result = [(False, 'x', 'leftgen'), (False, 'x', 'rightgen'), (False, 'z', 'leftgen'),
+                  (False, 'y', 'rightgen'), (True, (), 'leftgen'), (False, 'z', 'rightgen'),
+                  (True, (), 'rightgen')][count]
+        print(f'called gen_next for {result[2]} giving result {result[:2]}')
+        return result[:2]
+    monkeypatch.setattr(testee, 'read_pyfile', mock_read)
+    monkeypatch.setattr(testee, 'gen_next', mock_gen)
+    count = 0
+    assert testee.compare_pydata('old', 'new') == []
+    assert capsys.readouterr().out == ("called read_pyfile with arg old\n"
+                                       "called read_pyfile with arg new\n"
+                                       "called gen_next for leftgen giving result (True, '')\n"
+                                       "called gen_next for rightgen giving result (True, '')\n")
+    count = 0
+    monkeypatch.setattr(testee, 'gen_next', mock_gen_2)
+    assert testee.compare_pydata('old', 'new') == [('x', 'oldx', []), ('y', 'oldy', []),
+                                                   ('y', 'oldy', []), ('z', 'oldz', 'newz')]
+    assert capsys.readouterr().out == ("called read_pyfile with arg old\n"
+                                       "called read_pyfile with arg new\n"
+                                       "called gen_next for leftgen giving result (False, 'x')\n"
+                                       "called gen_next for rightgen giving result (False, 'z')\n"
+                                       "called gen_next for leftgen giving result (False, 'y')\n"
+                                       "called gen_next for rightgen giving result (False, 'y')\n"
+                                       "called gen_next for leftgen giving result (False, 'z')\n"
+                                       "called gen_next for rightgen giving result (True, ())\n"
+                                       "called gen_next for leftgen giving result (True, ())\n")
+    count = 0
+    monkeypatch.setattr(testee, 'gen_next', mock_gen_3)
+    assert testee.compare_pydata('old', 'new') == [('x', 'oldx', []), ('y', 'oldy', []),
+                                                   ('z', [], 'newz'), ('z', [], 'newz')]
+    assert capsys.readouterr().out == ("called read_pyfile with arg old\n"
+                                       "called read_pyfile with arg new\n"
+                                       "called gen_next for rightgen giving result (False, 'x')\n"
+                                       "called gen_next for leftgen giving result (False, 'z')\n"
+                                       "called gen_next for rightgen giving result (False, 'y')\n"
+                                       "called gen_next for leftgen giving result (True, ())\n"
+                                       "called gen_next for rightgen giving result (False, 'z')\n"
+                                       "called gen_next for rightgen giving result (True, ())\n")
 
-        testobj.pylines = ['    xxxx']
-        testobj.process()
-        assert capsys.readouterr().out == ("called testobj.add_to_construct with arg '    xxxx'\n"
-                                           "called testobj.save_prev_construct\n")
-        testobj.handle_construct = False
-        testobj.handle_class = True
-        testobj.process()
-        assert capsys.readouterr().out == "called testobj.do_class_line with arg '    xxxx'\n"
-        testobj.handle_class = False
-        testobj.handle_function = True
-        testobj.process()
-        assert capsys.readouterr().out == "called testobj.do_function_line with arg '    xxxx'\n"
-        testobj.handle_function = False
-        testobj.process()
-        assert capsys.readouterr().out == ""
 
-    def test_do_docstring_line(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_docstring_line
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.in_docstring = True
-        testobj.docstring_delim = '"""'
-        assert testobj.do_docstring_line("expected result") == "expected result"
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"""'
-        assert testobj.do_docstring_line('expected result """') == 'expected result '
-        assert not testobj.in_docstring
-        assert testobj.docstring_delim == ''
-        testobj.in_docstring = True
-        testobj.docstring_delim = '"""'
-        assert testobj.do_docstring_line('expected """ result') == 'expected """ result'
-        assert not testobj.in_docstring
-        assert testobj.docstring_delim == ''
+class MockGui:
+    """testdouble for gui.ShowComparisonGui object
+    """
+    def init_tree(self, *args):
+        "stub"
+        print('called comparergui.init_tree with args', args)
+    def build_header(self, *args):
+        "stub"
+        print('called comparergui.build_header with args', args)
+        return 'header'
+    def build_child(self, *args):
+        "stub"
+        print('called comparergui.build_child with args', args)
+        return 'child'
+    def set_node_text(self, *args):
+        "stub"
+        print('called comparergui.set_node_text with args', args)
+    def colorize_child(self, *args):
+        "stub"
+        print('called comparergui.colorize_child with args', args)
 
-    def test_is_line_module_docstring_start(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.is_line_module_docstring_start
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.docstring_delim = ''
-        testobj.in_docstring = False
-        testobj.contents = {'docstring': []}
-        assert not testobj.is_line_module_docstring_start("expected result")
-        assert testobj.docstring_delim == ''
-        assert not testobj.in_docstring
-        assert not testobj.contents['docstring']
-        assert not testobj.is_line_module_docstring_start('e"""xpected result')
-        assert testobj.docstring_delim == ''
-        assert not testobj.in_docstring
-        assert not testobj.contents['docstring']
-        assert testobj.is_line_module_docstring_start('"""expected result')
-        assert testobj.docstring_delim == '"""'
-        assert testobj.in_docstring
-        assert testobj.contents['docstring'] == ['expected result']
-        testobj.docstring_delim = ''
-        testobj.in_docstring = False
-        testobj.contents = {'docstring': []}
-        assert testobj.is_line_module_docstring_start("'''expected result")
-        assert testobj.docstring_delim == "'''"
-        assert testobj.in_docstring
-        assert testobj.contents['docstring'] == ['expected result']
-        testobj.docstring_delim = ''
-        testobj.in_docstring = False
-        testobj.contents = {'docstring': []}
-        assert testobj.is_line_module_docstring_start('"expected result')
-        assert testobj.docstring_delim == '"'
-        assert testobj.in_docstring
-        assert testobj.contents['docstring'] == ['expected result']
-        testobj.docstring_delim = ''
-        testobj.in_docstring = False
-        testobj.contents = {'docstring': []}
-        assert testobj.is_line_module_docstring_start("'expected result")
-        assert testobj.docstring_delim == "'"
-        assert testobj.in_docstring
-        assert testobj.contents['docstring'] == ['expected result']
+class MockComparer:
+    """testdouble for main.ShowComparison object
+    """
+    def __init__(self):
+        self.gui = MockGui()
+        self.parent = types.SimpleNamespace(data='comparer_data', lhs_path='lhs_path',
+                                            rhs_path='rhs_path')
 
-    def test_do_function_start(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_function_start
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.handle_function = False
-        testobj.handle_class = True
-        testobj.handle_construct = True
-        testobj.contents = {'functions': []}
-        testobj.do_function_start("a line")
-        assert testobj.handle_function
-        assert not testobj.handle_class
-        assert not testobj.handle_construct
-        assert testobj.contents['functions'] == [('a line', [], [])]
 
-    def test_do_class_start(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_class_start
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.handle_class = False
-        testobj.handle_function = True
-        testobj.handle_construct = True
-        testobj.contents = {'classes': []}
-        testobj.do_class_start("a line")
-        assert testobj.handle_class
-        assert not testobj.handle_function
-        assert not testobj.handle_construct
-        assert testobj.contents['classes'] == [('a line', [], [])]
+def test_refresh_pycompare(monkeypatch, capsys):
+    """unittest for python_comp.refresh_pycompare
+    """
+    def mock_compare(self, *args):
+        print("called differ.compare with args", args)
+        return ['lvalues'], ['rvalues']
+    def mock_prepare(*args):
+        print("called prepare_values with args", args)
+        return []
+    def mock_prepare_2(*args):
+        print("called prepare_values with args", args)
+        return [('', 'xxx', 'yyy'), (['qqq'], 'aaa', ''), (['qqq', 'rrr'], '', 'bbb'),
+                (['qqq'], 'ccc', 'ccc'), (['qqq', 'rrr'], '', '')]
+    def mock_add(*args):
+        print('called add_new_parentnode with args', args)
+        return args[2]
+    def mock_add_one(*args):
+        print('called add_functionbody_nodes_one_side with args', args)
+    def mock_add_both(*args):
+        print('called add_functionbody_nodes_both_sides with args', args)
+    monkeypatch.setattr(testee.difflib.Differ, 'compare', mock_compare)
+    monkeypatch.setattr(testee, 'prepare_values', mock_prepare)
+    monkeypatch.setattr(testee, 'add_new_parentnode', mock_add)
+    monkeypatch.setattr(testee, 'add_functionbody_nodes_one_side', mock_add_one)
+    monkeypatch.setattr(testee, 'add_functionbody_nodes_both_sides', mock_add_both)
+    comparer = MockComparer()
+    testee.refresh_pycompare(comparer)
+    assert capsys.readouterr().out == ("called comparergui.init_tree with args"
+                                       " ('construct', 'code in lhs_path', 'code in rhs_path')\n"
+                                       "called prepare_values with args ('comparer_data',)\n")
+    monkeypatch.setattr(testee, 'prepare_values', mock_prepare_2)
+    testee.refresh_pycompare(comparer)
+    assert capsys.readouterr().out == (
+            "called comparergui.init_tree with args"
+            " ('construct', 'code in lhs_path', 'code in rhs_path')\n"
+            "called prepare_values with args ('comparer_data',)\n"
+            f"called add_new_parentnode with args ({comparer}, {{}}, ('module level',))\n"
+            "called differ.compare with args ('xxx', 'yyy')\n"
+            f"called add_functionbody_nodes_both_sides with args ({comparer}, ('module level',),"
+            " (['lvalues'], ['rvalues']))\n"
+            f"called add_new_parentnode with args ({comparer},"
+            " {('module level',): ('module level',)}, ('qqq',))\n"
+            f"called add_functionbody_nodes_one_side with args ({comparer},"
+            " ('qqq',), 'aaa', 'left')\n"
+            f"called add_new_parentnode with args ({comparer},"
+            " {('module level',): ('module level',), ('qqq',): ('qqq',)}, ('qqq', 'rrr'))\n"
+            f"called add_functionbody_nodes_one_side with args ({comparer},"
+            " ('qqq', 'rrr'), 'bbb', 'right')\n"
+            "called differ.compare with args ('ccc', 'ccc')\n"
+            f"called add_functionbody_nodes_both_sides with args ({comparer},"
+            " ('qqq',), (['lvalues'], ['rvalues']))\n")
 
-    def test_do_construct(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_construct
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.handle_construct = False
-        testobj.handle_class = True
-        testobj.handle_function = True
-        testobj.do_construct("a line")
-        assert testobj.handle_construct
-        assert not testobj.handle_class
-        assert not testobj.handle_function
-        assert testobj.construct == ['a line']
 
-    def test_save_prev_construct(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.save_prev_construct
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.contents = {'symbols': ['a'], 'module-level code': ['b']}
-        testobj.construct = ['x']
-        testobj.save_prev_construct()
-        assert testobj.contents['symbols'] == ['a', 'x']
-        testobj.construct = ['x', 'y']
-        testobj.save_prev_construct()
-        assert testobj.contents['module-level code'] == ['b', ['x', 'y']]
+def test_prepare_values():
+    """unittest for python_comp.prepare_values
+    """
+    assert testee.prepare_values([]) == []
+    assert testee.prepare_values([(['x'], '', ''), (['y'], 'l1', ''), (['y'], '', 'r1'),
+                                  (['y', 'z'], 'l2', 'r2')]) == [(['x'], [], []),
+                                                                 (['y'], 'l1', 'r1'),
+                                                                 (['y', 'z'], 'l2', 'r2')]
 
-    def test_add_to_construct(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_function_line
-        """
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.construct = ['a']
-        testobj.add_to_construct('b')
-        assert testobj.construct == ['a', 'b']
 
-    def test_do_function_line(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_function_line
-        """
-        def mock_do(arg):
-            print(f"called ReadPyFile.do_docstring_line with arg '{arg}'")
-            return ''
-        def mock_do_2(arg):
-            print(f"called ReadPyFile.do_docstring_line with arg '{arg}'")
-            return arg
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.in_docstring = True
-        testobj.contents = {'functions': [(), ('x', ['y'], ['z'])]}
-        testobj.do_docstring_line = mock_do
-        testobj.do_function_line('line')
-        assert testobj.contents['functions'] == [(),  ('x', ['y'], ['z'])]
-        assert capsys.readouterr().out == "called ReadPyFile.do_docstring_line with arg 'line'\n"
-        testobj.do_docstring_line = mock_do_2
-        testobj.do_function_line('line')
-        assert testobj.contents['functions'] == [(),  ('x', ['y', 'line'], ['z'])]
-        assert capsys.readouterr().out == "called ReadPyFile.do_docstring_line with arg 'line'\n"
+def test_add_new_parentnode(capsys):
+    """unittest for python_comp.add_new_parentnode
+    """
+    comparer = MockComparer()
+    parentdict = {('x',): 'xxx'}
+    assert testee.add_new_parentnode(comparer, {}, ('y',)) == 'header'
+    assert capsys.readouterr().out == ("called comparergui.build_header with args ('y',)\n")
+    assert testee.add_new_parentnode(comparer, parentdict, ('x', 'y')) == 'child'
+    assert capsys.readouterr().out == ("called comparergui.build_child with args ('xxx', 'y')\n")
 
-        testobj.in_docstring = False
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.do_function_line('"""')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"""'
-        assert testobj.contents['functions'] == [(),  ('x', [''], ['z'])]
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_function_line('"""line')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"""'
-        assert testobj.contents['functions'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_function_line("'''line")
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == "'''"
-        assert testobj.contents['functions'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_function_line('"line')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"'
-        assert testobj.contents['functions'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_function_line("'line")
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == "'"
-        assert testobj.contents['functions'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['functions'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_function_line('line')
-        assert testobj.contents['functions'] == [(),  ('x', [], ['z', 'line'])]
 
-    def test_do_class_line(self, monkeypatch, capsys):
-        """unittest for ReadPyfile.do_class_line
-        """
-        def mock_do(arg):
-            print(f"called ReadPyFile.do_docstring_line with arg '{arg}'")
-            return ''
-        def mock_do_2(arg):
-            print(f"called ReadPyFile.do_docstring_line with arg '{arg}'")
-            return arg
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.in_docstring = True
-        testobj.contents = {'classes': [(), ('x', ['y'], ['z'])]}
-        testobj.do_docstring_line = mock_do
-        testobj.do_class_line('line')
-        assert testobj.contents['classes'] == [(),  ('x', ['y'], ['z'])]
-        assert capsys.readouterr().out == "called ReadPyFile.do_docstring_line with arg 'line'\n"
-        testobj.do_docstring_line = mock_do_2
-        testobj.do_class_line('line')
-        assert testobj.contents['classes'] == [(),  ('x', ['y', 'line'], ['z'])]
-        assert capsys.readouterr().out == "called ReadPyFile.do_docstring_line with arg 'line'\n"
+def test_add_function_body_nodes_one_side(capsys):
+    """unittest for python_comp.add_function_body_nodes_one_side
+    """
+    comparer = MockComparer()
+    testee.add_functionbody_nodes_one_side(comparer, 'parent', ['x', 'y'], 'left')
+    assert capsys.readouterr().out == (
+            "called comparergui.build_child with args ('parent', 'function body')\n"
+            "called comparergui.colorize_child with args ('child', False, True, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 1, 'x')\n"
+            "called comparergui.colorize_child with args ('child', False, True, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 1, 'y')\n"
+            "called comparergui.colorize_child with args ('child', False, True, False)\n")
+    testee.add_functionbody_nodes_one_side(comparer, 'parent', ['x', 'y'], 'any')
+    assert capsys.readouterr().out == (
+            "called comparergui.build_child with args ('parent', 'function body')\n"
+            "called comparergui.colorize_child with args ('child', True, False, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 2, 'x')\n"
+            "called comparergui.colorize_child with args ('child', True, False, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 2, 'y')\n"
+            "called comparergui.colorize_child with args ('child', True, False, False)\n")
 
-        testobj.in_docstring = False
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.do_class_line('"""')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"""'
-        assert testobj.contents['classes'] == [(),  ('x', [''], ['z'])]
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_class_line('"""line')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"""'
-        assert testobj.contents['classes'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_class_line("'''line")
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == "'''"
-        assert testobj.contents['classes'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_class_line('"line')
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == '"'
-        assert testobj.contents['classes'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_class_line("'line")
-        assert testobj.in_docstring
-        assert testobj.docstring_delim == "'"
-        assert testobj.contents['classes'] == [(),  ('x', ['line'], ['z'])]
-        testobj.contents['classes'] = [(), ('x', [], ['z'])]
-        testobj.in_docstring = False
-        testobj.do_class_line('line')
-        assert testobj.contents['classes'] == [(),  ('x', [], ['z', 'line'])]
+
+def test_add_function_body_nodes_both_sides(capsys):
+    """unittest for python_comp.add_function_body_nodes_both_sides
+    """
+    comparer = MockComparer()
+    testee.add_functionbody_nodes_both_sides(comparer, 'parent',
+                                             ['  xxxx', '- yy y', '+ yyyy', '? zzzz'])
+    assert capsys.readouterr().out == (
+            "called comparergui.build_child with args ('parent', 'function body')\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 2, 'xxxx')\n"
+            "called comparergui.set_node_text with args ('child', 1, 'xxxx')\n"
+            "called comparergui.colorize_child with args ('child', False, False, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 1, 'yy y')\n"
+            "called comparergui.colorize_child with args ('child', False, True, False)\n"
+            "called comparergui.build_child with args ('child', '')\n"
+            "called comparergui.set_node_text with args ('child', 2, 'yyyy')\n"
+            "called comparergui.colorize_child with args ('child', True, False, False)\n")
+
+
+def test_gen_next():
+    """unittest for python_comp.gen_next
+    """
+    assert testee.gen_next((x for x in [])) == (True, [])
+    assert testee.gen_next((x for x in [('a', 'b')])) == (False, ('a', 'b'))
