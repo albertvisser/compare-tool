@@ -84,6 +84,8 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
             print('called comparergui.build_child with args', args)
         def set_node_text(self, *args):
             print('called comparergui.set_node_text with args', args)
+        def colorize_header(self, *args):
+            print('called comparergui.colorize_header with args', args)
         def colorize_child(self, *args):
             print('called comparergui.colorize_child with args', args)
     monkeypatch.setattr(testee, 'prepare_values', mock_prepare)
@@ -113,19 +115,26 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
             "called comparergui.build_child with args (None, 'ronly')\n"
             "called comparergui.set_node_text with args (None, 2, 'rvalue')\n"
             "called comparergui.colorize_child with args (None, True, '', '')\n"
+            "called comparergui.colorize_header with args (None, True, '', '')\n"
             "called comparergui.build_child with args (None, 'both')\n"
             "called comparergui.colorize_child with args (None, '', '', '')\n"
+            "called comparergui.colorize_header with args (None, '', '', '')\n"
             "called comparergui.build_child with args (None, 'same')\n"
             "called comparergui.set_node_text with args (None, 1, 'value')\n"
             "called comparergui.set_node_text with args (None, 2, 'value')\n"
             "called comparergui.colorize_child with args (None, False, False, False)\n"
+            "called comparergui.colorize_header with args (None, False, False, False)\n"
+            "called comparergui.colorize_header with args (None, False, False, False)\n"
             "called comparergui.build_child with args (None, 'diff')\n"
             "called comparergui.set_node_text with args (None, 1, 'lvalue')\n"
             "called comparergui.set_node_text with args (None, 2, 'rvalue')\n"
             "called comparergui.colorize_child with args (None, False, False, True)\n"
+            "called comparergui.colorize_header with args (None, False, False, True)\n"
+            "called comparergui.colorize_header with args (None, False, False, True)\n"
             "called comparergui.build_child with args (None, 'lonly')\n"
             "called comparergui.set_node_text with args (None, 1, 'lvalue')\n"
-            "called comparergui.colorize_child with args (None, '', True, '')\n")
+            "called comparergui.colorize_child with args (None, '', True, '')\n"
+            "called comparergui.colorize_header with args (None, '', True, '')\n")
 
 
 def test_prepare_values():
