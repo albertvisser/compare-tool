@@ -6,6 +6,7 @@ import PyQt6.QtWidgets as qtw
 import PyQt6.QtGui as gui
 import PyQt6.QtCore as core
 
+nocolour = gui.QBrush(core.Qt.GlobalColor.black)
 rightonly_colour = gui.QBrush(core.Qt.GlobalColor.blue)
 leftonly_colour = gui.QBrush(core.Qt.GlobalColor.darkGreen)
 difference_colour = gui.QBrush(core.Qt.GlobalColor.red)
@@ -243,23 +244,35 @@ class ShowComparisonGui(qtw.QTreeWidget):
         header = qtw.QTreeWidgetItem()
         self.set_node_text(header, 0, section)
         self.addTopLevelItem(header)
+        header.setForeground(0, nocolour)
         return header
 
     def colorize_header(self, node, rightonly, leftonly, difference):
         """visualize the difference by coloring the header
         """
-        if rightonly and not leftonly:
-            node.setForeground(0, rightonly_colour)
-        if leftonly and not rightonly:
-            node.setForeground(0, leftonly_colour)
-        if difference or (leftonly and rightonly):
-            node.setForeground(0, difference_colour)
+        # testcolour = node.foreground(0)
+        testcolour = node.foreground(0)
+        if testcolour == nocolour:
+            if rightonly and not leftonly:
+                node.setForeground(0, rightonly_colour)
+            if leftonly and not rightonly:
+                node.setForeground(0, leftonly_colour)
+            if difference or (leftonly and rightonly):
+                node.setForeground(0, difference_colour)
+        elif testcolour == leftonly_colour:
+            if rightonly or difference:
+                node.setForeground(0, difference_colour)
+        elif testcolour == rightonly_colour:
+            if leftonly or difference:
+                node.setForeground(0, difference_colour)
+
 
     def build_child(self, header, option):
         """create a child under this header
         """
         child = qtw.QTreeWidgetItem()
         self.set_node_text(child, 0, option)
+        child.setForeground(0, nocolour)
         header.addChild(child)
         return child
 

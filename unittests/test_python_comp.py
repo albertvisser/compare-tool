@@ -152,6 +152,9 @@ class MockGui:
     def set_node_text(self, *args):
         "stub"
         print('called comparergui.set_node_text with args', args)
+    def colorize_header(self, *args):
+        "stub"
+        print('called comparergui.colorize_header with args', args)
     def colorize_child(self, *args):
         "stub"
         print('called comparergui.colorize_child with args', args)
@@ -182,8 +185,10 @@ def test_refresh_pycompare(monkeypatch, capsys):
         print('called add_new_parentnode with args', args)
         return args[2]
     def mock_add_one(*args):
+        args = (args[0], 'parentdict', args[2], args[3], args[4])
         print('called add_functionbody_nodes_one_side with args', args)
     def mock_add_both(*args):
+        args = (args[0], 'parentdict', args[2], args[3])
         print('called add_functionbody_nodes_both_sides with args', args)
     monkeypatch.setattr(testee.difflib.Differ, 'compare', mock_compare)
     monkeypatch.setattr(testee, 'prepare_values', mock_prepare)
@@ -203,18 +208,18 @@ def test_refresh_pycompare(monkeypatch, capsys):
             "called prepare_values with args ('comparer_data',)\n"
             f"called add_new_parentnode with args ({comparer}, {{}}, ('module level',))\n"
             "called differ.compare with args ('xxx', 'yyy')\n"
-            f"called add_functionbody_nodes_both_sides with args ({comparer}, ('module level',),"
-            " (['lvalues'], ['rvalues']))\n"
+            f"called add_functionbody_nodes_both_sides with args ({comparer}, 'parentdict',"
+            " ('module level',), (['lvalues'], ['rvalues']))\n"
             f"called add_new_parentnode with args ({comparer},"
             " {('module level',): ('module level',)}, ('qqq',))\n"
-            f"called add_functionbody_nodes_one_side with args ({comparer},"
+            f"called add_functionbody_nodes_one_side with args ({comparer}, 'parentdict',"
             " ('qqq',), 'aaa', 'left')\n"
             f"called add_new_parentnode with args ({comparer},"
             " {('module level',): ('module level',), ('qqq',): ('qqq',)}, ('qqq', 'rrr'))\n"
-            f"called add_functionbody_nodes_one_side with args ({comparer},"
+            f"called add_functionbody_nodes_one_side with args ({comparer}, 'parentdict',"
             " ('qqq', 'rrr'), 'bbb', 'right')\n"
             "called differ.compare with args ('ccc', 'ccc')\n"
-            f"called add_functionbody_nodes_both_sides with args ({comparer},"
+            f"called add_functionbody_nodes_both_sides with args ({comparer}, 'parentdict',"
             " ('qqq',), (['lvalues'], ['rvalues']))\n")
 
 
@@ -243,7 +248,8 @@ def test_add_function_body_nodes_one_side(capsys):
     """unittest for python_comp.add_function_body_nodes_one_side
     """
     comparer = MockComparer()
-    testee.add_functionbody_nodes_one_side(comparer, 'parent', ['x', 'y'], 'left')
+    parentdict = {('pa',): 'parent'}
+    testee.add_functionbody_nodes_one_side(comparer, parentdict, ('pa',) , ['x', 'y'], 'left')
     assert capsys.readouterr().out == (
             "called comparergui.build_child with args ('parent', 'function body')\n"
             "called comparergui.colorize_child with args ('child', False, True, False)\n"
@@ -252,8 +258,10 @@ def test_add_function_body_nodes_one_side(capsys):
             "called comparergui.colorize_child with args ('child', False, True, False)\n"
             "called comparergui.build_child with args ('child', '')\n"
             "called comparergui.set_node_text with args ('child', 1, 'y')\n"
-            "called comparergui.colorize_child with args ('child', False, True, False)\n")
-    testee.add_functionbody_nodes_one_side(comparer, 'parent', ['x', 'y'], 'any')
+            "called comparergui.colorize_child with args ('child', False, True, False)\n"
+            "called comparergui.colorize_header with args ('child', False, True, False)\n"
+            "called comparergui.colorize_header with args ('parent', False, True, False)\n")
+    testee.add_functionbody_nodes_one_side(comparer, parentdict, ('pa',), ['x', 'y'], 'any')
     assert capsys.readouterr().out == (
             "called comparergui.build_child with args ('parent', 'function body')\n"
             "called comparergui.colorize_child with args ('child', True, False, False)\n"
@@ -262,14 +270,17 @@ def test_add_function_body_nodes_one_side(capsys):
             "called comparergui.colorize_child with args ('child', True, False, False)\n"
             "called comparergui.build_child with args ('child', '')\n"
             "called comparergui.set_node_text with args ('child', 2, 'y')\n"
-            "called comparergui.colorize_child with args ('child', True, False, False)\n")
+            "called comparergui.colorize_child with args ('child', True, False, False)\n"
+            "called comparergui.colorize_header with args ('child', True, False, False)\n"
+            "called comparergui.colorize_header with args ('parent', True, False, False)\n")
 
 
 def test_add_function_body_nodes_both_sides(capsys):
     """unittest for python_comp.add_function_body_nodes_both_sides
     """
     comparer = MockComparer()
-    testee.add_functionbody_nodes_both_sides(comparer, 'parent',
+    parentdict = {('pa',): 'parent'}
+    testee.add_functionbody_nodes_both_sides(comparer, parentdict, ('pa',),
                                              ['  xxxx', '- yy y', '+ yyyy', '? zzzz'])
     assert capsys.readouterr().out == (
             "called comparergui.build_child with args ('parent', 'function body')\n"
@@ -282,7 +293,9 @@ def test_add_function_body_nodes_both_sides(capsys):
             "called comparergui.colorize_child with args ('child', False, True, False)\n"
             "called comparergui.build_child with args ('child', '')\n"
             "called comparergui.set_node_text with args ('child', 2, 'yyyy')\n"
-            "called comparergui.colorize_child with args ('child', True, False, False)\n")
+            "called comparergui.colorize_child with args ('child', True, False, False)\n"
+            "called comparergui.colorize_header with args ('child', False, False, True)\n"
+            "called comparergui.colorize_header with args ('parent', False, False, True)\n")
 
 
 def test_gen_next():

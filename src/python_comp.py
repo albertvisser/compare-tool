@@ -118,12 +118,12 @@ def refresh_pycompare(comparer):
             if key not in parentdict:
                 parentdict[key] = add_new_parentnode(comparer, parentdict, key)
         if lvalues and not rvalues:
-            add_functionbody_nodes_one_side(comparer, parentdict[key], lvalues, 'left')
+            add_functionbody_nodes_one_side(comparer, parentdict, key, lvalues, 'left')
         elif rvalues and not lvalues:
-            add_functionbody_nodes_one_side(comparer, parentdict[key], rvalues, 'right')
+            add_functionbody_nodes_one_side(comparer, parentdict, key, rvalues, 'right')
         elif lvalues and rvalues:
             difflines = diff.compare(lvalues, rvalues)
-            add_functionbody_nodes_both_sides(comparer, parentdict[key], difflines)
+            add_functionbody_nodes_both_sides(comparer, parentdict, key, difflines)
 
 
 def prepare_values(data):
@@ -161,10 +161,10 @@ def add_new_parentnode(comparer, parentdict, key):
     return node
 
 
-def add_functionbody_nodes_one_side(comparer, parent, values, side):
+def add_functionbody_nodes_one_side(comparer, parentdict, parent, values, side):
     """add nodes for the function body when it's only on one side
     """
-    top = comparer.gui.build_child(parent, 'function body')
+    top = comparer.gui.build_child(parentdict[parent], 'function body')
     if side == 'left':
         pos, leftonly, rightonly = 1, True, False
     else:
@@ -175,17 +175,24 @@ def add_functionbody_nodes_one_side(comparer, parent, values, side):
         node = comparer.gui.build_child(top, '')
         comparer.gui.set_node_text(node, pos, line)
         comparer.gui.colorize_child(node, rightonly, leftonly, False)
+    comparer.gui.colorize_header(top, rightonly, leftonly, False)
+    for num in range(len(parent), 0, -1):
+        node = parentdict[parent[:num]]
+        comparer.gui.colorize_header(node, rightonly, leftonly, False)
 
 
-def add_functionbody_nodes_both_sides(comparer, parent, difflines):
+def add_functionbody_nodes_both_sides(comparer, parentdict, parent, difflines):
     """add nodes for the function body after comparing the lines
     """
-    top = comparer.gui.build_child(parent, 'function body')
+    top = comparer.gui.build_child(parentdict[parent], 'function body')
+    difference = False
     for line in difflines:
         if line[:2] == '? ':
             continue
         leftonly = line[:2] == '- '
         rightonly = line[:2] == '+ '
+        if leftonly or rightonly:
+            difference = True
         value = line[2:]
         node = comparer.gui.build_child(top, '')
         if not leftonly:
@@ -193,6 +200,11 @@ def add_functionbody_nodes_both_sides(comparer, parent, difflines):
         if not rightonly:
             comparer.gui.set_node_text(node, 1, value)
         comparer.gui.colorize_child(node, rightonly, leftonly, False)
+    # breakpoint()
+    comparer.gui.colorize_header(top, False, False, difference)
+    for num in range(len(parent), 0, -1):
+        node = parentdict[parent[:num]]
+        comparer.gui.colorize_header(node, False, False, difference)
 
 
 def gen_next(gen):
