@@ -36,15 +36,6 @@ Groen: alleen aanwezig in linkerfile
 Blauw: alleen aanwezig in rechterfile"""
 
 
-def auto_determine_comparetype(leftpath, rightpath):
-    "try to guess the comparison type from the file extension (only if they match)"
-    extl = pathlib.Path(leftpath).suffix[1:]
-    extr = pathlib.Path(rightpath).suffix[1:]
-    if extl == extr and extl.lower() in comparetypes:
-        return extl.lower()
-    return ''
-
-
 class Comparer:
     """Application class
     """
@@ -76,7 +67,7 @@ class Comparer:
             self.comparetype = method
         if self.lhs_path and self.rhs_path:
             if not self.comparetype:
-                self.comparetype = auto_determine_comparetype(self.lhs_path, self.rhs_path)
+                self.comparetype = self.auto_determine_comparetype(self.lhs_path, self.rhs_path)
             mld = self.get_input.check_input(self.lhs_path, self.rhs_path, self.comparetype)
             if mld:
                 self.gui.meld_input_fout(mld)  # qt: critical; wx: unspecified
@@ -85,8 +76,6 @@ class Comparer:
         else:
             self.about()
             if self.open():
-                # print('in Comparer na open(): comparetype is ', self.comparetype)
-                # self.comparetype = auto_determine_comparetype(self.lhs_path, self.rhs_path)
                 self.doit()
 
         self.gui.go()
@@ -97,6 +86,15 @@ class Comparer:
         if ok:
             self.doit()
         # return ok
+
+    @staticmethod
+    def auto_determine_comparetype(leftpath, rightpath):
+        "try to guess the comparison type from the file extension (only if they match)"
+        extl = pathlib.Path(leftpath).suffix[1:]
+        extr = pathlib.Path(rightpath).suffix[1:]
+        if extl == extr and extl.lower() in comparetypes:
+            return extl.lower()
+        return ''
 
     def doit(self, event=None):   # , first_time=False):
         """perform action

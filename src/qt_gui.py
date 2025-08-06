@@ -147,10 +147,13 @@ class AskOpenFilesGui(qtw.QDialog):
         gsizer = qtw.QGridLayout()
         gsizer.addWidget(qtw.QLabel(comparetext), 0, 0)
         self.sel = []
+        rb_auto = qtw.QRadioButton('Autodetect', self)
+        rb_auto.setChecked(True)
+        gsizer.addWidget(rb_auto, 0, 1)
         for ix, cmptype in enumerate(sorted(choices)):
             text = choices[cmptype][0]
             rb = qtw.QRadioButton(text, self)
-            gsizer.addWidget(rb, ix, 1)
+            gsizer.addWidget(rb, ix + 1, 1)
             # dit heeft hier nog geen nut, omdat comparetype nog niet bepaald is
             # if self.master.parent.comparetype == cmptype:
             #     rb.setChecked(True)
@@ -185,10 +188,14 @@ class AskOpenFilesGui(qtw.QDialog):
         linkerpad = self.browse1.input.currentText()
         rechterpad = self.browse2.input.currentText()
         selectiontype = ''
+        # breakpoint()
         for rb, cmptype in self.sel:
             if rb.isChecked():
                 selectiontype = cmptype
                 break
+        else:
+            # if rb_auto.isChecked():   # niks aangevinkt of deze aangevinkt komt op hetzelfde neer
+            selectiontype = self.master.parent.auto_determine_comparetype(linkerpad, rechterpad)
         mld = self.master.check_input(linkerpad, rechterpad, selectiontype)
         if mld:
             qtw.QMessageBox.critical(self, self.master.parent.apptitel, mld)

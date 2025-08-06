@@ -3,14 +3,6 @@
 import types
 from src import main
 
-def test_determine_comparetype(monkeypatch):
-    """unittest for main.determine_comparetype
-    """
-    monkeypatch.setattr(main, 'comparetypes', ['x'])
-    assert main.auto_determine_comparetype('test1', 'test2') == ''
-    assert main.auto_determine_comparetype('test1.x', 'test2.y') == ''
-    assert main.auto_determine_comparetype('test1.x', 'test2.x') == 'x'
-
 
 def test_get_input_paths(capsys):
     """unittest for main.get_input_paths
@@ -38,11 +30,6 @@ def test_do_compare(monkeypatch, capsys):
         """
         print(f'called compare_method with args `{left}` and `{right}`')
         raise ValueError('xxxx', 1, 1)
-    def mock_compare_parse(left, right):
-        """stub
-        """
-        print(f'called compare_method with args `{left}` and `{right}`')
-        raise main.ParseError('yyyy')
     monkeypatch.setattr(main, 'comparetypes', {'x': ('', mock_compare, '')})
     assert main.do_compare('left', 'right', 'x') == (True, ['compare output'])
     assert capsys.readouterr().out == 'called compare_method with args `left` and `right`\n'
@@ -125,33 +112,29 @@ def test_comparer_init(monkeypatch, capsys):
         """
         print('called get_input_paths() with args', args)
         return 'left', 'right'
-    def mock_determine_comparetype(*args):
+    def mock_determine_comparetype(self, *args):
         """stub
         """
-        print('called auto_determine_comparetype() with args', args)
+        print('called Comparer.auto_determine_comparetype() with args', args)
     def mock_doit(self):
         """stub
         """
-        print('called comparer.doit()')
+        print('called Comparer.doit()')
     def mock_about(self):
         """stub
         """
-        print('called comparer.about()')
+        print('called Comparer.about()')
     def mock_open(self):
         """stub
         """
-        print('called comparer.open()')
+        print('called Comparer.open()')
         return True
-    def mock_meld_fout(self, *args):
-        """stub
-        """
-        print('called gui.meld_input_fout() with args', args)
     monkeypatch.setattr(main.gui, 'MainWindow', MockMainWindow)
     monkeypatch.setattr(main, 'AskOpenFiles', MockAskOpenFiles)
     monkeypatch.setattr(main, 'ShowComparison', MockShowComparison)
     monkeypatch.setattr(main, 'IniFile', MockIniFile)
     monkeypatch.setattr(main, 'get_input_paths', mock_get_paths)
-    monkeypatch.setattr(main, 'auto_determine_comparetype', mock_determine_comparetype)
+    monkeypatch.setattr(main.Comparer, 'auto_determine_comparetype', mock_determine_comparetype)
     monkeypatch.setattr(main.Comparer, 'doit', mock_doit)
     monkeypatch.setattr(main.Comparer, 'about', mock_about)
     monkeypatch.setattr(main.Comparer, 'open', mock_open)
@@ -183,9 +166,9 @@ def test_comparer_init(monkeypatch, capsys):
           "called IniFile.__init__() with arg /home/albert/projects/compare-tool/actif.ini\n"
           "called IniFile.read()\n"
           f"called AskOpenFiles.__init__() with args ({testobj},)\n"
-          "called auto_determine_comparetype() with args ('left', 'right')\n"
+          "called Comparer.auto_determine_comparetype() with args ('left', 'right')\n"
           "called AskOpenFiles.check_input() with args ('left', 'right', None)\n"
-          "called comparer.doit()\n"
+          "called Comparer.doit()\n"
           "called MainWindow.go()\n")
     testobj = main.Comparer(['Left', 'Right'], 'ini')
     assert testobj.data == {}
@@ -200,7 +183,7 @@ def test_comparer_init(monkeypatch, capsys):
           "called IniFile.read()\n"
           f"called AskOpenFiles.__init__() with args ({testobj},)\n"
           "called AskOpenFiles.check_input() with args ('left', 'right', 'ini')\n"
-          "called comparer.doit()\n"
+          "called Comparer.doit()\n"
           "called MainWindow.go()\n")
     monkeypatch.setattr(MockAskOpenFiles, 'check_input', lambda *x: 'melding')
     testobj = main.Comparer(['Left', 'Right'], 'ini')
@@ -221,9 +204,9 @@ def test_comparer_init(monkeypatch, capsys):
           "called IniFile.__init__() with arg /home/albert/projects/compare-tool/actif.ini\n"
           "called IniFile.read()\n"
           f"called AskOpenFiles.__init__() with args ({testobj},)\n"
-          "called comparer.about()\n"
-          "called comparer.open()\n"
-          "called comparer.doit()\n"
+          "called Comparer.about()\n"
+          "called Comparer.open()\n"
+          "called Comparer.doit()\n"
           "called MainWindow.go()\n")
     monkeypatch.setattr(main.Comparer, 'open', lambda *x: False)
     testobj = main.Comparer([], '')
@@ -233,10 +216,12 @@ def test_comparer_init(monkeypatch, capsys):
           "called IniFile.__init__() with arg /home/albert/projects/compare-tool/actif.ini\n"
           "called IniFile.read()\n"
           f"called AskOpenFiles.__init__() with args ({testobj},)\n"
-          "called comparer.about()\n"
+          "called Comparer.about()\n"
           "called MainWindow.go()\n")
 
 def setup_comparer(monkeypatch, capsys):
+    """create object to test methods on
+    """
     def mock_init(self, *args):
         """stub for initializing main.Comparer object
         """
@@ -287,6 +272,15 @@ def test_comparer_open(monkeypatch, capsys):
     assert capsys.readouterr().out == (
             f"called gui.show_dialog() with args ({testobj_get_input}, 'get_input_gui')\n"
             "called Comparer.doit\n")
+
+def test_comparer_determine_comparetype(monkeypatch, capsys):
+    """unittest for main.determine_comparetype
+    """
+    monkeypatch.setattr(main, 'comparetypes', ['x'])
+    testobj = setup_comparer(monkeypatch, capsys)
+    assert testobj.auto_determine_comparetype('test1', 'test2') == ''
+    assert testobj.auto_determine_comparetype('test1.x', 'test2.y') == ''
+    assert testobj.auto_determine_comparetype('test1.x', 'test2.x') == 'x'
 
 def test_comparer_doit(monkeypatch, capsys):
     """unittest for main.Comparer.doit

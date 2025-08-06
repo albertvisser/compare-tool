@@ -152,11 +152,13 @@ class TestMainWindow:
         """unittest for MainWindow.keyPressEvent
         """
         class KeyEvent1:
+            "stub"
             def key(self):
                 return testee.core.Qt.Key.Key_Escape
             def __str__(self):
                 return 'EscapeKey'
         class KeyEvent2:
+            "stub"
             def key(self):
                 return 'other'
             def __str__(self):
@@ -289,11 +291,13 @@ class TestAskOpenFilesGui:
             "called Grid.__init__\n"
             "called Label.__init__ with args ('comparetext',)\n"
             "called Grid.addWidget with arg MockLabel at (0, 0)\n"
-            f"called RadioButton.__init__ with args ('xxx', {testobj}) {{}}\n"
+            f"called RadioButton.__init__ with args ('Autodetect', {testobj}) {{}}\n"
+            "called RadioButton.setChecked with arg `True`\n"
             "called Grid.addWidget with arg MockRadioButton at (0, 1)\n"
-            f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
+            f"called RadioButton.__init__ with args ('xxx', {testobj}) {{}}\n"
             "called Grid.addWidget with arg MockRadioButton at (1, 1)\n"
-            # "called RadioButton.setChecked with arg `True`\n"
+            f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
+            "called Grid.addWidget with arg MockRadioButton at (2, 1)\n"
             "called HBox.addLayout with arg MockGridLayout\n"
             "called HBox.addStretch\n"
             "called VBox.addLayout with arg MockHBoxLayout\n"
@@ -331,6 +335,7 @@ class TestAskOpenFilesGui:
         """unittest for AskOpenFilesGui.accept
         """
         class mock_button:
+            "stub"
             def __init__(self, *args, **kwargs):
                 print('called FileBrowseButton with args', args, kwargs)
                 self.input = mockqtw.MockComboBox(self)
@@ -343,7 +348,14 @@ class TestAskOpenFilesGui:
             return ''
         def mock_accept(self):
             print('called Dialog.accept')
+        def mock_determine(*args):
+            print('called Comparer.auto_determine_comparetype with args', args)
+            return ''
+        def mock_determine_2(*args):
+            print('called Comparer.auto_determine_comparetype with args', args)
+            return 'xx'
         testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.master.parent.auto_determine_comparetype = mock_determine
         testobj.browse1 = mock_button('left side')
         testobj.browse2 = mock_button('right side')
         check1 = mockqtw.MockCheckBox()
@@ -390,7 +402,49 @@ class TestAskOpenFilesGui:
         assert capsys.readouterr().out == (
                 "called ComboBox.currentText\n"
                 "called ComboBox.currentText\n"
+                "called Comparer.auto_determine_comparetype with args"
+                " ('current text', 'current text')\n"
                 "called Comparer.check_input with args ('current text', 'current text', '')\n"
+                "called Dialog.accept\n")
+        testobj.master.parent.auto_determine_comparetype = mock_determine_2
+        testobj.accept()
+        assert testobj.master.parent.lhs_path == 'current text'
+        assert testobj.master.parent.rhs_path == 'current text'
+        assert testobj.master.parent.comparetype == 'xx'
+        assert capsys.readouterr().out == (
+                "called ComboBox.currentText\n"
+                "called ComboBox.currentText\n"
+                "called Comparer.auto_determine_comparetype with args"
+                " ('current text', 'current text')\n"
+                "called Comparer.check_input with args ('current text', 'current text', 'xx')\n"
+                "called Dialog.accept\n")
+        testobj.master.parent.auto_determine_comparetype = mock_determine
+        rb = mockqtw.MockRadioButton()
+        assert capsys.readouterr().out == "called RadioButton.__init__ with args () {}\n"
+        testobj.sel = [(rb, 'xxx')]
+        testobj.accept()
+        assert testobj.master.parent.lhs_path == 'current text'
+        assert testobj.master.parent.rhs_path == 'current text'
+        assert testobj.master.parent.comparetype == ''
+        assert capsys.readouterr().out == (
+                "called ComboBox.currentText\n"
+                "called ComboBox.currentText\n"
+                "called RadioButton.isChecked\n"
+                "called Comparer.auto_determine_comparetype with args"
+                " ('current text', 'current text')\n"
+                "called Comparer.check_input with args ('current text', 'current text', '')\n"
+                "called Dialog.accept\n")
+        rb.setChecked(True)
+        assert capsys.readouterr().out == "called RadioButton.setChecked with arg `True`\n"
+        testobj.accept()
+        assert testobj.master.parent.lhs_path == 'current text'
+        assert testobj.master.parent.rhs_path == 'current text'
+        assert testobj.master.parent.comparetype == 'xxx'
+        assert capsys.readouterr().out == (
+                "called ComboBox.currentText\n"
+                "called ComboBox.currentText\n"
+                "called RadioButton.isChecked\n"
+                "called Comparer.check_input with args ('current text', 'current text', 'xxx')\n"
                 "called Dialog.accept\n")
 
 
@@ -588,7 +642,6 @@ class TestShowComparisonGui:
         node.foreground = mock_foreground_4
         testobj.colorize_header(node, 'any', 'any', 'any')
         assert capsys.readouterr().out == "called TreeItem.foreground with args (0,)\n"
-
 
     def test_build_child(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.build_child
