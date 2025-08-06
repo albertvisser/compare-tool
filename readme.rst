@@ -30,29 +30,38 @@ is compared as::
     horns = 1                       horns = 1
 
 
-I've also included the possibilty to compare XML files in a similar fashion, and to do a simple lini-by-line text comparison (after sorting all the lines in the files).
+I also included the possibilty to compare XML files in a similar fashion, and to do a simple line-by-line text comparison (after sorting all the lines in the files).
+
+Since then I expanded on this idea to include comparisons for HTML, Python code and json data.
+
+Each have a somewhat different implementation of "out-of-sequence", obviously related to the type of comparison. 
+
+The result is shown in a tree structure. The elements are colorized to highlight the differences.
+
 
 Usage
 -----
 
-Execute ``actif.py``. When executed from the command line, the --help switch gives you the following information::
+Execute ``actif.py`` in the project root directory. When executed from the command line, the --help switch gives you the following information::
 
- usage: actif.py [-h] [-m {ini,ini2,xml,txt}] FILE FILE
+ usage: actif.py [-h] [-m {ini,ini2,xml,txt,py,json}] [-i FILE FILE]
 
  starter for Compare Tool
 
- positional arguments:
-   FILE
-
- optional arguments:
+ options:
    -h, --help            show this help message and exit
-   -m {ini,ini2,xml,txt}, --method {ini,ini2,xml,txt}
+   -m, --method {ini,ini2,xml,html,txt,py,json}
                          comparison method
+   -i, --input FILE FILE
 
 showing that you can specify the files to compare and the method to use when calling the tool. Without (all necessary) arguments, you start with a dialog where you can choose your options.
+You can call up this dialog at any time to start a new comparison.
+
+The comparison method can be automatically selected if both files have the same extension that matches one of the methods.
 
 Requirements
 ------------
 
 - Python
-- PyQt(5) / wxPython (Phoenix)
+- PyQt / wxPython (Phoenix)
+- BeautifulSoup for the HTML comparison
