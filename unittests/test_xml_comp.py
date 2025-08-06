@@ -139,7 +139,7 @@ def test_gen_next():
 
 
 # 109->137, 113->137
-def test_compare_xmldata(monkeypatch, capsys):
+def test_compare_xmldata(monkeypatch, capsys, expected_output):
     """unittest for xml_comp.compare_xmldata
     """
     def mock_sort(fname):
@@ -198,38 +198,10 @@ def test_compare_xmldata(monkeypatch, capsys):
             (([('top', 0), ('dit', 0)], ''), 'contents1', 'met niks'),
             (([('top', 0), ('dit', 0)], 'attr1'), 'xxx', ''),
             (([('top', 0), ('dit', 0)], 'attr2'), 'yyy', '')]
-    assert capsys.readouterr().out == (
-            "called sort_xmldata with arg 'left'\n"
-            "called sort_xmldata with arg 'right'\n"
-            "called gen_next from left side returning ('', (False, [('top', 0)], '', ''))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0)], '', ''))\n"
-            "called gen_next from left side returning ('', (False, [('top', 0), ('dat', 0)],"
-            " '', 'contents2'))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('daaro', 0)],"
-            " '', ''))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('daaro', 0),"
-            " ('niet-hiero', 0)], '', None))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('deze', 0)],"
-            " '', ''))\n"
-            "called gen_next from left side returning ('', (False, [('top', 0), ('deze', 0)],"
-            " '', 'dinges'))\n"
-            "called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)],"
-            " '', 'contents1'))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('die', 0)],"
-            " '', 'met inhoud'))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('die', 0)],"
-            " 'iets', 'niets'))\n"
-            "called gen_next from right side returning ('', (False, [('top', 0), ('dit', 0)],"
-            " '', 'met niks'))\n"
-            "called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)],"
-            " 'attr1', 'xxx'))\n"
-            "called gen_next from right side returning ('EOF', (True, '', '', ''))\n"
-            "called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)],"
-            " 'attr2', 'yyy'))\n"
-            "called gen_next from left side returning ('EOF', (True, '', '', ''))\n")
+    assert capsys.readouterr().out == expected_output['compare']
 
 
-def test_refresh_xmlcompare(capsys):
+def test_refresh_xmlcompare(capsys, expected_output):
     """unittest for xml_comp.refresh_xmlcompare
     """
     class MockItem:
@@ -295,62 +267,128 @@ def test_refresh_xmlcompare(capsys):
             (([('top', 0), ('dit', 0)], 'attr4'), '', 'zzz'),
             (([('top', 0), ('dit', 0)], 'attr5'), None, 'zzz')]
     testee.refresh_xmlcompare(comparer)
-    assert capsys.readouterr().out == textwrap.dedent("""\
-        called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')
-        called ComparerGui.build_header with arg <> top
-        called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 2, '')
-        called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, True, False)
-        called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> daaro')
-        called ComparerGui.set_node_text with args (<Item "child for '<> daaro'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "child for '<> daaro'">, 2, '')
-        called ComparerGui.colorize_header with args (<Item "child for '<> daaro'">, True, True, False)
-        called ComparerGui.build_child with args (<Item "child for '<> daaro'">, '<> niet-hiero')
-        called ComparerGui.set_node_text with args (<Item "child for '<> niet-hiero'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "child for '<> niet-hiero'">, 2, None)
-        called ComparerGui.colorize_header with args (<Item "child for '<> niet-hiero'">, True, False, False)
-        called ComparerGui.get_parent with arg "child for '<> niet-hiero'"
-        called ComparerGui.get_parent with arg "child for '<> daaro'"
-        called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> dat')
-        called ComparerGui.set_node_text with args (<Item "child for '<> dat'">, 1, 'contents2')
-        called ComparerGui.set_node_text with args (<Item "child for '<> dat'">, 2, '')
-        called ComparerGui.colorize_header with args (<Item "child for '<> dat'">, False, True, False)
-        called ComparerGui.get_parent with arg "child for '<> dat'"
-        called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> deze')
-        called ComparerGui.set_node_text with args (<Item "child for '<> deze'">, 1, 'dinges')
-        called ComparerGui.set_node_text with args (<Item "child for '<> deze'">, 2, '')
-        called ComparerGui.colorize_header with args (<Item "child for '<> deze'">, False, True, False)
-        called ComparerGui.get_parent with arg "child for '<> deze'"
-        called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> die')
-        called ComparerGui.set_node_text with args (<Item "child for '<> die'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "child for '<> die'">, 2, 'met inhoud')
-        called ComparerGui.build_child with args (<Item "child for '<> die'">, 'iets')
-        called ComparerGui.colorize_child with args (<Item "child for 'iets'">, True, False, False)
-        called ComparerGui.set_node_text with args (<Item "child for 'iets'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "child for 'iets'">, 2, 'niets')
-        called ComparerGui.colorize_header with args (<Item "child for '<> die'">, True, False, False)
-        called ComparerGui.get_parent with arg "child for '<> die'"
-        called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> dit')
-        called ComparerGui.set_node_text with args (<Item "child for '<> dit'">, 1, 'contents1')
-        called ComparerGui.set_node_text with args (<Item "child for '<> dit'">, 2, 'met niks')
-        called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr1')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr1'">, 1, 'xxx')
-        called ComparerGui.colorize_child with args (<Item "child for 'attr1'">, False, True, True)
-        called ComparerGui.set_node_text with args (<Item "child for 'attr1'">, 2, '')
-        called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr2')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr2'">, 1, 'xxx')
-        called ComparerGui.colorize_child with args (<Item "child for 'attr2'">, False, True, True)
-        called ComparerGui.set_node_text with args (<Item "child for 'attr2'">, 2, '(no value)')
-        called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr3')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr3'">, 1, 'yyy')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr3'">, 2, 'yyy')
-        called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr4')
-        called ComparerGui.colorize_child with args (<Item "child for 'attr4'">, True, True, True)
-        called ComparerGui.set_node_text with args (<Item "child for 'attr4'">, 1, '')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr4'">, 2, 'zzz')
-        called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr5')
-        called ComparerGui.set_node_text with args (<Item "child for 'attr5'">, 1, '(no value)')
-        called ComparerGui.colorize_child with args (<Item "child for 'attr5'">, True, True, True)
-        called ComparerGui.set_node_text with args (<Item "child for 'attr5'">, 2, 'zzz')
-        called ComparerGui.colorize_header with args (<Item "child for '<> dit'">, True, True, True)
-        """)
+    assert capsys.readouterr().out == expected_output['refresh']
+
+compare_output = """\
+called sort_xmldata with arg 'left'
+called sort_xmldata with arg 'right'
+called gen_next from left side returning ('', (False, [('top', 0)], '', ''))
+called gen_next from right side returning ('', (False, [('top', 0)], '', ''))
+called gen_next from left side returning ('', (False, [('top', 0), ('dat', 0)], '', 'contents2'))
+called gen_next from right side returning ('', (False, [('top', 0), ('daaro', 0)], '', ''))
+called gen_next from right side returning ('', (False, [('top', 0), ('daaro', 0), ('niet-hiero', 0)], '', None))
+called gen_next from right side returning ('', (False, [('top', 0), ('deze', 0)], '', ''))
+called gen_next from left side returning ('', (False, [('top', 0), ('deze', 0)], '', 'dinges'))
+called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)], '', 'contents1'))
+called gen_next from right side returning ('', (False, [('top', 0), ('die', 0)], '', 'met inhoud'))
+called gen_next from right side returning ('', (False, [('top', 0), ('die', 0)], 'iets', 'niets'))
+called gen_next from right side returning ('', (False, [('top', 0), ('dit', 0)], '', 'met niks'))
+called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)], 'attr1', 'xxx'))
+called gen_next from right side returning ('EOF', (True, '', '', ''))
+called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)], 'attr2', 'yyy'))
+called gen_next from left side returning ('EOF', (True, '', '', ''))
+"""
+refresh_output = """\
+called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')
+called ComparerGui.build_header with arg <> top
+called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 2, '')
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> daaro')
+called ComparerGui.set_node_text with args (<Item "child for '<> daaro'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "child for '<> daaro'">, 2, '')
+called ComparerGui.get_parent with arg "child for '<> daaro'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, True, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.build_child with args (<Item "child for '<> daaro'">, '<> niet-hiero')
+called ComparerGui.set_node_text with args (<Item "child for '<> niet-hiero'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "child for '<> niet-hiero'">, 2, None)
+called ComparerGui.get_parent with arg "child for '<> niet-hiero'"
+called ComparerGui.colorize_header with args (<Item "child for '<> daaro'">, True, False, False)
+called ComparerGui.get_parent with arg "child for '<> daaro'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, False, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.get_parent with arg "child for '<> niet-hiero'"
+called ComparerGui.get_parent with arg "child for '<> daaro'"
+called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> dat')
+called ComparerGui.set_node_text with args (<Item "child for '<> dat'">, 1, 'contents2')
+called ComparerGui.set_node_text with args (<Item "child for '<> dat'">, 2, '')
+called ComparerGui.get_parent with arg "child for '<> dat'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, False, True, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.get_parent with arg "child for '<> dat'"
+called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> deze')
+called ComparerGui.set_node_text with args (<Item "child for '<> deze'">, 1, 'dinges')
+called ComparerGui.set_node_text with args (<Item "child for '<> deze'">, 2, '')
+called ComparerGui.get_parent with arg "child for '<> deze'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, False, True, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.get_parent with arg "child for '<> deze'"
+called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> die')
+called ComparerGui.set_node_text with args (<Item "child for '<> die'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "child for '<> die'">, 2, 'met inhoud')
+called ComparerGui.build_child with args (<Item "child for '<> die'">, 'iets')
+called ComparerGui.colorize_child with args (<Item "child for 'iets'">, True, False, False)
+called ComparerGui.get_parent with arg "child for 'iets'"
+called ComparerGui.colorize_header with args (<Item "child for '<> die'">, True, False, False)
+called ComparerGui.get_parent with arg "child for '<> die'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, False, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.set_node_text with args (<Item "child for 'iets'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "child for 'iets'">, 2, 'niets')
+called ComparerGui.get_parent with arg "child for '<> die'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, False, False)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.get_parent with arg "child for '<> die'"
+called ComparerGui.build_child with args (<Item "header for '<> top'">, '<> dit')
+called ComparerGui.set_node_text with args (<Item "child for '<> dit'">, 1, 'contents1')
+called ComparerGui.set_node_text with args (<Item "child for '<> dit'">, 2, 'met niks')
+called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr1')
+called ComparerGui.set_node_text with args (<Item "child for 'attr1'">, 1, 'xxx')
+called ComparerGui.colorize_child with args (<Item "child for 'attr1'">, False, True, True)
+called ComparerGui.get_parent with arg "child for 'attr1'"
+called ComparerGui.colorize_header with args (<Item "child for '<> dit'">, False, True, True)
+called ComparerGui.get_parent with arg "child for '<> dit'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, False, True, True)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.set_node_text with args (<Item "child for 'attr1'">, 2, '')
+called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr2')
+called ComparerGui.set_node_text with args (<Item "child for 'attr2'">, 1, 'xxx')
+called ComparerGui.colorize_child with args (<Item "child for 'attr2'">, False, True, True)
+called ComparerGui.get_parent with arg "child for 'attr2'"
+called ComparerGui.colorize_header with args (<Item "child for '<> dit'">, False, True, True)
+called ComparerGui.get_parent with arg "child for '<> dit'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, False, True, True)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.set_node_text with args (<Item "child for 'attr2'">, 2, '(no value)')
+called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr3')
+called ComparerGui.set_node_text with args (<Item "child for 'attr3'">, 1, 'yyy')
+called ComparerGui.set_node_text with args (<Item "child for 'attr3'">, 2, 'yyy')
+called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr4')
+called ComparerGui.colorize_child with args (<Item "child for 'attr4'">, True, True, True)
+called ComparerGui.get_parent with arg "child for 'attr4'"
+called ComparerGui.colorize_header with args (<Item "child for '<> dit'">, True, True, True)
+called ComparerGui.get_parent with arg "child for '<> dit'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, True, True)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.set_node_text with args (<Item "child for 'attr4'">, 1, '')
+called ComparerGui.set_node_text with args (<Item "child for 'attr4'">, 2, 'zzz')
+called ComparerGui.build_child with args (<Item "child for '<> dit'">, 'attr5')
+called ComparerGui.set_node_text with args (<Item "child for 'attr5'">, 1, '(no value)')
+called ComparerGui.colorize_child with args (<Item "child for 'attr5'">, True, True, True)
+called ComparerGui.get_parent with arg "child for 'attr5'"
+called ComparerGui.colorize_header with args (<Item "child for '<> dit'">, True, True, True)
+called ComparerGui.get_parent with arg "child for '<> dit'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, True, True)
+called ComparerGui.get_parent with arg "header for '<> top'"
+called ComparerGui.set_node_text with args (<Item "child for 'attr5'">, 2, 'zzz')
+called ComparerGui.get_parent with arg "child for '<> dit'"
+called ComparerGui.colorize_header with args (<Item "header for '<> top'">, True, True, True)
+called ComparerGui.get_parent with arg "header for '<> top'"
+"""
+
+
+@pytest.fixture
+def expected_output():
+    "langere output voorspellingen"
+    return {'compare': compare_output, 'refresh': refresh_output}

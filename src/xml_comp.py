@@ -158,6 +158,7 @@ def refresh_xmlcompare(comparer):
     comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     current_elems = []
     rightonly = leftonly = difference = False
+    # print(comparer.parent.data)
     for x in comparer.parent.data:
         node, lvalue, rvalue = x
         elems, attr = node
@@ -165,7 +166,8 @@ def refresh_xmlcompare(comparer):
             if not current_elems:
                 header = comparer.gui.build_header('<> ' + elems[-1][0])
             else:
-                comparer.gui.colorize_header(header, rightonly, leftonly, difference)
+                # comparer.gui.colorize_header(header, rightonly, leftonly, difference)
+                colorize_headers(comparer, header, rightonly, leftonly, difference)
                 if len(elems) > len(current_elems):
                     parent = header
                 elif len(elems) < len(current_elems):
@@ -191,15 +193,27 @@ def refresh_xmlcompare(comparer):
         if lvalue == '':
             rightonly = True
             comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+            colorize_headers(comparer, child, rightonly, leftonly, difference)
         comparer.gui.set_node_text(child, 1, lvalue)
         if rvalue is None:
             rvalue = '(no value)'
         if rvalue == '':
             leftonly = True
             comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+            colorize_headers(comparer, child, rightonly, leftonly, difference)
         if lvalue and rvalue and lvalue != rvalue:
             difference = True
             comparer.gui.colorize_child(child, rightonly, leftonly, difference)
+            colorize_headers(comparer, child, rightonly, leftonly, difference)
         comparer.gui.set_node_text(child, 2, rvalue)
     if comparer.parent.data:
-        comparer.gui.colorize_header(header, rightonly, leftonly, difference)
+        # comparer.gui.colorize_header(header, rightonly, leftonly, difference)
+        colorize_headers(comparer, header, rightonly, leftonly, difference)
+
+def colorize_headers(comparer, header, rightonly, leftonly, difference):
+    """propagate colours upwards
+    """
+    parent = comparer.gui.get_parent(header)
+    while parent:
+        comparer.gui.colorize_header(parent, rightonly, leftonly, difference)
+        parent = comparer.gui.get_parent(parent)

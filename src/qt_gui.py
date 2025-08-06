@@ -173,13 +173,11 @@ class AskOpenFilesGui(qtw.QDialog):
         self.setLayout(self.sizer)
 
     def update_typeselector(self):
-    # def _exec(self):
         "gebruikte vergelijkingsmethode aangeven bij uitsturen"
         for rb, cmptype in self.sel:
             rb.setChecked(False)
             if cmptype == self.master.parent.comparetype:
                 rb.setChecked(True)
-    #    super().exec()
 
     def accept(self):
         """transmit the chosen data
@@ -250,22 +248,27 @@ class ShowComparisonGui(qtw.QTreeWidget):
     def colorize_header(self, node, rightonly, leftonly, difference):
         """visualize the difference by coloring the header
         """
-        # testcolour = node.foreground(0)
         testcolour = node.foreground(0)
+        colour_to_set = None
         if testcolour == nocolour:
             if rightonly and not leftonly:
-                node.setForeground(0, rightonly_colour)
-            if leftonly and not rightonly:
-                node.setForeground(0, leftonly_colour)
-            if difference or (leftonly and rightonly):
-                node.setForeground(0, difference_colour)
+                colour_to_set = rightonly_colour
+            elif leftonly and not rightonly:
+                colour_to_set = leftonly_colour
+            elif difference or (leftonly and rightonly):
+                colour_to_set = difference_colour
         elif testcolour == leftonly_colour:
             if rightonly or difference:
-                node.setForeground(0, difference_colour)
+                colour_to_set = difference_colour
         elif testcolour == rightonly_colour:
             if leftonly or difference:
-                node.setForeground(0, difference_colour)
-
+                colour_to_set = difference_colour
+        if colour_to_set:
+            node.setForeground(0, colour_to_set)
+            if node.text(1):
+                node.setForeground(1, colour_to_set)
+            if node.text(2):
+                node.setForeground(2, colour_to_set)
 
     def build_child(self, header, option):
         """create a child under this header

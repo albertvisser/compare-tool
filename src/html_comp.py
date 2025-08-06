@@ -156,6 +156,7 @@ def refresh_htmlcompare(comparer):
      """
     comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
     parents = {-1: None}
+    # print(comparer.parent.data)
     for item, lvalue, rvalue in comparer.parent.data:
         node, attr_name = item
         level, elem_name = node
@@ -186,9 +187,7 @@ def refresh_htmlcompare(comparer):
             if lvalue and rvalue and lvalue != rvalue:
                 difference = True
                 comparer.gui.colorize_child(new_node, rightonly, leftonly, difference)
-            # geen idee waarom dit uit stond maar dit kleurt de directe parent mee
-            # wat gebeurt er als er meer verschillen onder de parent zitten?
-            # (dan pakt-ie de kleur van het laatste child)
-            # zouden hoger liggende parents niet ook mee (of altijd rood) moeten kleuren?
             if my_parent:
-                comparer.gui.colorize_header(my_parent, rightonly, leftonly, difference)
+                # comparer.gui.colorize_header(my_parent, rightonly, leftonly, difference)
+                for num in range(level - 1, 0, -1):
+                    comparer.gui.colorize_header(parents[num], rightonly, leftonly, difference)

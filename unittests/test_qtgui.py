@@ -517,46 +517,74 @@ class TestShowComparisonGui:
         testobj.colorize_header(node, True, False, True)     # kan dit?
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
                                            "called TreeItem.setForeground with args (0, 'right')\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           # "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, True, False, False)
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'right')\n")
+                                           "called TreeItem.setForeground with args (0, 'right')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, False, True, True)     # kan dit?
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
                                            "called TreeItem.setForeground with args (0, 'left')\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           # "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, False, True, False)
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'left')\n")
+                                           "called TreeItem.setForeground with args (0, 'left')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, True, True, True)      # kan dit?
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, True, True, False)    # kan dit?
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, False, False, True)
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, False, False, False)  # kan dit?
         assert capsys.readouterr().out == "called TreeItem.foreground with args (0,)\n"
         node.foreground = mock_foreground_2
         testobj.colorize_header(node, True, '', '')
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         testobj.colorize_header(node, '', True, '')
         assert capsys.readouterr().out == "called TreeItem.foreground with args (0,)\n"
         testobj.colorize_header(node, '', '', True)
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
         node.foreground = mock_foreground_3
         testobj.colorize_header(node, True, '', '')
         assert capsys.readouterr().out == "called TreeItem.foreground with args (0,)\n"
         testobj.colorize_header(node, '', True, '')
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.text with arg 2\n")
+        node.setText(1, 'x')
+        node.setText(2, 'y')
+        assert capsys.readouterr().out == ("called TreeItem.setText with args (1, 'x')\n"
+                                           "called TreeItem.setText with args (2, 'y')\n")
         testobj.colorize_header(node, '', '', True)
         assert capsys.readouterr().out == ("called TreeItem.foreground with args (0,)\n"
-                                           "called TreeItem.setForeground with args (0, 'both')\n")
+                                           "called TreeItem.setForeground with args (0, 'both')\n"
+                                           "called TreeItem.text with arg 1\n"
+                                           "called TreeItem.setForeground with args (1, 'both')\n"
+                                           "called TreeItem.text with arg 2\n"
+                                           "called TreeItem.setForeground with args (2, 'both')\n")
         node.foreground = mock_foreground_4
         testobj.colorize_header(node, 'any', 'any', 'any')
         assert capsys.readouterr().out == "called TreeItem.foreground with args (0,)\n"
