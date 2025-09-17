@@ -83,18 +83,51 @@ class TestMainWindow:
     def test_go(self, monkeypatch, capsys):
         """unittest for MainWindow.go
         """
+        class MockShowComp:
+            "stub"
+            gui = 'ShowCompGui'
+        class MockAskOpenFiles:
+            "stub"
+            def check_input(self, *args):
+                print('called AskOpenFiles.check_input with args', args)
+                return 'msg'
+        class MockComparer:
+            "stub"
+            showcomp = MockShowComp()
+            get_input = MockAskOpenFiles()
+            def meld_input_fout(self, msg):
+                print(f"called Comparer.meld_input_fout with arg '{msg}'")
+            def open(self):
+                print('called Comparer.open')
+            def doit(self):
+                print('called Comparer.doit')
+        def mock_input(*args):
+            print('called AskOpenFiles.check_input with args', args)
+            return ''
         monkeypatch.setattr(testee.qtw.QMainWindow, 'setCentralWidget',
                             mockqtw.MockMainWindow.setCentralWidget)
         monkeypatch.setattr(testee.qtw.QMainWindow, 'show', mockqtw.MockMainWindow.show)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.master.showcomp = types.SimpleNamespace(gui='results')
+        testobj.master = MockComparer()
         testobj.app = mockqtw.MockApplication()
         assert capsys.readouterr().out == 'called Application.__init__\n'
         with pytest.raises(SystemExit):
-            testobj.go()
+            testobj.go('left', 'right', 'method')
         assert capsys.readouterr().out == (
-                "called MainWidget.setCentralWindow with arg `str`\n"
+                "called MainWidget.setCentralWidget with arg `str`\n"
                 "called MainWindow.show\n"
+                "called AskOpenFiles.check_input with args ('left', 'right', 'method')\n"
+                "called Comparer.meld_input_fout with arg 'msg'\n"
+                "called Comparer.open\n"
+                "called Application.exec\n")
+        testobj.master.get_input.check_input = mock_input
+        with pytest.raises(SystemExit):
+            testobj.go('left', 'right', 'method')
+        assert capsys.readouterr().out == (
+                "called MainWidget.setCentralWidget with arg `str`\n"
+                "called MainWindow.show\n"
+                "called AskOpenFiles.check_input with args ('left', 'right', 'method')\n"
+                "called Comparer.doit\n"
                 "called Application.exec\n")
 
     def test_meld_input_fout(self, monkeypatch, capsys):

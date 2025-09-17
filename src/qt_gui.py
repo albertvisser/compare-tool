@@ -52,11 +52,18 @@ class MainWindow(qtw.QMainWindow):
                 self.menuactions[item_id] = add_action_to_menu(itemtitle, callback, shortcut,
                                                                text, menu)
 
-    def go(self):
+    def go(self, leftpath, rightpath, method):
         "display the screen and start the event loop"
         self.win = self.master.showcomp.gui
         self.setCentralWidget(self.win)
         self.show()
+        mld = self.master.get_input.check_input(leftpath, rightpath, method)
+        if mld:
+            self.master.meld_input_fout(mld)  # qt: critical; wx: unspecified
+            self.master.open()
+        else:
+            self.master.doit()  # first_time=True)
+
         sys.exit(self.app.exec())
 
     def meld_input_fout(self, mld):
@@ -97,13 +104,13 @@ class MainWindow(qtw.QMainWindow):
         self.close()
 
 
-def show_dialog(parent, cls):
+def show_dialog(parent, dlg):
     """show a dialog and return the result
 
     parent argument is voor compatibiliteit met wx versie
     """
-    cls.update_typeselector()
-    ok = cls.exec()
+    dlg.update_typeselector()
+    ok = dlg.exec()
     return ok == qtw.QDialog.DialogCode.Accepted
 
 

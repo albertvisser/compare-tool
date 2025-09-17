@@ -45,9 +45,15 @@ class MainWindow(wx.Frame):
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)
 
-    def go(self):
+    def go(self, leftpath, rightpath, method):
         "display the screen and start the event loop"
         self.Show(True)
+        mld = self.master.get_input.check_input(leftpath, rightpath, method)
+        if mld:
+            self.meld_input_fout(mld)  # qt: critical; wx: unspecified
+            self.master.open()
+        else:
+            self.master.doit()  # first_time=True)
         self.app.MainLoop()
 
     def meld_input_fout(self, mld):
@@ -81,14 +87,13 @@ class MainWindow(wx.Frame):
         self.Close(True)
 
 
-def show_dialog(parent, cls):
+def show_dialog(parent, dlg):
     """show a dialog and return the result
     """
-    x, y = parent.GetPosition()
-    with cls(parent, -1, parent.master.apptitel, pos=(x + 50, y + 50)) as dlg:
-        result = dlg.ShowModal() == dlg.GetAffirmativeId()
-        if result:
-            dlg.accept()
+    x, y = parent.parent.gui.GetPosition()
+    # with cls(parent, -1, parent.parent.apptitel, pos=(x + 50, y + 50)) as dlg:
+    dlg.SetPosition((x + 50, y + 50))
+    result = dlg.ShowModal() == dlg.GetAffirmativeId()
     return result
 
 
@@ -103,7 +108,7 @@ class AskOpenFilesGui(wx.Dialog):
     def __init__(self, master, size):
         self.master = master
         physical_parent = master.parent.gui
-        super().__init__(physical_parent, pos=wx.DefaultPosition, title="", size=size,
+        super().__init__(physical_parent, size=size, title=master.parent.apptitel,
                          style=wx.DEFAULT_DIALOG_STYLE)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):

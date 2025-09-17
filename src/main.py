@@ -57,28 +57,19 @@ class Comparer:
         self.gui = gui.MainWindow(self)
         self.showcomp = ShowComparison(self)
         # print(fileargs)
+        if method and method in comparetypes:
+            self.comparetype = method
         self.lhs_path, self.rhs_path = get_input_paths(fileargs)
+        if not self.comparetype:
+            self.comparetype = self.auto_determine_comparetype(self.lhs_path, self.rhs_path)
 
         self.ini = IniFile(str(pathlib.Path(__file__).parent.parent.resolve() / "actif.ini"))
         self.ini.read()
         self.get_input = AskOpenFiles(self)
-
-        if method and method in comparetypes:
-            self.comparetype = method
-        if self.lhs_path and self.rhs_path:
-            if not self.comparetype:
-                self.comparetype = self.auto_determine_comparetype(self.lhs_path, self.rhs_path)
-            mld = self.get_input.check_input(self.lhs_path, self.rhs_path, self.comparetype)
-            if mld:
-                self.gui.meld_input_fout(mld)  # qt: critical; wx: unspecified
-            else:
-                self.doit()  # first_time=True)
-        else:
+        if not self.lhs_path or not self.rhs_path:
             self.about()
-            if self.open():
-                self.doit()
-
-        self.gui.go()
+            self.open()
+        self.gui.go(self.lhs_path, self.rhs_path, self.comparetype)
 
     def open(self):
         "show open dialog"
@@ -90,8 +81,8 @@ class Comparer:
     @staticmethod
     def auto_determine_comparetype(leftpath, rightpath):
         "try to guess the comparison type from the file extension (only if they match)"
-        extl = pathlib.Path(leftpath).suffix[1:]
-        extr = pathlib.Path(rightpath).suffix[1:]
+        extl = pathlib.Path(leftpath).suffix[1:] if leftpath else ''
+        extr = pathlib.Path(rightpath).suffix[1:] if rightpath else ''
         if extl == extr and extl.lower() in comparetypes:
             return extl.lower()
         return ''
@@ -135,14 +126,13 @@ class Comparer:
 
 def get_input_paths(fileargs):
     "split up incoming file arguments"
-    noargs, onearg, twoargs = (0, 1, 2)
     leftpath = rightpath = ''
     if fileargs:
         # if len(fileargs) > noargs:
         leftpath = fileargs[0]
-        if len(fileargs) > onearg:
+        if len(fileargs) > 1:
             rightpath = fileargs[1]
-            if len(fileargs) > twoargs:
+            if len(fileargs) > 2:
                 print('excessive filename arguments truncated')
     return leftpath, rightpath
 
