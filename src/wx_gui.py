@@ -45,20 +45,16 @@ class MainWindow(wx.Frame):
             menubar.Append(menu, title)
         self.SetMenuBar(menubar)
 
-    def go(self, leftpath, rightpath, method):
+    def go(self):  # , leftpath, rightpath, method):
         "display the screen and start the event loop"
         self.Show(True)
-        mld = self.master.get_input.check_input(leftpath, rightpath, method)
+        mld = self.master.get_input.check_input()
         if mld:
-            self.meld_input_fout(mld)  # qt: critical; wx: unspecified
+            wx.MessageBox(mld, self.master.apptitel)
             self.master.open()
         else:
             self.master.doit()  # first_time=True)
         self.app.MainLoop()
-
-    def meld_input_fout(self, mld):
-        "show invalid input message"
-        wx.MessageBox(mld, self.master.apptitel)
 
     def meld_vergelijking_fout(self, message, data):
         "show comparison error(s)"
@@ -74,10 +70,11 @@ class MainWindow(wx.Frame):
         dlg = wx.MessageDialog(self, melding, self.master.apptitel, wx.OK | wx.ICON_INFORMATION)
         dlg.ShowModal()
         dlg.Destroy()
+        # wx.MessageBox(meld, self.master.apptitel)
 
     def refresh(self):
         """panel opnieuw opbouwen in plaats van een refresh doen
-        maar ik vraag me af of dit zo wel werkt
+        maar ik vraag me af of dit zo wel werkt - nou kennelijk wel
         """
         self.win.Destroy()
         self.setup_gui()
@@ -93,8 +90,20 @@ def show_dialog(parent, dlg):
     x, y = parent.parent.gui.GetPosition()
     # with cls(parent, -1, parent.parent.apptitel, pos=(x + 50, y + 50)) as dlg:
     dlg.SetPosition((x + 50, y + 50))
-    result = dlg.ShowModal() == dlg.GetAffirmativeId()
-    return result
+    while True:
+        ok = dlg.ShowModal() == dlg.GetAffirmativeId()
+        if ok:
+            mld = dlg.get_results()
+            if mld:
+                wx.MessageBox(mld, parent.parent.apptitel)
+            else:
+                break
+        else:
+            break
+    #         return False
+    # return True
+    # return dlg.ShowModal() == dlg.GetAffirmativeId()
+    return ok
 
 
 class AskOpenFilesGui(wx.Dialog):
@@ -105,53 +114,72 @@ class AskOpenFilesGui(wx.Dialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, master, size):
+    def __init__(self, master, size, title):
         self.master = master
         physical_parent = master.parent.gui
-        super().__init__(physical_parent, size=size, title=master.parent.apptitel,
-                         style=wx.DEFAULT_DIALOG_STYLE)
+        super().__init__(physical_parent, size=size, title=title)
+        self.paths = {'left': '', 'right': ''}
+        # self.fbbh_left = self.fbbh_right = None
+        self.vsizer = wx.BoxSizer(wx.VERTICAL)
+        self.SetSizer(self.vsizer)
+        self.SetAutoLayout(True)
+        self.vsizer.Fit(self)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
         "add a line for selecting a file"
         callback = self.fbbh1_callback if path == 'linker' else self.fbbh2_callback
-        fbbh = filebrowse.FileBrowseButtonWithHistory(self, -1, size=(450, -1),
-                                                      labelText=label,
+        fbbh = filebrowse.FileBrowseButtonWithHistory(self, size=(450, -1),
+                                                      labelText='',
                                                       buttonText=browse,
                                                       toolTip=tooltip.format(path),
                                                       dialogTitle=title.format(path),
                                                       changeCallback=callback)
         fbbh.SetHistory(history)
         fbbh.SetValue(value)
+        if path == 'linker':
+            self.fbbh_left = fbbh
+        else:
+            self.fbbh_right = fbbh
         return fbbh
 
-    def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
-        "do the screen layout"
-        self.fbbh1, self.fbbh2 = leftfile, rightfile
-        sizer = wx.BoxSizer(wx.VERTICAL)
+    def create_fileselector_grid(self, linedefs):
+        "build a grid for the file selector widgets"
+        gbox = wx.FlexGridSizer(cols=2, vgap=0, hgap=4)
+        for ix, linedef in enumerate(linedefs):
+            caption, selector = linedef
+            text = wx.StaticText(self, label=caption)  # , size=(60, -1))
+            gbox.Add(text, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
+            gbox.Add(selector, 0, wx.ALL, 5)
+        self.vsizer.Add(gbox, 0, wx.ALL, 5)
 
-        box = wx.BoxSizer(wx.VERTICAL)
-        box.Add(self.fbbh1, 0, wx.ALL, 5)
-        box.Add(self.fbbh2, 0, wx.ALL, 5)
-        sizer.Add(box, 0, wx.ALL, 5)
-
+    def build_typeselector(self, comparetext, choices):
+        "build a collection of radiobuttons"
         box = wx.BoxSizer(wx.VERTICAL)
         gbox = wx.FlexGridSizer(cols=2, vgap=0, hgap=4)
         gbox.Add(wx.StaticText(self, label=comparetext))
-        self.sel = []
-        for ix, type_ in enumerate(sorted(choices)):
+        optionlist = []
+        for ix, cmptype in enumerate(sorted(choices)):
             if ix > 0:
                 gbox.Add(wx.StaticText(self, label=''))
-            text = choices[type_][0]
+            text = choices[cmptype][0]
             rb = wx.RadioButton(self, label=text)
             gbox.Add(rb)
-            if self.master.parent.comparetype == type_:
-                rb.SetValue(True)
-            self.sel.append((rb, type_))
+            optionlist.append((rb, cmptype))
         box.Add(gbox, 0, wx.ALL, 9)
-        sizer.Add(box, 0, wx.ALL, 5)
+        self.vsizer.Add(box, 0, wx.ALL, 5)
+        return optionlist
 
+    def update_typeselector(self):
+        "gebruikte vergelijkingsmethode aangeven bij uitsturen"
+        for rb, cmptype in self.master.options:
+            rb.SetValue(False)
+            if cmptype == self.master.parent.comparetype:
+                rb.SetValue(True)
+
+    def add_buttons(self, oktext, canceltext):
+        "add the confirm / reject buttons"
         box = wx.BoxSizer(wx.HORIZONTAL)
-        label = wx.StaticText(self, -1, "", size=(155, -1))
+        label = wx.StaticText(self, size=(155, -1))
         box.Add(label, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
         btn = wx.Button(self, label=oktext[0])
         self.SetAffirmativeId(btn.GetId())
@@ -161,66 +189,74 @@ class AskOpenFilesGui(wx.Dialog):
         self.SetEscapeId(btn.GetId())
         btn.SetHelpText(canceltext[1])
         box.Add(btn, 0, wx.ALIGN_CENTRE | wx.ALL, 5)
-        sizer.Add(box, 0, wx.EXPAND | wx.ALL, 5)
+        self.vsizer.Add(box, 0, wx.EXPAND | wx.ALL, 5)
 
-        self.SetSizer(sizer)
-        self.SetAutoLayout(True)
-        sizer.Fit(self)
-
-    def accept(self):
+    def get_results(self):
         """transmit the chosen data
         """
-        self.master.parent.lhs_path = self.path_left
-        self.master.parent.rhs_path = self.path_right
-        for rb, type_ in self.sel:
-            if rb.GetValue():
-                self.master.parent.comparetype = type_
-                break
+        return self.master.check_input()
+
+    def get_fbb_result(self, fbb):
+        """return the filebrowsebutton's selected / entered name
+        """
+        if fbb == self.fbbh_left:
+            return self.paths['left']
+        return self.paths['right']
+
+    def get_radiobox_value(self, rb):
+        """return the radiobutton's value (checked or not)
+        """
+        return rb.GetValue()
 
     def fbbh1_callback(self, evt):
         "callback voor bovenste/linker/source file selector"
-        if hasattr(self, 'fbbh1'):
-            self.path_left = evt.GetString()
-            history = self.fbbh1.GetHistory()
-            if self.path_left not in history:
-                history.append(self.path_left)
-                self.fbbh1.SetHistory(history)
-                self.fbbh1.GetHistoryControl().SetStringSelection(self.path_left)
+        self.paths['left'] = evt.GetString()
+        if not hasattr(self, 'fbbh_left'):  # voor wanneer dei widget nog niet gedefinieerd is
+            return
+        history = self.fbbh_left.GetHistory()
+        if self.paths['left'] not in history:
+            history.append(self.paths['left'])
+            self.fbbh_left.SetHistory(history)
+            self.fbbh_left.GetHistoryControl().SetStringSelection(self.paths['left'])
 
     def fbbh2_callback(self, evt):
         "callback voor onderste/rechter/target file selector"
-        if hasattr(self, 'fbbh2'):
-            self.path_right = evt.GetString()
-            history = self.fbbh2.GetHistory()
-            if self.path_right not in history:
-                history.append(self.path_right)
-                self.fbbh2.SetHistory(history)
-                self.fbbh2.GetHistoryControl().SetStringSelection(self.path_right)
+        self.paths['right'] = evt.GetString()
+        if not hasattr(self, 'fbbh_right'):  # voor wanneer de widget nog niet gedefinieerd is
+            return
+        history = self.fbbh_right.GetHistory()
+        if self.paths['right'] not in history:
+            history.append(self.paths['right'])
+            self.fbbh_right.SetHistory(history)
+            self.fbbh_right.GetHistoryControl().SetStringSelection(self.paths['right'])
 
 
 class ShowComparisonGui(wx.Panel):
     """Part of the main window showing the comparison as a tree
     """
     def __init__(self, parent):
-        # wx.Panel.__init__(self, parent)  # , -1 ,size=(1080, 960))
         super().__init__(parent)
         self.parent = parent
+        vsizer = wx.BoxSizer(wx.VERTICAL)
 
-        # als ik deze uitzet vult deze initieel het hele hoofdscherm
-        # self.Bind(wx.EVT_SIZE, self.on_size)
-
-        # die show_tooltip switch zorgt ervoor dat de teksten onleesbaar worden
-        self.tree = gizmos.TreeListCtrl(self, -1, size=(1080, 600), agwStyle=gizmos.TR_DEFAULT_STYLE
+        self.tree = gizmos.TreeListCtrl(self, size=(1080, 600), agwStyle=gizmos.TR_DEFAULT_STYLE
                                         | gizmos.TR_HAS_VARIABLE_ROW_HEIGHT
                                         # | 0x100000 | # wx.TR_TOOLTIP_ON_LONG_ITEMS
                                         | gizmos.TR_ELLIPSIZE_LONG_ITEMS
                                         | gizmos.TR_FULL_ROW_HIGHLIGHT)  #
                                         # | CTC.TR_TOOLTIP_ON_LONG_ITEMS
                                         # | HTL.TR_ELLIPSIZE_LONG_ITEMS)
+        ## self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.on_right_up)
+        ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self.on_left_up)
+        ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_DCLICK, self.on_doubleclick)
         self.rightonly_colour = wx.Colour(wx.BLUE)
         self.leftonly_colour = wx.Colour(wx.GREEN)
         self.difference_colour = wx.Colour(wx.RED)
         ## self.inversetext_colour = wx.Colour(Qt.WHITE)
+        self.SetAutoLayout(True)
+        self.SetSizer(vsizer)
+        vsizer.Fit(self)
+        vsizer.Add(self.tree, 1, wx.EXPAND)
 
     def setup_nodata_columns(self, root_text, leftcaption, rightcaption):
         "set header texts when there's no data to be shown"
@@ -228,17 +264,8 @@ class ShowComparisonGui(wx.Panel):
         self.tree.SetItemText(first, leftcaption)
         self.tree.SetItemText(first, rightcaption)
 
-    def finish_init(self):
+    def show_tree(self):
         "(do layout and) render the area"
-        ## self.tree.GetMainWindow().Bind(wx.EVT_RIGHT_UP, self.on_right_up)
-        ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_UP, self.on_left_up)
-        ## self.tree.GetMainWindow().Bind(wx.EVT_LEFT_DCLICK, self.on_doubleclick)
-        ## sizer = wx.BoxSizer(wx.VERTICAL)
-        vsizer = wx.BoxSizer(wx.VERTICAL)
-        vsizer.Add(self.tree, 1, wx.EXPAND)
-        self.SetAutoLayout(True)
-        self.SetSizer(vsizer)
-        vsizer.Fit(self)
         self.Show(True)
 
     def refresh_tree(self):

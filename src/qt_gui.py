@@ -52,23 +52,18 @@ class MainWindow(qtw.QMainWindow):
                 self.menuactions[item_id] = add_action_to_menu(itemtitle, callback, shortcut,
                                                                text, menu)
 
-    def go(self, leftpath, rightpath, method):
+    def go(self):   # , leftpath, rightpath, method):
         "display the screen and start the event loop"
         self.win = self.master.showcomp.gui
         self.setCentralWidget(self.win)
         self.show()
-        mld = self.master.get_input.check_input(leftpath, rightpath, method)
+        mld = self.master.get_input.check_input()
         if mld:
-            self.master.meld_input_fout(mld)  # qt: critical; wx: unspecified
+            qtw.QMessageBox.critical(self, self.master.apptitel, mld)
             self.master.open()
         else:
-            self.master.doit()  # first_time=True)
-
+            self.master.doit()
         sys.exit(self.app.exec())
-
-    def meld_input_fout(self, mld):
-        "show invalid input message"
-        qtw.QMessageBox.critical(self, self.master.apptitel, mld)
 
     def meld_vergelijking_fout(self, message, data):
         "show comparison error(s)"
@@ -122,54 +117,54 @@ class AskOpenFilesGui(qtw.QDialog):
     selecteren met behulp van een file selector dialoog
     de te tonen lijsten worden bewaard in een bestand aangegeven door self.inifile
     """
-    def __init__(self, master, size):
+    def __init__(self, master, size, title):
         self.master = master
         super().__init__(master.parent.gui)
         ## self.resize(size)  # (680, 400)
+        self.setWindowTitle(title)
+        self.vsizer = qtw.QVBoxLayout()
+        self.setLayout(self.vsizer)
 
     def add_ask_for_filename(self, size, label, browse, path, tooltip, title, history, value):
-        "add a line for selecting a file"
-        return FileBrowseButton(self, caption=label, button=browse, text=value, items=history)
-
-    def build_screen(self, leftfile, rightfile, comparetext, choices, oktext, canceltext):
-        "do the screen layout"
-        self.sizer = qtw.QVBoxLayout()
-
+        "create a widget for selecting a file"
         hsizer = qtw.QHBoxLayout()
-        hsizer.addWidget(leftfile)
-        ## self.paths.append((name, browse))
-        ## hsizer.addStretch()
-        self.sizer.addLayout(hsizer)
-        self.browse1 = leftfile
+        fbb = FileBrowseButton(self, caption=label, button=browse, text=value, items=history)
+        hsizer.addWidget(fbb)
+        self.vsizer.addLayout(hsizer)
+        return fbb
 
-        hsizer = qtw.QHBoxLayout()
-        hsizer.addWidget(rightfile)
-        ## self.paths.append((name, browse))
-        ## hsizer.addStretch()
-        self.sizer.addLayout(hsizer)
-        self.browse2 = rightfile
+    def create_fileselector_grid(self, linedefs):
+        "build a grid for the file selector widgets"
+        gsizer = qtw.QGridLayout()
+        for ix, linedef in enumerate(linedefs):
+            caption, selector = linedef
+            lbl = qtw.QLabel(caption)
+            # lbl.setMinimumWidth(120)
+            # lbl.setMaximumWidth(120)
+            gsizer.addWidget(lbl, ix, 0)
+            gsizer.addWidget(selector, ix, 1)
+        self.vsizer.addLayout(gsizer)
 
+    def build_typeselector(self, comparetext, choices):
+        "build a collection of radiobuttons"
         hsizer = qtw.QHBoxLayout()
         hsizer.addSpacing(10)
         gsizer = qtw.QGridLayout()
         gsizer.addWidget(qtw.QLabel(comparetext), 0, 0)
-        self.sel = []
-        rb_auto = qtw.QRadioButton('Autodetect', self)
-        rb_auto.setChecked(True)
-        gsizer.addWidget(rb_auto, 0, 1)
+        optionlist = []
         for ix, cmptype in enumerate(sorted(choices)):
             text = choices[cmptype][0]
             rb = qtw.QRadioButton(text, self)
-            gsizer.addWidget(rb, ix + 1, 1)
-            # dit heeft hier nog geen nut, omdat comparetype nog niet bepaald is
-            # if self.master.parent.comparetype == cmptype:
-            #     rb.setChecked(True)
-            self.sel.append((rb, cmptype))
+            gsizer.addWidget(rb, ix, 1)
+            optionlist.append((rb, cmptype))
         hsizer.addLayout(gsizer)
         hsizer.addStretch()
-        self.sizer.addLayout(hsizer)
+        self.vsizer.addLayout(hsizer)
+        return optionlist
 
-        # eigenlijk hier ook die oktext en canceltext gebruiken
+    def add_buttons(self, oktext, canceltext):
+        "add the confirm / reject buttons"
+        # ok/canceltext zijn tuples van button text en tooltip text
         buttonbox = qtw.QDialogButtonBox()
         buttonbox.addButton(qtw.QDialogButtonBox.StandardButton.Ok)
         buttonbox.addButton(qtw.QDialogButtonBox.StandardButton.Cancel)
@@ -179,12 +174,11 @@ class AskOpenFilesGui(qtw.QDialog):
         hsizer.addStretch()
         hsizer.addWidget(buttonbox)
         hsizer.addStretch()
-        self.sizer.addLayout(hsizer)
-        self.setLayout(self.sizer)
+        self.vsizer.addLayout(hsizer)
 
     def update_typeselector(self):
         "gebruikte vergelijkingsmethode aangeven bij uitsturen"
-        for rb, cmptype in self.sel:
+        for rb, cmptype in self.master.options:
             rb.setChecked(False)
             if cmptype == self.master.parent.comparetype:
                 rb.setChecked(True)
@@ -192,25 +186,21 @@ class AskOpenFilesGui(qtw.QDialog):
     def accept(self):
         """transmit the chosen data
         """
-        linkerpad = self.browse1.input.currentText()
-        rechterpad = self.browse2.input.currentText()
-        selectiontype = ''
-        # breakpoint()
-        for rb, cmptype in self.sel:
-            if rb.isChecked():
-                selectiontype = cmptype
-                break
-        else:
-            # if rb_auto.isChecked():   # niks aangevinkt of deze aangevinkt komt op hetzelfde neer
-            selectiontype = self.master.parent.auto_determine_comparetype(linkerpad, rechterpad)
-        mld = self.master.check_input(linkerpad, rechterpad, selectiontype)
+        mld = self.master.check_input()
         if mld:
             qtw.QMessageBox.critical(self, self.master.parent.apptitel, mld)
-            return
-        self.master.parent.lhs_path = linkerpad
-        self.master.parent.rhs_path = rechterpad
-        self.master.parent.comparetype = selectiontype
-        super().accept()
+        else:
+            super().accept()
+
+    def get_fbb_result(self, fbb):
+        """return the filebrowsebutton's selcted / entered name
+        """
+        return fbb.input.currentText()
+
+    def get_radiobox_value(self, rb):
+        """return the radiobutton's value (checked or not)
+        """
+        return rb.isChecked()
 
 
 class ShowComparisonGui(qtw.QTreeWidget):
@@ -235,7 +225,7 @@ class ShowComparisonGui(qtw.QTreeWidget):
         self.addTopLevelItem(root)
         return root  # for testing
 
-    def finish_init(self):
+    def show_tree(self):
         "render the area"
         self.show()
 
@@ -344,10 +334,6 @@ class FileBrowseButton(qtw.QFrame):
         self.input.setMaximumWidth(300)
         self.input.addItems(items)
         self.input.setEditText(text)
-        lbl = qtw.QLabel(caption)
-        lbl.setMinimumWidth(120)
-        lbl.setMaximumWidth(120)
-        box.addWidget(lbl)
         box.addWidget(self.input)
         self.button = qtw.QPushButton(button, self, clicked=self.browse)
         self.button.setMaximumWidth(68)

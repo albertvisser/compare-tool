@@ -53,25 +53,25 @@ class Comparer:
                                    (ID_COLORS, "&Legenda", "F1", "What do the colors indicate?",
                                     self.legend), )}
         self.data = {}
-        self.comparetype = ''  # = method in wx version
+        self.comparetype = ''
         self.gui = gui.MainWindow(self)
         self.showcomp = ShowComparison(self)
         # print(fileargs)
         if method and method in comparetypes:
             self.comparetype = method
         self.lhs_path, self.rhs_path = get_input_paths(fileargs)
-        if not self.comparetype:
-            self.comparetype = self.auto_determine_comparetype(self.lhs_path, self.rhs_path)
+        # if not self.comparetype:
+        #     self.comparetype = self.auto_determine_comparetype(self.lhs_path, self.rhs_path)
 
         self.ini = IniFile(str(pathlib.Path(__file__).parent.parent.resolve() / "actif.ini"))
         self.ini.read()
         self.get_input = AskOpenFiles(self)
         if not self.lhs_path or not self.rhs_path:
             self.about()
-            self.open()
-        self.gui.go(self.lhs_path, self.rhs_path, self.comparetype)
+            # self.open()
+        self.gui.go()  # self.lhs_path, self.rhs_path, self.comparetype)
 
-    def open(self):
+    def open(self, event=None):
         "show open dialog"
         ok = gui.show_dialog(self.get_input, self.get_input.gui)
         if ok:
@@ -90,6 +90,8 @@ class Comparer:
     def doit(self, event=None):   # , first_time=False):
         """perform action
         """
+        if not self.comparetype:
+            return
         ok, data = do_compare(self.lhs_path, self.rhs_path, self.comparetype)
         if not ok:
             message, data = data[0], data[1]
@@ -157,41 +159,61 @@ class AskOpenFiles:
     """
     def __init__(self, parent):
         self.parent = parent
-        self.gui = gui.AskOpenFilesGui(self, size=(400, 200))
+        self.gui = gui.AskOpenFilesGui(self, size=(400, 200), title=self.parent.apptitel)
+
         tooltip = ("Geef hier de naam van het {} te vergelijken ini file "
                    "of kies er een uit een lijst met recent gebruikte")
         title = "Selecteer het {} ini file"
-        lhs_file = self.gui.add_ask_for_filename(size=(450, -1), label='Vergelijk:',
-                                                 browse='Zoek', path='linker',
-                                                 tooltip=tooltip, title=title,
-                                                 history=self.parent.ini.mru_left,
-                                                 value=self.parent.lhs_path)
-        rhs_file = self.gui.add_ask_for_filename(size=(450, -1), label='Met:',
-                                                 browse='Zoek', path='rechter',
-                                                 tooltip=tooltip, title=title,
-                                                 history=self.parent.ini.mru_right,
-                                                 value=self.parent.rhs_path)
-        self.gui.build_screen(lhs_file, rhs_file, 'Soort vergelijking:', comparetypes,
-                              oktext=("&Gebruiken", "Klik hier om de vergelijking uit te voeren"),
-                              canceltext=("&Afbreken", "Klik hier om zonder wijzigingen terug te"
-                                          " gaan naar het hoofdscherm"))
+        self.lhs_file = self.gui.add_ask_for_filename(size=(450, -1), label='Vergelijk:',
+                                                      browse='Zoek', path='linker',
+                                                      tooltip=tooltip, title=title,
+                                                      history=self.parent.ini.mru_left,
+                                                      value=self.parent.lhs_path)
+        self.rhs_file = self.gui.add_ask_for_filename(size=(450, -1), label='Met:',
+                                                      browse='Zoek', path='rechter',
+                                                      tooltip=tooltip, title=title,
+                                                      history=self.parent.ini.mru_right,
+                                                      value=self.parent.rhs_path)
 
-    def check_input(self, linkerpad, rechterpad, seltype):
+        self.gui.create_fileselector_grid([('Vergelijk:', self.lhs_file), ('Met:', self.rhs_file)])
+        types_to_select = dict(comparetypes)
+        types_to_select[''] = ('Autodetect', )
+        self.options = self.gui.build_typeselector('Soort vergelijking:', types_to_select)
+        self.gui.update_typeselector()
+        self.gui.add_buttons(("&Gebruiken", "Klik hier om de vergelijking uit te voeren"),
+                             ("&Afbreken", "Klik hier om zonder wijzigingen terug te gaan naar het"
+                              " hoofdscherm"))
+
+    def check_input(self):
         """parse input
         """
+        linkerpad = self.gui.get_fbb_result(self.lhs_file)
+        rechterpad = self.gui.get_fbb_result(self.rhs_file)
+        selectiontype = ''
+        for rb, cmptype in self.options[1:]:
+            if self.gui.get_radiobox_value(rb):
+                selectiontype = cmptype
+                break
+        else:
+            selectiontype = self.parent.auto_determine_comparetype(linkerpad, rechterpad)
+        mld = ''
         if linkerpad == "":
-            return 'Geen linkerbestand opgegeven'
-        if rechterpad == "":
-            return 'Geen rechterbestand opgegeven'
-        if not pathlib.Path(linkerpad).exists():
-            return f'Bestand {linkerpad} kon niet gevonden/geopend worden'
-        if not pathlib.Path(rechterpad).exists():
-            return f'Bestand {rechterpad} kon niet gevonden/geopend worden'
-        if rechterpad == linkerpad:
-            return "Bestandsnamen zijn gelijk"
-        if seltype not in comparetypes:
-            return 'Geen vergelijkingsmethode gekozen'
-        return ''
+            mld = 'Geen linkerbestand opgegeven'
+        elif rechterpad == "":
+            mld = 'Geen rechterbestand opgegeven'
+        elif not pathlib.Path(linkerpad).exists():
+            mld = f'Bestand {linkerpad} kon niet gevonden/geopend worden'
+        elif not pathlib.Path(rechterpad).exists():
+            mld = f'Bestand {rechterpad} kon niet gevonden/geopend worden'
+        elif rechterpad == linkerpad:
+            mld = "Bestandsnamen zijn gelijk"
+        elif selectiontype not in comparetypes:
+            mld = 'Geen vergelijkingsmethode gekozen en niet automatisch te bepalen'
+        else:
+            self.parent.lhs_path = linkerpad
+            self.parent.rhs_path = rechterpad
+            self.parent.comparetype = selectiontype
+        return mld
 
 
 class ShowComparison:
@@ -209,7 +231,7 @@ class ShowComparison:
                                           "hier ook niet")
         else:
             self.refresh()
-        self.gui.finish_init()
+        self.gui.show_tree()
 
     def refresh(self):
         """(re)do the comparison

@@ -88,57 +88,49 @@ class TestMainWindow:
             gui = 'ShowCompGui'
         class MockAskOpenFiles:
             "stub"
-            def check_input(self, *args):
-                print('called AskOpenFiles.check_input with args', args)
+            def check_input(self):
+                print('called AskOpenFiles.check_input')
                 return 'msg'
         class MockComparer:
             "stub"
+            apptitel = 'xxx'
             showcomp = MockShowComp()
             get_input = MockAskOpenFiles()
-            def meld_input_fout(self, msg):
-                print(f"called Comparer.meld_input_fout with arg '{msg}'")
+            # def meld_input_fout(self, msg):
+            #     print(f"called Comparer.meld_input_fout with arg '{msg}'")
             def open(self):
                 print('called Comparer.open')
             def doit(self):
                 print('called Comparer.doit')
-        def mock_input(*args):
-            print('called AskOpenFiles.check_input with args', args)
+        def mock_input():
+            print('called AskOpenFiles.check_input')
             return ''
         monkeypatch.setattr(testee.qtw.QMainWindow, 'setCentralWidget',
                             mockqtw.MockMainWindow.setCentralWidget)
         monkeypatch.setattr(testee.qtw.QMainWindow, 'show', mockqtw.MockMainWindow.show)
+        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.master = MockComparer()
         testobj.app = mockqtw.MockApplication()
         assert capsys.readouterr().out == 'called Application.__init__\n'
         with pytest.raises(SystemExit):
-            testobj.go('left', 'right', 'method')
+            testobj.go()  # 'left', 'right', 'method')
         assert capsys.readouterr().out == (
                 "called MainWidget.setCentralWidget with arg `str`\n"
                 "called MainWindow.show\n"
-                "called AskOpenFiles.check_input with args ('left', 'right', 'method')\n"
-                "called Comparer.meld_input_fout with arg 'msg'\n"
+                "called AskOpenFiles.check_input\n"
+                f"called MessageBox.critical with args `{testobj}` `xxx` `msg`\n"
                 "called Comparer.open\n"
                 "called Application.exec\n")
         testobj.master.get_input.check_input = mock_input
         with pytest.raises(SystemExit):
-            testobj.go('left', 'right', 'method')
+            testobj.go()  # 'left', 'right', 'method')
         assert capsys.readouterr().out == (
                 "called MainWidget.setCentralWidget with arg `str`\n"
                 "called MainWindow.show\n"
-                "called AskOpenFiles.check_input with args ('left', 'right', 'method')\n"
+                "called AskOpenFiles.check_input\n"
                 "called Comparer.doit\n"
                 "called Application.exec\n")
-
-    def test_meld_input_fout(self, monkeypatch, capsys):
-        """unittest for MainWindow.meld_input_fout
-        """
-        monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
-        testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.master.apptitel = 'Comparer'
-        testobj.meld_input_fout('ahem')
-        assert capsys.readouterr().out == (
-                f"called MessageBox.critical with args `{testobj}` `Comparer` `ahem`\n")
 
     def test_meld_vergelijking_fout(self, monkeypatch, capsys):
         """unittest for MainWindow.meld_vergelijking_fout
@@ -270,10 +262,15 @@ class TestAskOpenFilesGui:
         """unittest for AskOpenFilesGui.__init__
         """
         monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
+        monkeypatch.setattr(testee.qtw.QDialog, 'setWindowTitle', mockqtw.MockDialog.setWindowTitle)
+        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
+        monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
         testmaster = types.SimpleNamespace(parent=types.SimpleNamespace(gui='mastergui'))
-        # breakpoint()
-        testee.AskOpenFilesGui(testmaster, 'size')
-        assert capsys.readouterr().out == 'called Dialog.__init__ with args mastergui () {}\n'
+        testee.AskOpenFilesGui(testmaster, 'size', 'title')
+        assert capsys.readouterr().out == ("called Dialog.__init__ with args mastergui () {}\n"
+                                           "called Dialog.setWindowTitle with args ('title',)\n"
+                                           "called VBox.__init__\n"
+                                           "called Dialog.setLayout with arg MockVBoxLayout\n")
 
     def test_add_ask_for_filename(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.add_ask_for_filename
@@ -282,58 +279,84 @@ class TestAskOpenFilesGui:
             print('called FileBrowseButton with args', args, kwargs)
             return 'result'
         monkeypatch.setattr(testee, 'FileBrowseButton', mock_button)
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
         testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vsizer = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
         assert testobj.add_ask_for_filename('size', 'label', 'browse', 'path', 'tooltip', 'title',
                                             'history', 'value') == "result"
         assert capsys.readouterr().out == (
+                "called HBox.__init__\n"
                 f"called FileBrowseButton with args ({testobj},)"
-                " {'caption': 'label', 'button': 'browse', 'text': 'value', 'items': 'history'}\n")
+                " {'caption': 'label', 'button': 'browse', 'text': 'value', 'items': 'history'}\n"
+                "called HBox.addWidget with arg str\n"
+                "called VBox.addLayout with arg MockHBoxLayout\n")
 
-    def test_build_screen(self, monkeypatch, capsys):
-        """unittest for AskOpenFilesGui.build_screen
+    def test_create_fileselector_grid(self, monkeypatch, capsys):
+        """unittest for text_create_fileselector_grid
         """
-        monkeypatch.setattr(testee.qtw, 'QVBoxLayout', mockqtw.MockVBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QGridLayout', mockqtw.MockGridLayout)
+        monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vsizer = mockqtw.MockVBoxLayout()
+        sel1 = mockqtw.MockComboBox()       # niet het correcte type widget,
+        sel2 = mockqtw.MockPushButton()     # maar zo kan ik het verschil zien
+        assert capsys.readouterr().out == ("called VBox.__init__\n"
+                                           "called ComboBox.__init__\n"
+                                           "called PushButton.__init__ with args () {}\n")
+        testobj.create_fileselector_grid([('text1', sel1), ('text2', sel2)])
+        assert capsys.readouterr().out == (
+            "called Grid.__init__\n"
+            "called Label.__init__ with args ('text1',)\n"
+            "called Grid.addWidget with arg MockLabel at (0, 0)\n"
+            "called Grid.addWidget with arg MockComboBox at (0, 1)\n"
+            "called Label.__init__ with args ('text2',)\n"
+            "called Grid.addWidget with arg MockLabel at (1, 0)\n"
+            "called Grid.addWidget with arg MockPushButton at (1, 1)\n"
+            "called VBox.addLayout with arg MockGridLayout\n")
+
+    def test_build_typeselector(self, monkeypatch, capsys):
+        """unittest for AskOpenFilesGui.build_typeselector
+        """
         monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
         monkeypatch.setattr(testee.qtw, 'QGridLayout', mockqtw.MockGridLayout)
         monkeypatch.setattr(testee.qtw, 'QLabel', mockqtw.MockLabel)
         monkeypatch.setattr(testee.qtw, 'QRadioButton', mockqtw.MockRadioButton)
-        monkeypatch.setattr(testee.qtw, 'QDialogButtonBox', mockqtw.MockButtonBox)
-        monkeypatch.setattr(testee.qtw.QDialog, 'setLayout', mockqtw.MockDialog.setLayout)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        leftfile = mockqtw.MockComboBox()
-        rightfile = mockqtw.MockComboBox()
-        assert capsys.readouterr().out == "called ComboBox.__init__\ncalled ComboBox.__init__\n"
+        testobj.vsizer = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
         choices = {'y': ('yyy',), 'x': ('xxx',)}
         testobj.master.parent.comparetype = 'y'
-        testobj.build_screen(leftfile, rightfile, 'comparetext', choices, 'oktext', 'canceltext')
-        assert len(testobj.sel) == len(choices)
-        assert isinstance(testobj.sel[0][0], testee.qtw.QRadioButton)
-        assert testobj.sel[0][1] == 'x'
-        assert isinstance(testobj.sel[1][0], testee.qtw.QRadioButton)
-        assert testobj.sel[1][1] == 'y'
+        result = testobj.build_typeselector('comparetext', choices)
+        assert len(result) == len(choices)
+        assert isinstance(result[0][0], testee.qtw.QRadioButton)
+        assert result[0][1] == 'x'
+        assert isinstance(result[1][0], testee.qtw.QRadioButton)
+        assert result[1][1] == 'y'
         assert capsys.readouterr().out == (
-            "called VBox.__init__\n"
-            "called HBox.__init__\n"
-            "called HBox.addWidget with arg MockComboBox\n"
-            "called VBox.addLayout with arg MockHBoxLayout\n"
-            "called HBox.__init__\n"
-            "called HBox.addWidget with arg MockComboBox\n"
-            "called VBox.addLayout with arg MockHBoxLayout\n"
             "called HBox.__init__\n"
             "called HBox.addSpacing\n"
             "called Grid.__init__\n"
             "called Label.__init__ with args ('comparetext',)\n"
             "called Grid.addWidget with arg MockLabel at (0, 0)\n"
-            f"called RadioButton.__init__ with args ('Autodetect', {testobj}) {{}}\n"
-            "called RadioButton.setChecked with arg `True`\n"
-            "called Grid.addWidget with arg MockRadioButton at (0, 1)\n"
             f"called RadioButton.__init__ with args ('xxx', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg MockRadioButton at (1, 1)\n"
+            "called Grid.addWidget with arg MockRadioButton at (0, 1)\n"
             f"called RadioButton.__init__ with args ('yyy', {testobj}) {{}}\n"
-            "called Grid.addWidget with arg MockRadioButton at (2, 1)\n"
+            "called Grid.addWidget with arg MockRadioButton at (1, 1)\n"
             "called HBox.addLayout with arg MockGridLayout\n"
             "called HBox.addStretch\n"
-            "called VBox.addLayout with arg MockHBoxLayout\n"
+            "called VBox.addLayout with arg MockHBoxLayout\n")
+
+    def test_add_buttons(self, monkeypatch, capsys):
+        """unittest for AskOpenFilesGui.add_buttons
+        """
+        monkeypatch.setattr(testee.qtw, 'QHBoxLayout', mockqtw.MockHBoxLayout)
+        monkeypatch.setattr(testee.qtw, 'QDialogButtonBox', mockqtw.MockButtonBox)
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.vsizer = mockqtw.MockVBoxLayout()
+        assert capsys.readouterr().out == "called VBox.__init__\n"
+        testobj.add_buttons('oktext', 'canceltext')
+        assert capsys.readouterr().out == (
             "called ButtonBox.__init__ with args ()\n"
             "called ButtonBox.addButton with args (1,)\n"
             "called ButtonBox.addButton with args (2,)\n"
@@ -343,8 +366,7 @@ class TestAskOpenFilesGui:
             "called HBox.addStretch\n"
             "called HBox.addWidget with arg MockButtonBox\n"
             "called HBox.addStretch\n"
-            "called VBox.addLayout with arg MockHBoxLayout\n"
-            "called Dialog.setLayout with arg MockVBoxLayout\n")
+            "called VBox.addLayout with arg MockHBoxLayout\n")
 
     def test_update_typeselector(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.upate_typeselector
@@ -356,8 +378,9 @@ class TestAskOpenFilesGui:
         assert capsys.readouterr().out == ("called CheckBox.__init__\n"
                                            "called CheckBox.__init__\n"
                                            "called CheckBox.__init__\n")
-        testobj.sel = ((check1, 'type1'), (check2, 'type2'), (check3, 'type3'))
-        testobj.master = types.SimpleNamespace(parent=types.SimpleNamespace(comparetype='type2'))
+        testobj.master = types.SimpleNamespace(parent=types.SimpleNamespace(comparetype='type2'),
+                                               options=((check1, 'type1'), (check2, 'type2'),
+                                                        (check3, 'type3')))
         testobj.update_typeselector()
         assert capsys.readouterr().out == ("called CheckBox.setChecked with arg False\n"
                                            "called CheckBox.setChecked with arg False\n"
@@ -367,118 +390,48 @@ class TestAskOpenFilesGui:
     def test_accept(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.accept
         """
-        class mock_button:
-            "stub"
-            def __init__(self, *args, **kwargs):
-                print('called FileBrowseButton with args', args, kwargs)
-                self.input = mockqtw.MockComboBox(self)
-                self.input.setCurrentText(args[0])
         def mock_check_nok(*args):
             print('called Comparer.check_input with args', args)
             return 'A message'
         def mock_check_ok(*args):
             print('called Comparer.check_input with args', args)
             return ''
-        def mock_accept(self):
-            print('called Dialog.accept')
-        def mock_determine(*args):
-            print('called Comparer.auto_determine_comparetype with args', args)
-            return ''
-        def mock_determine_2(*args):
-            print('called Comparer.auto_determine_comparetype with args', args)
-            return 'xx'
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.master.parent.auto_determine_comparetype = mock_determine
-        testobj.browse1 = mock_button('left side')
-        testobj.browse2 = mock_button('right side')
-        check1 = mockqtw.MockCheckBox()
-        check2 = mockqtw.MockCheckBox()
-        check2.setChecked(True)
-        testobj.sel = [(check1, 'xxx'), (check2, 'yyy')]
-        assert capsys.readouterr().out == ("called FileBrowseButton with args ('left side',) {}\n"
-                                           "called ComboBox.__init__\n"
-                                           "called ComboBox.setCurrentText with arg `left side`\n"
-                                           "called FileBrowseButton with args ('right side',) {}\n"
-                                           "called ComboBox.__init__\n"
-                                           "called ComboBox.setCurrentText with arg `right side`\n"
-                                           "called CheckBox.__init__\n"
-                                           "called CheckBox.__init__\n"
-                                           "called CheckBox.setChecked with arg True\n")
-        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mock_accept)
+        testobj.master = types.SimpleNamespace(parent=types.SimpleNamespace(apptitel='xxx'))
         monkeypatch.setattr(testee.qtw, 'QMessageBox', mockqtw.MockMessageBox)
+        monkeypatch.setattr(testee.qtw.QDialog, 'accept', mockqtw.MockDialog.accept)
         testobj.master.check_input = mock_check_nok
         testobj.accept()
         assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called CheckBox.isChecked\n"
-                "called CheckBox.isChecked\n"
-                "called Comparer.check_input with args ('current text', 'current text', 'yyy')\n"
-                f"called MessageBox.critical with args `{testobj}` `Comparer` `A message`\n")
+                "called Comparer.check_input with args ()\n"
+                f"called MessageBox.critical with args `{testobj}` `xxx` `A message`\n")
         testobj.master.check_input = mock_check_ok
         testobj.accept()
-        assert testobj.master.parent.lhs_path == 'current text'
-        assert testobj.master.parent.rhs_path == 'current text'
-        assert testobj.master.parent.comparetype == 'yyy'
         assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called CheckBox.isChecked\n"
-                "called CheckBox.isChecked\n"
-                "called Comparer.check_input with args ('current text', 'current text', 'yyy')\n"
+                "called Comparer.check_input with args ()\n"
                 "called Dialog.accept\n")
-        testobj.sel = []
-        testobj.accept()
-        assert testobj.master.parent.lhs_path == 'current text'
-        assert testobj.master.parent.rhs_path == 'current text'
-        assert testobj.master.parent.comparetype == ''
-        assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called Comparer.auto_determine_comparetype with args"
-                " ('current text', 'current text')\n"
-                "called Comparer.check_input with args ('current text', 'current text', '')\n"
-                "called Dialog.accept\n")
-        testobj.master.parent.auto_determine_comparetype = mock_determine_2
-        testobj.accept()
-        assert testobj.master.parent.lhs_path == 'current text'
-        assert testobj.master.parent.rhs_path == 'current text'
-        assert testobj.master.parent.comparetype == 'xx'
-        assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called Comparer.auto_determine_comparetype with args"
-                " ('current text', 'current text')\n"
-                "called Comparer.check_input with args ('current text', 'current text', 'xx')\n"
-                "called Dialog.accept\n")
-        testobj.master.parent.auto_determine_comparetype = mock_determine
+
+    def test_get_fbb_result(self, monkeypatch, capsys):
+        """unittest for AskOpenFilesGui.get_fbb_result
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        fbb = types.SimpleNamespace(input=mockqtw.MockComboBox())
+        fbb.input.setCurrentText('xxx')
+        assert capsys.readouterr().out == ("called ComboBox.__init__\n"
+                                           "called ComboBox.setCurrentText with arg `xxx`\n")
+        assert testobj.get_fbb_result(fbb) == 'current text'
+        assert capsys.readouterr().out == "called ComboBox.currentText\n"
+
+    def test_get_radiobox_value(self, monkeypatch, capsys):
+        """unittest for AskOpenFilesGui.get_radiobox_value
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
         rb = mockqtw.MockRadioButton()
-        assert capsys.readouterr().out == "called RadioButton.__init__ with args () {}\n"
-        testobj.sel = [(rb, 'xxx')]
-        testobj.accept()
-        assert testobj.master.parent.lhs_path == 'current text'
-        assert testobj.master.parent.rhs_path == 'current text'
-        assert testobj.master.parent.comparetype == ''
-        assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called RadioButton.isChecked\n"
-                "called Comparer.auto_determine_comparetype with args"
-                " ('current text', 'current text')\n"
-                "called Comparer.check_input with args ('current text', 'current text', '')\n"
-                "called Dialog.accept\n")
         rb.setChecked(True)
-        assert capsys.readouterr().out == "called RadioButton.setChecked with arg `True`\n"
-        testobj.accept()
-        assert testobj.master.parent.lhs_path == 'current text'
-        assert testobj.master.parent.rhs_path == 'current text'
-        assert testobj.master.parent.comparetype == 'xxx'
-        assert capsys.readouterr().out == (
-                "called ComboBox.currentText\n"
-                "called ComboBox.currentText\n"
-                "called RadioButton.isChecked\n"
-                "called Comparer.check_input with args ('current text', 'current text', 'xxx')\n"
-                "called Dialog.accept\n")
+        assert capsys.readouterr().out == ("called RadioButton.__init__ with args () {}\n"
+                                           "called RadioButton.setChecked with arg `True`\n")
+        assert testobj.get_radiobox_value(rb)
+        assert capsys.readouterr().out == "called RadioButton.isChecked\n"
 
 
 class TestShowComparisonGui:
@@ -535,14 +488,14 @@ class TestShowComparisonGui:
                 "called TreeItem.setText with args (2, 'rightcaption')\n"
                 f'called ShowComparisonGui.addTopLevelItem with arg {root}\n')
 
-    def test_finish_init(self, monkeypatch, capsys):
+    def test_show_tree(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.finish_init
         """
         def mock_show():
             print('called ShowComparisonGui.show')
         testobj = self.setup_testobj(monkeypatch, capsys)
         testobj.show = mock_show
-        testobj.finish_init()
+        testobj.show_tree()
         assert capsys.readouterr().out == 'called ShowComparisonGui.show\n'
 
     def test_refresh_tree(self, monkeypatch, capsys):
@@ -775,10 +728,6 @@ class TestFileBrowseButton:
             "called ComboBox.setMaximumWidth with arg `300`\n"
             "called ComboBox.addItems with arg []\n"
             "called ComboBox.setEditText with arg ``\n"
-            "called Label.__init__ with args ('',)\n"
-            "called Label.setMinimumWidth with arg `120`\n"
-            "called Label.setMaximumWidth with arg `120`\n"
-            "called HBox.addWidget with arg MockLabel\n"
             "called HBox.addWidget with arg MockComboBox\n"
             f"called PushButton.__init__ with args ('', {testobj}) {{'clicked': {testobj.browse}}}\n"
             "called PushButton.setMaximumWidth with arg `68`\n"
@@ -798,10 +747,6 @@ class TestFileBrowseButton:
             "called ComboBox.setMaximumWidth with arg `300`\n"
             "called ComboBox.addItems with arg ['a', 'b']\n"
             "called ComboBox.setEditText with arg `zzz`\n"
-            "called Label.__init__ with args ('xxx',)\n"
-            "called Label.setMinimumWidth with arg `120`\n"
-            "called Label.setMaximumWidth with arg `120`\n"
-            "called HBox.addWidget with arg MockLabel\n"
             "called HBox.addWidget with arg MockComboBox\n"
             f"called PushButton.__init__ with args ('yyy', {testobj})"
             f" {{'clicked': {testobj.browse}}}\n"
