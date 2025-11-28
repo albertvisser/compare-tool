@@ -164,7 +164,8 @@ def add_new_parentnode(comparer, parentdict, key):
 def add_functionbody_nodes_one_side(comparer, parentdict, parent, values, side):
     """add nodes for the function body when it's only on one side
     """
-    nodetext = 'code' if parent[0] == 'module level' else 'function body'
+    nodetext = ('code' if parent[0] == 'module level' else 'class level'
+                if parent[-1].startswith('class') else 'function body')
     top = comparer.gui.build_child(parentdict[parent], nodetext)
     if side == 'left':
         pos, leftonly, rightonly = 1, True, False
@@ -185,7 +186,8 @@ def add_functionbody_nodes_one_side(comparer, parentdict, parent, values, side):
 def add_functionbody_nodes_both_sides(comparer, parentdict, parent, difflines):
     """add nodes for the function body after comparing the lines
     """
-    nodetext = 'code' if parent[0] == 'module level' else 'function body'
+    nodetext = ('code' if parent[0] == 'module level' else 'class level'
+                if parent[-1].startswith('class') else  'function body')
     top = comparer.gui.build_child(parentdict[parent], nodetext)
     difference = False
     for line in difflines:
