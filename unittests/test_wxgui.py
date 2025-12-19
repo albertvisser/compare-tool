@@ -53,7 +53,7 @@ class TestMainWindow:
         testobj.setup_gui()
         assert capsys.readouterr().out == (
                 f"called BoxSizer.__init__ with args ({testee.wx.VERTICAL},)\n"
-                f"called vert sizer.Add with args <item> (1, {testee.wx.EXPAND})\n"
+                f"called vert sizer.Add with args ('gui', 1, {testee.wx.EXPAND})\n"
                 "called Frame.SetAutoLayout with args (True,)\n"
                 "called Frame.SetSizer with args (vert sizer,)\n"
                 f"called vert sizer.Fit with args ({testobj},)\n")
@@ -329,12 +329,12 @@ class TestAskOpenFilesGui:
         assert capsys.readouterr().out == (
                 "called FlexGridSizer.__init__ with args () {'cols': 2, 'vgap': 0, 'hgap': 4}\n"
                 f"called StaticText.__init__ with args ({testobj},) {{'label': 'text1'}}\n"
-                "called FlexGridSizer.Add with args <item> (0, 2288, 5)\n"
-                "called FlexGridSizer.Add with args <item> (0, 240, 5)\n"
+                "called FlexGridSizer.Add with args MockStaticText (0, 2288, 5)\n"
+                "called FlexGridSizer.Add with args MockComboBox (0, 240, 5)\n"
                 f"called StaticText.__init__ with args ({testobj},) {{'label': 'text2'}}\n"
-                "called FlexGridSizer.Add with args <item> (0, 2288, 5)\n"
-                "called FlexGridSizer.Add with args <item> (0, 240, 5)\n"
-                "called vert sizer.Add with args <item> (0, 240, 5)\n")
+                "called FlexGridSizer.Add with args MockStaticText (0, 2288, 5)\n"
+                "called FlexGridSizer.Add with args MockButton (0, 240, 5)\n"
+                "called vert sizer.Add with args MockFlexGridSizer (0, 240, 5)\n")
 
     def test_build_typeselector(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.build_typeselector
@@ -351,9 +351,9 @@ class TestAskOpenFilesGui:
                 "called BoxSizer.__init__ with args (8,)\n"
                 "called FlexGridSizer.__init__ with args () {'cols': 2, 'vgap': 0, 'hgap': 4}\n"
                 f"called StaticText.__init__ with args ({testobj},) {{'label': 'comparetext'}}\n"
-                "called FlexGridSizer.Add with args <item> ()\n"
-                "called vert sizer.Add with args <item> (0, 240, 9)\n"
-                "called vert sizer.Add with args <item> (0, 240, 5)\n")
+                "called FlexGridSizer.Add with args MockStaticText ()\n"
+                "called vert sizer.Add with args MockFlexGridSizer (0, 240, 9)\n"
+                "called vert sizer.Add with args MockBoxSizer (0, 240, 5)\n")
         result = testobj.build_typeselector('comparetext', {'y': ('yyy',), 'x': ('xxx',)})
         assert len(result) == len(('x', 'y'))
         assert isinstance(result[0][0], testee.wx.RadioButton)
@@ -364,15 +364,15 @@ class TestAskOpenFilesGui:
                 "called BoxSizer.__init__ with args (8,)\n"
                 "called FlexGridSizer.__init__ with args () {'cols': 2, 'vgap': 0, 'hgap': 4}\n"
                 f"called StaticText.__init__ with args ({testobj},) {{'label': 'comparetext'}}\n"
-                "called FlexGridSizer.Add with args <item> ()\n"
+                "called FlexGridSizer.Add with args MockStaticText ()\n"
                 f"called RadioButton.__init__ with args ({testobj},) {{'label': 'xxx'}}\n"
-                "called FlexGridSizer.Add with args <item> ()\n"
+                "called FlexGridSizer.Add with args MockRadioButton ()\n"
                 f"called StaticText.__init__ with args ({testobj},) {{'label': ''}}\n"
-                "called FlexGridSizer.Add with args <item> ()\n"
+                "called FlexGridSizer.Add with args MockStaticText ()\n"
                 f"called RadioButton.__init__ with args ({testobj},) {{'label': 'yyy'}}\n"
-                "called FlexGridSizer.Add with args <item> ()\n"
-                "called vert sizer.Add with args <item> (0, 240, 9)\n"
-                "called vert sizer.Add with args <item> (0, 240, 5)\n")
+                "called FlexGridSizer.Add with args MockRadioButton ()\n"
+                "called vert sizer.Add with args MockFlexGridSizer (0, 240, 9)\n"
+                "called vert sizer.Add with args MockBoxSizer (0, 240, 5)\n")
 
     def test_update_typeselector(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.update_typeselector
@@ -411,21 +411,21 @@ class TestAskOpenFilesGui:
             f"called BoxSizer.__init__ with args ({testee.wx.HORIZONTAL},)\n"
             f"called StaticText.__init__ with args ({testobj},) {{'size': (155, -1)}}\n"
             "called hori sizer.Add with args"
-            f" <item> (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
+            f" MockStaticText (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
             f"called Button.__init__ with args ({testobj},) {{'label': 'o'}}\n"
             "called Button.GetId\n"
             "called dialog.SetAffirmativeId with args ('id',)\n"
             "called Button.SetHelpText with arg 'k'\n"
             "called hori sizer.Add with args"
-            f" <item> (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
+            f" MockButton (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
             f"called Button.__init__ with args ({testobj}, 403, 'c') {{}}\n"
             "called Button.GetId\n"
             "called dialog.SetEscapeId with args ('id',)\n"
             "called Button.SetHelpText with arg 'a'\n"
             "called hori sizer.Add with args"
-            f" <item> (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
+            f" MockButton (0, {testee.wx.ALIGN_CENTRE | testee.wx.ALL}, 5)\n"
             "called vert sizer.Add with args"
-            f" <item> (0, {testee.wx.EXPAND | testee.wx.ALL}, 5)\n")
+            f" MockBoxSizer (0, {testee.wx.EXPAND | testee.wx.ALL}, 5)\n")
 
     def test_get_results(self, monkeypatch, capsys):
         """unittest for AskOpenFilesGui.get_results
@@ -567,7 +567,7 @@ class TestShowComparisonGui:
                 "called Panel.SetAutoLayout with args (True,)\n"
                 "called Panel.SetSizer with args (vert sizer,)\n"
                 f"called vert sizer.Fit with args ({testobj},)\n"
-                f"called vert sizer.Add with args <item> (1, {testee.wx.EXPAND})\n")
+                f"called vert sizer.Add with args MockTree (1, {testee.wx.EXPAND})\n")
 
     def test_setup_nodata_columns(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.setup_nodata_columns
