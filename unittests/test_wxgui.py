@@ -118,7 +118,7 @@ class TestMainWindow:
         assert capsys.readouterr().out == (
                 "called frame.Show with args (True,)\n"
                 "called AskOpenFileNames.check_input with args ()\n"
-                "called wx.MessageBox with args ('message', 'title')\n"
+                "called wx.MessageBox with args ('message', 'title') {}\n"
                 "called Comparer.open\n"
                 "called app.MainLoop\n")
         testobj.master.get_input.check_input = mock_check_2
@@ -212,7 +212,7 @@ def test_show_dialog(monkeypatch, capsys):
                                        "called dialog.SetPosition with args ((51, 52),)\n"
                                        "called Dialog.ShowModal\n"
                                        "called dialog.get_results\n"
-                                       "called wx.MessageBox with args ('message', 'title')\n"
+                                       "called wx.MessageBox with args ('message', 'title') {}\n"
                                        "called Dialog.ShowModal\n"
                                        "called dialog.get_results\n")
     monkeypatch.setattr(mockwx.MockDialog, 'ShowModal', mock_show)
