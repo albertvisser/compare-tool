@@ -289,7 +289,7 @@ class TestAskOpenFilesGui:
                 "called HBox.__init__\n"
                 f"called FileBrowseButton with args ({testobj},)"
                 " {'caption': 'label', 'button': 'browse', 'text': 'value', 'items': 'history'}\n"
-                "called HBox.addWidget with arg str\n"
+                "called HBox.addWidget with arg result\n"
                 "called VBox.addLayout with arg MockHBoxLayout\n")
 
     def test_create_fileselector_grid(self, monkeypatch, capsys):
