@@ -1,20 +1,86 @@
 """unittests for ./src/main.py
 """
 import types
+import pytest
 from src import main as testee
 
 
-def test_get_input_paths(capsys):
+def test_get_input_paths(monkeypatch, capsys):
     """unittest for main.get_input_paths
     """
+    def mock_is(*args):
+        print('called is_tracked_file with args', args)
+        return (testee.pathlib.Path('qqq/xxx'), 'yyy')
+    def mock_is_not(*args):
+        print('called is_tracked_file with args', args)
+        return ()
+    def mock_run(*args, **kwargs):
+        print('called subprocess.run with args', args, kwargs)
+    def mock_run_2(*args, **kwargs):
+        print('called subprocess.run with args', args, kwargs)
+        raise testee.subprocess.CalledProcessError(1, 'xxx')
+    monkeypatch.setattr(testee, 'is_tracked_file', mock_is_not)
+    monkeypatch.setattr(testee.subprocess, 'run', mock_run)
     assert testee.get_input_paths([]) == ('', '')
     assert capsys.readouterr().out == ''
-    assert testee.get_input_paths(['left'])
-    assert capsys.readouterr().out == ''
+    assert testee.get_input_paths(['left']) == ('left', '')
+    assert capsys.readouterr().out == "called is_tracked_file with args ('left',)\n"
+    monkeypatch.setattr(testee, 'is_tracked_file', mock_is)
+    if testee.pathlib.Path('/tmp/compare-tool/compare-tool/xxx/yyy').exists():
+        testee.pathlib.Path('/tmp/compare-tool/compare-tool/xxx/yyy').unlink()
+        testee.pathlib.Path('/tmp/compare-tool/compare-tool/xxx').rmdir()
+    # assert testee.get_input_paths(['left']) == ('/tmp/compare-tool/compare-tool/left', 'left')
+    assert testee.get_input_paths(['left']) == ('/tmp/compare-tool/xxx/yyy', 'left')
+    assert capsys.readouterr().out == (
+            "called is_tracked_file with args ('left',)\n"
+            "called subprocess.run with args (['git', 'show', 'master:yyy'],)"
+            " {'stdout': <_io.TextIOWrapper name='/tmp/compare-tool/xxx/yyy'"
+            " mode='w' encoding='UTF-8'>,"
+            f" 'cwd': {testee.pathlib.Path('qqq/xxx')!r},"
+            " 'check': True}\n")
+    monkeypatch.setattr(testee.subprocess, 'run', mock_run_2)
+    with pytest.raises(ValueError) as exc:
+        testee.get_input_paths(['left'])
+    assert str(exc.value) == 'left is not a tracked file in a repository'
+    assert capsys.readouterr().out == (
+            "called is_tracked_file with args ('left',)\n"
+            "called subprocess.run with args (['git', 'show', 'master:yyy'],)"
+            " {'stdout': <_io.TextIOWrapper name='/tmp/compare-tool/xxx/yyy'"
+            " mode='w' encoding='UTF-8'>,"
+            f" 'cwd': {testee.pathlib.Path('qqq/xxx')!r},"
+            " 'check': True}\n")
     assert testee.get_input_paths(['left', 'right'])
     assert capsys.readouterr().out == ''
     assert testee.get_input_paths(['left', 'right', ''])
     assert capsys.readouterr().out == 'excessive filename arguments truncated\n'
+
+
+def test_is_tracked_file(monkeypatch, capsys, tmp_path):
+    """unittest for main.is_tracked_file
+    """
+    def mock_resolve(path):
+        print('called path.resolve with arg', path)
+        return path
+    def mock_iterdir(path):
+        print('called path.iterdir with arg', path)
+        if path.name == 'path':
+            return [testee.pathlib.Path('path/test'), testee.pathlib.Path('path/.git')]
+        if path.name == 'to':
+            return [testee.pathlib.Path('path.to/xxx'), testee.pathlib.Path('path/to/yyy')]
+        return []
+    (tmp_path / 'path').mkdir()
+    (tmp_path / 'path' / 'test').touch()
+    (tmp_path / 'path' / '.git').touch()
+    (tmp_path / 'path' / 'to').mkdir()
+    (tmp_path / 'path' / 'to' / 'xxx').touch()
+    (tmp_path / 'path' / 'to' / 'yyy').touch()
+    assert testee.is_tracked_file(f'{tmp_path}/path/to/filename') == ()
+    assert capsys.readouterr().out == ("")
+    (tmp_path / 'path' / '.git').unlink()
+    (tmp_path / 'path' / '.git').mkdir()
+    assert testee.is_tracked_file(f'{tmp_path}/path/to/filename') == (tmp_path / 'path',
+                                                                      'to/filename')
+    assert capsys.readouterr().out == ("")
 
 
 def test_do_compare(monkeypatch, capsys):
@@ -391,15 +457,15 @@ class TestComparer:
         monkeypatch.setattr(testee.gui, 'show_dialog', mock_show_dialog)
         # testobj = setup_comparer(monkeypatch, capsys)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj_get_input = types.SimpleNamespace(gui='get_input_gui')
-        testobj.get_input = testobj_get_input
+        testobj.inputgetter = types.SimpleNamespace(gui='get_input_gui')
+        # testobj.get_input = testobj_get_input
         testobj.open()
         assert capsys.readouterr().out == (
-                f"called gui.show_dialog() with args ({testobj_get_input}, 'get_input_gui')\n")
+                f"called gui.show_dialog() with args ({testobj.inputgetter}, {testobj.gui})\n")
         monkeypatch.setattr(testee.gui, 'show_dialog', mock_show_dialog_2)
         testobj.open()
         assert capsys.readouterr().out == (
-                f"called gui.show_dialog() with args ({testobj_get_input}, 'get_input_gui')\n"
+                f"called gui.show_dialog() with args ({testobj.inputgetter}, {testobj.gui})\n"
                 "called Comparer.doit\n")
 
     def test_auto_determine_comparetype(self, monkeypatch, capsys):
@@ -457,6 +523,18 @@ class TestComparer:
         assert testobj.ini.mru_left == [testobj.lhs_path]
         assert testobj.ini.mru_right == [testobj.rhs_path]
         assert capsys.readouterr().out == ('called IniFile.write()\ncalled ShowComparison.refresh()\n')
+
+    def test_get_titles(self, monkeypatch, capsys):
+        """unittest for Comparer.get_titles
+        """
+        testobj = self.setup_testobj(monkeypatch, capsys)
+        assert testobj.get_titles('xxx', 'yyy') == ('xxx', 'yyy')
+        testobj.lhs_path = 'leftpath'
+        testobj.rhs_path = 'rightpath'
+        assert testobj.get_titles() == ('leftpath', 'rightpath')
+        testobj.lhs_path = 'leftpath'
+        testobj.rhs_path = f'{testee.TMPROOT}/rightpath'
+        assert testobj.get_titles() == ('leftpath', 'repository version')
 
     def test_about(self, monkeypatch, capsys):
         """unittest for Comparer.about
@@ -704,7 +782,7 @@ class TestShowComparison:
         assert testobj.parent == testobjparent
         # assert testobj.gui == testobjparent.gui
         assert capsys.readouterr().out == (
-              "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
+              f"called ShowComparisonGui.__init__() with args ({testobjparent},) {{}}\n"
               "called ShowComparisonGui.init_tree() with args ('Document structure',"
               " 'value in `lefthand-side` file', 'value in `righthand-side` file') {}\n"
               "called ShowComparisonGui.setup_nodata_columns() with args ('geen bestanden geladen',"
@@ -716,7 +794,7 @@ class TestShowComparison:
         assert testobj.parent == testobjparent
         # assert testobj.gui == testobjparent.gui
         assert capsys.readouterr().out == (
-              "called ShowComparisonGui.__init__() with args ('ComparerGui',) {}\n"
+              f"called ShowComparisonGui.__init__() with args ({testobj.parent},) {{}}\n"
               "called ShowComparisonGui.init_tree() with args ('Document structure',"
               " 'value in `lefthand-side` file', 'value in `righthand-side` file') {}\n"
               'called ShowComparison.refresh()\n'

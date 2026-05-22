@@ -113,7 +113,7 @@ class TestMainWindow:
         assert capsys.readouterr().out == "called app.__init__ with args ()\n"
         testobj.master = types.SimpleNamespace(
                 apptitel='title', open=mock_open, doit=mock_doit,
-                get_input=types.SimpleNamespace(check_input=mock_check))
+                inputgetter=types.SimpleNamespace(check_input=mock_check))
         testobj.go()
         assert capsys.readouterr().out == (
                 "called frame.Show with args (True,)\n"
@@ -121,7 +121,7 @@ class TestMainWindow:
                 "called wx.MessageBox with args ('message', 'title') {}\n"
                 "called Comparer.open\n"
                 "called app.MainLoop\n")
-        testobj.master.get_input.check_input = mock_check_2
+        testobj.master.inputgetter.check_input = mock_check_2
         testobj.go()
         assert capsys.readouterr().out == (
                 "called frame.Show with args (True,)\n"
@@ -199,14 +199,14 @@ def test_show_dialog(monkeypatch, capsys):
         print('called dialog.get_results')
         return 'message' if counter == 1 else ''
     monkeypatch.setattr(testee.wx, 'MessageBox', mockwx.mock_messagebox)
-    parent = types.SimpleNamespace(parent=types.SimpleNamespace(apptitel='title',
-                                                                gui=mockwx.MockFrame()))
-    dlg = mockwx.MockDialog(parent)
-    dlg.get_results = mock_get
+    parent = mockwx.MockFrame()
+    master = types.SimpleNamespace(parent=types.SimpleNamespace(apptitel='title'),
+                                   gui=mockwx.MockDialog('master'))
+    master.gui.get_results = mock_get
     assert capsys.readouterr().out == ("called frame.__init__ with args () {}\n"
                                        "called Dialog.__init__ with args () {}\n")
     counter = 0
-    assert testee.show_dialog(parent, dlg)
+    assert testee.show_dialog(master, parent)
     assert capsys.readouterr().out == ("called Frame.GetPosition\n"
                                        "called Point.__init__ with args (1, 2)\n"
                                        "called dialog.SetPosition with args ((51, 52),)\n"
@@ -216,7 +216,7 @@ def test_show_dialog(monkeypatch, capsys):
                                        "called Dialog.ShowModal\n"
                                        "called dialog.get_results\n")
     monkeypatch.setattr(mockwx.MockDialog, 'ShowModal', mock_show)
-    assert not testee.show_dialog(parent, dlg)
+    assert not testee.show_dialog(master, parent)
     assert capsys.readouterr().out == ("called Frame.GetPosition\n"
                                        "called Point.__init__ with args (1, 2)\n"
                                        "called dialog.SetPosition with args ((51, 52),)\n"
@@ -547,15 +547,15 @@ class TestShowComparisonGui:
         monkeypatch.setattr(testee.wx, 'BoxSizer', mockwx.MockBoxSizer)
         monkeypatch.setattr(testee.gizmos, 'TreeListCtrl', mockwx.MockTree)
         monkeypatch.setattr(testee.wx, 'Colour', mockwx.MockColour)
-        parent = 'parent'
+        parent = types.SimpleNamespace(gui='MainWindow')
         testobj = testee.ShowComparisonGui(parent)
-        assert testobj.parent == 'parent'
+        assert testobj.parent == parent
         assert isinstance(testobj.tree, testee.gizmos.TreeListCtrl)
         assert isinstance(testobj.rightonly_colour, testee.wx.Colour)
         assert isinstance(testobj.leftonly_colour, testee.wx.Colour)
         assert isinstance(testobj.difference_colour, testee.wx.Colour)
         assert capsys.readouterr().out == (
-                "called Panel.__init__ with args ('parent',)\n"
+                "called Panel.__init__ with args ('MainWindow',)\n"
                 f"called BoxSizer.__init__ with args ({testee.wx.VERTICAL},)\n"
                 f"called Tree.__init__ with args ({testobj},) {{'size': (1080, 600),"
                 f" 'agwStyle': {testee.gizmos.TR_DEFAULT_STYLE
@@ -605,11 +605,16 @@ class TestShowComparisonGui:
     def test_init_tree(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.init_tree
         """
+        def mock_get():
+            print('called Comparer.get_titles')
+            return 'left_title', 'right_title'
         testobj = self.setup_testobj(monkeypatch, capsys)
+        testobj.parent = types.SimpleNamespace(get_titles=mock_get)
         testobj.tree = mockwx.MockTree()
-        testobj.init_tree('caption', 'left_title', 'right_title')
+        testobj.init_tree('caption')
         assert testobj.root == 'The Root'
         assert capsys.readouterr().out == ("called Tree.__init__ with args () {}\n"
+                                           "called Comparer.get_titles\n"
                                            "called tree.DeleteAllItems\n"
                                            "called tree.AddColumn with args ('caption',)\n"
                                            "called tree.AddColumn with args ('left_title',)\n"

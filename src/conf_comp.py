@@ -97,7 +97,7 @@ def gen_next(gen):
 def refresh_inicompare(comparer):
     """(re)do comparing the ini files (visually)
     """
-    comparer.gui.init_tree('Section/Option', comparer.parent.lhs_path, comparer.parent.rhs_path)
+    comparer.gui.init_tree('Section/Option')  # , comparer.parent.lhs_path, comparer.parent.rhs_path)
     header = None
     current_section = ''
     rightonly = leftonly = difference = False

@@ -185,15 +185,12 @@ def test_refresh_txtcompare(capsys):
     """unittest for txt_comp.refresh_txtcompare
     """
     testobj = MockShowComparison()
-    testobj.parent.lhs_path = 'left'
-    testobj.parent.rhs_path = 'right'
     testobj.parent.data = [('b1', 'l1', 'r1'), ('b2', 'l2', ''), ('b3', '', 'r2'), ('b4', '', '')]
     testee.refresh_txtcompare(testobj)
     assert capsys.readouterr().out == (
             "called Comparer.__init__()\n"
             "called ShowComparisonGui.__init__()\n"
-            "called ShowComparisonGui.init_tree() with args ('Text in both files', 'left',"
-            " 'right')\n"
+            "called ShowComparisonGui.init_tree() with args ('Text in both files',)\n"
             "called ShowComparisonGui.build_header() with args ('b1',)\n"
             "called ShowComparisonGui.set_node_text() with args ('node1', 1, 'l1')\n"
             "called ShowComparisonGui.set_node_text() with args ('node1', 2, 'r1')\n"

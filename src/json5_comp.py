@@ -67,7 +67,7 @@ def refresh_json5compare(comparer):
             comparer.gui.set_node_text(node, 2, rvalue)
         comparer.gui.colorize_child(node, rvalue and not lvalue, lvalue and not rvalue,
                                     lvalue and rvalue and lvalue != rvalue)
-        for level in range(len(keylist) -1, 0, -1):
+        for level in range(len(keylist) - 1, 0, -1):
             key = tuple(keylist[:level])
             comparer.gui.colorize_header(parentdict[key], rvalue and not lvalue,
                                          lvalue and not rvalue,

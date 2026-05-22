@@ -302,12 +302,10 @@ def test_refresh_inicompare(capsys):
             self.parent = types.SimpleNamespace()
     comparer = MockComparer()
     assert capsys.readouterr().out == "called Comparer.__init__\ncalled ComparerGui.__init__\n"
-    comparer.parent.lhs_path = 'old file'
-    comparer.parent.rhs_path = 'new file'
     comparer.parent.data = []
     testee.refresh_inicompare(comparer)
-    assert capsys.readouterr().out == ("called ComparerGui.init_tree with args"
-                                       " ('Section/Option', 'old file', 'new file')\n")
+    assert capsys.readouterr().out == (
+            "called ComparerGui.init_tree with args ('Section/Option',)\n")
     comparer.parent.data = [(('SectionA', 'OptionX'), 'ValueL1', 'ValueR1'),
                             (('SectionA', 'OptionY'), 'ValueL2', 'ValueR2'),
                             (('SectionB', 'OptionX'), None, 'ValueR3'),
@@ -321,7 +319,7 @@ def test_refresh_inicompare(capsys):
                             (('SectionE', 'OptionY'), 'Value', 'Value')]
     testee.refresh_inicompare(comparer)
     assert capsys.readouterr().out == textwrap.dedent("""\
-        called ComparerGui.init_tree with args ('Section/Option', 'old file', 'new file')
+        called ComparerGui.init_tree with args ('Section/Option')
         called ComparerGui.build_header with arg SectionA
         called ComparerGui.build_child with args ("header for 'SectionA'", 'OptionX')
         called ComparerGui.set_node_text with args ("child for 'OptionX'", 1, 'ValueL1')

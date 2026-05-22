@@ -48,7 +48,7 @@ class MainWindow(wx.Frame):
     def go(self):  # , leftpath, rightpath, method):
         "display the screen and start the event loop"
         self.Show(True)
-        mld = self.master.get_input.check_input()
+        mld = self.master.inputgetter.check_input()
         if mld:
             wx.MessageBox(mld, self.master.apptitel)
             self.master.open()
@@ -84,10 +84,11 @@ class MainWindow(wx.Frame):
         self.Close(True)
 
 
-def show_dialog(parent, dlg):
+def show_dialog(master, parent):
     """show a dialog and return the result
     """
-    x, y = parent.parent.gui.GetPosition()
+    dlg = master.gui
+    x, y = parent.GetPosition()
     # with cls(parent, -1, parent.parent.apptitel, pos=(x + 50, y + 50)) as dlg:
     dlg.SetPosition((x + 50, y + 50))
     while True:
@@ -95,7 +96,7 @@ def show_dialog(parent, dlg):
         if ok:
             mld = dlg.get_results()
             if mld:
-                wx.MessageBox(mld, parent.parent.apptitel)
+                wx.MessageBox(mld, master.parent.apptitel)
             else:
                 break
         else:
@@ -235,7 +236,7 @@ class ShowComparisonGui(wx.Panel):
     """Part of the main window showing the comparison as a tree
     """
     def __init__(self, parent):
-        super().__init__(parent)
+        super().__init__(parent.gui)
         self.parent = parent
         vsizer = wx.BoxSizer(wx.VERTICAL)
 
@@ -274,8 +275,9 @@ class ShowComparisonGui(wx.Panel):
         self.tree.Expand(self.root)
 
     # API methods to be called from the specific refresh functions
-    def init_tree(self, caption, left_title, right_title):
+    def init_tree(self, caption, *args):  # left_title, right_title):
         "setup empty tree with given titles"
+        left_title, right_title = self.parent.get_titles(*args)
         self.tree.DeleteAllItems()
         # self.tree.ClearColumns()
         self.tree.AddColumn(caption)

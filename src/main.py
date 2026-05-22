@@ -4,6 +4,7 @@ import sys
 import traceback
 import pathlib
 from configparser import ConfigParser
+import subprocess
 from . import gui
 from .conf_comp import compare_configs, compare_configs_safe, refresh_inicompare
 from .xml_comp import compare_xmldata, refresh_xmlcompare
@@ -32,11 +33,16 @@ abouttext = """\
 Met dit programma kun je twee (ini) files met elkaar vergelijken,
 maakt niet uit hoe door elkaar de secties en entries ook zitten.
 
-Het is ook bruikbaar voor XML en HTML bestanden."""
+Het is ook bruikbaar voor XML en JSON bestanden, HTML documenten en Python code.
+
+Het is zelfs mogelijk om voor een bestand dat in een GIT repository getracked wordt
+de versie in de working tree te vergelijken met de versie in de repo head.
+"""
 colors_text = """\
 Rood: aan beide kanten aanwezig, verschillend
 Groen: alleen aanwezig in linkerfile
 Blauw: alleen aanwezig in rechterfile"""
+TMPROOT = '/tmp/compare-tool'
 
 
 class Comparer:
@@ -58,6 +64,8 @@ class Comparer:
         self.data = {}
         self.comparetype = ''
         self.gui = gui.MainWindow(self)
+        self.lhs_path = 'value in `lefthand-side` file'
+        self.rhs_path = 'value in `righthand-side` file'
         self.showcomp = ShowComparison(self)
         # print(fileargs)
         if method and method in comparetypes:
@@ -68,7 +76,7 @@ class Comparer:
 
         self.ini = IniFile(str(pathlib.Path(__file__).parent.parent.resolve() / "actif.ini"))
         self.ini.read()
-        self.get_input = AskOpenFiles(self)
+        self.inputgetter = AskOpenFiles(self)
         if not self.lhs_path or not self.rhs_path:
             self.about()
             # self.open()
@@ -76,7 +84,8 @@ class Comparer:
 
     def open(self, event=None):
         "show open dialog"
-        ok = gui.show_dialog(self.get_input, self.get_input.gui)
+        # ok = gui.show_dialog(self.inputgetter, self.inputgetter.gui)
+        ok = gui.show_dialog(self.inputgetter, self.gui)
         if ok:
             self.doit()
         # return ok
@@ -114,6 +123,19 @@ class Comparer:
         self.data = data
         self.showcomp.refresh()
 
+    def get_titles(self, *args):
+        """return 2 provided input strings as titles or "calculate" them
+        """
+        if args:
+            left_title, right_title = args
+        else:
+            left_title = self.lhs_path
+            if self.rhs_path.startswith(TMPROOT):
+                right_title = 'repository version'
+            else:
+                right_title = self.rhs_path
+        return left_title, right_title
+
     def about(self, event=None):
         """opening blurb
         """
@@ -139,7 +161,46 @@ def get_input_paths(fileargs):
             rightpath = fileargs[1]
             if len(fileargs) > 2:
                 print('excessive filename arguments truncated')
+        else:
+            if repofile := is_tracked_file(fileargs[0]):
+                repodir, repofile = repofile
+                tmploc = pathlib.Path(f'{TMPROOT}/{repodir.name}/{repofile}')
+                tmploc.parent.mkdir(parents=True, exist_ok=True)
+                with tmploc.open('w') as f_out:
+                    try:
+                        subprocess.run(['git', 'show', f'master:{repofile}'],  # capture_output=True,
+                                       stdout=f_out,
+                                       cwd=repodir.expanduser(),
+                                       check=True)
+                    except subprocess.CalledProcessError:
+                        raise ValueError(f'{fileargs[0]} is not a tracked file in a repository')
+                leftpath, rightpath = str(tmploc), leftpath
     return leftpath, rightpath
+
+
+def is_tracked_file(filename):
+    """check if path is a file tracked in a git repo.
+    If so, return a tuple of the name of the repo and the file's location within the repo
+    """
+    repodir = repofile = ''
+    path = pathlib.Path(filename).resolve()
+    # quick & dirty versie
+    # try:
+    #     newpath = path.relative_to(pathlib.Path('~/projects').expanduser())
+    # except ValueError:
+    #     return ()
+    # reponame = newpath.parents[-1].resolve().name
+    # nette(re) versie
+    # walk up the path to check for a gt repo
+    for parent in path.parents:
+        for pth in parent.iterdir():
+            if pth.name == '.git' and pth.is_dir():
+                repodir = parent
+                repofile = path.relative_to(parent)
+                break
+        if repodir:
+            break
+    return (repodir, str(repofile)) if repodir else ()
 
 
 def do_compare(leftpath, rightpath, selectiontype):
@@ -224,7 +285,7 @@ class ShowComparison:
     """
     def __init__(self, parent):
         self.parent = parent
-        self.gui = gui.ShowComparisonGui(parent.gui)
+        self.gui = gui.ShowComparisonGui(parent)
         # self.gui.init_tree("Sectie / Optie:", f"waarde in {self.parent.lhs_path}",
         #                   f"waarde in {self.parent.rhs_path}")
         self.gui.init_tree('Document structure', 'value in `lefthand-side` file',

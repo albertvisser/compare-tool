@@ -197,14 +197,12 @@ def test_refresh_pycompare(monkeypatch, capsys):
     monkeypatch.setattr(testee, 'add_functionbody_nodes_both_sides', mock_add_both)
     comparer = MockComparer()
     testee.refresh_pycompare(comparer)
-    assert capsys.readouterr().out == ("called comparergui.init_tree with args"
-                                       " ('construct', 'code in lhs_path', 'code in rhs_path')\n"
+    assert capsys.readouterr().out == ("called comparergui.init_tree with args ('construct',)\n"
                                        "called prepare_values with args ('comparer_data',)\n")
     monkeypatch.setattr(testee, 'prepare_values', mock_prepare_2)
     testee.refresh_pycompare(comparer)
     assert capsys.readouterr().out == (
-            "called comparergui.init_tree with args"
-            " ('construct', 'code in lhs_path', 'code in rhs_path')\n"
+            "called comparergui.init_tree with args ('construct',)\n"
             "called prepare_values with args ('comparer_data',)\n"
             f"called add_new_parentnode with args ({comparer}, {{}}, ('module level',))\n"
             "called differ.compare with args ('xxx', 'yyy')\n"

@@ -89,11 +89,10 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
         def colorize_child(self, *args):
             print('called comparergui.colorize_child with args', args)
     monkeypatch.setattr(testee, 'prepare_values', mock_prepare)
-    comparer = types.SimpleNamespace(gui=MockGui(), parent=types.SimpleNamespace(
-        lhs_path='xxx', rhs_path='yyy', data=[]))
+    comparer = types.SimpleNamespace(gui=MockGui(), parent=types.SimpleNamespace(data=[]))
     testee.refresh_jsoncompare(comparer)
     assert capsys.readouterr().out == (
-            "called comparergui.init_tree with args ('key/value', 'xxx', 'yyy')\n"
+            "called comparergui.init_tree with args ('key/value',)\n"
             "called prepare_values with arg []\n")
     comparer = types.SimpleNamespace(gui=MockGui(), parent=types.SimpleNamespace(
         lhs_path='xxx', rhs_path='yyy', data=[
@@ -102,7 +101,7 @@ def test_refresh_jsoncompare(monkeypatch, capsys):
             (['top', 'both', 'diff'], 'lvalue', 'rvalue'), (['top', 'lonly'], 'lvalue', '')]))
     testee.refresh_jsoncompare(comparer)
     assert capsys.readouterr().out == (
-            "called comparergui.init_tree with args ('key/value', 'xxx', 'yyy')\n"
+            "called comparergui.init_tree with args ('key/value',)\n"
             "called prepare_values with arg [(['top'], 'lvalue', 'rvalue'),"
             " (['top', 'ronly'], '', 'rvalue'), (['top', 'both'], '', ''),"
             " (['top', 'both', 'same'], 'value', 'value'),"

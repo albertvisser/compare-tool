@@ -104,8 +104,8 @@ def refresh_pycompare(comparer):
     """redo the comparison (visually)
     """
     diff = difflib.Differ()
-    comparer.gui.init_tree('construct', f'code in {comparer.parent.lhs_path}',
-                           f'code in {comparer.parent.rhs_path}')
+    comparer.gui.init_tree('construct')  # , f'code in {comparer.parent.lhs_path}',
+                           # f'code in {comparer.parent.rhs_path}')
     parentdict = {}
     for line in prepare_values(comparer.parent.data):
         elements, lvalues, rvalues = line
@@ -187,7 +187,7 @@ def add_functionbody_nodes_both_sides(comparer, parentdict, parent, difflines):
     """add nodes for the function body after comparing the lines
     """
     nodetext = ('code' if parent[0] == 'module level' else 'class level'
-                if parent[-1].startswith('class') else  'function body')
+                if parent[-1].startswith('class') else 'function body')
     top = comparer.gui.build_child(parentdict[parent], nodetext)
     difference = False
     for line in difflines:

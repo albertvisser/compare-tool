@@ -95,7 +95,7 @@ class TestMainWindow:
             "stub"
             apptitel = 'xxx'
             showcomp = MockShowComp()
-            get_input = MockAskOpenFiles()
+            inputgetter = MockAskOpenFiles()
             # def meld_input_fout(self, msg):
             #     print(f"called Comparer.meld_input_fout with arg '{msg}'")
             def open(self):
@@ -122,7 +122,7 @@ class TestMainWindow:
                 f"called MessageBox.critical with args `{testobj}` `xxx` `msg`\n"
                 "called Comparer.open\n"
                 "called Application.exec\n")
-        testobj.master.get_input.check_input = mock_input
+        testobj.master.inputgetter.check_input = mock_input
         with pytest.raises(SystemExit):
             testobj.go()  # 'left', 'right', 'method')
         assert capsys.readouterr().out == (
@@ -214,26 +214,22 @@ class TestMainWindow:
 def test_show_dialog(monkeypatch, capsys):
     """unittest for qt_gui.show_dialog
     """
-    def mock_exec(cls):
-        print('called Dialog.exec')
-        return True
-    def mock_update():
-        print('called dialog.update_typeselector')
-    mockparent = 'parent'
-    monkeypatch.setattr(testee.qtw.QDialog, '__init__', mockqtw.MockDialog.__init__)
-    monkeypatch.setattr(testee.qtw.QDialog, 'exec', mockqtw.MockDialog.exec)
-    cls = testee.qtw.QDialog('xxx')
-    cls.update_typeselector = mock_update
-    assert not testee.show_dialog(mockparent, cls)
-    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
-                                       'called dialog.update_typeselector\n'
+    class MockGui:
+        "stub"
+        def exec(self):
+            print('called Dialog.exec')
+            return result
+        def update_typeselector(self):
+            print('called dialog.update_typeselector')
+    master = types.SimpleNamespace(gui=MockGui())
+    parent = 'parent'
+    result = 'xxx'
+    assert not testee.show_dialog(master, parent)
+    assert capsys.readouterr().out == ('called dialog.update_typeselector\n'
                                        "called Dialog.exec\n")
-    monkeypatch.setattr(testee.qtw.QDialog, 'exec', mock_exec)
-    cls = testee.qtw.QDialog('xxx')
-    cls.update_typeselector = mock_update
-    assert testee.show_dialog(mockparent, cls)
-    assert capsys.readouterr().out == ("called Dialog.__init__ with args xxx () {}\n"
-                                       'called dialog.update_typeselector\n'
+    result = testee.qtw.QDialog.DialogCode.Accepted
+    assert testee.show_dialog(master, parent)
+    assert capsys.readouterr().out == ('called dialog.update_typeselector\n'
                                        "called Dialog.exec\n")
 
 
@@ -466,12 +462,15 @@ class TestShowComparisonGui:
         monkeypatch.setattr(testee.qtw.QTreeWidget, 'setColumnCount',
                             mockqtw.MockTreeWidget.setColumnCount)
         monkeypatch.setattr(testee.qtw.QTreeWidget, 'header', mockqtw.MockTreeWidget.header)
-        testee.ShowComparisonGui('parent')
-        assert capsys.readouterr().out == ("called ShowComparisonGui.__init__ with args ('parent',)\n"
-                                           "called Tree.setColumnCount with arg `3`\n"
-                                           "called Tree.header\ncalled Header.__init__\n"
-                                           "called Header.resizeSection with args (0, 200)\n"
-                                           "called Header.resizeSection with args (1, 350)\n")
+        parent = types.SimpleNamespace(gui='ShowComparisonGui')
+        testobj = testee.ShowComparisonGui(parent)
+        assert testobj.parent == parent
+        assert capsys.readouterr().out == (
+                "called ShowComparisonGui.__init__ with args ('ShowComparisonGui',)\n"
+                "called Tree.setColumnCount with arg `3`\n"
+                "called Tree.header\ncalled Header.__init__\n"
+                "called Header.resizeSection with args (0, 200)\n"
+                "called Header.resizeSection with args (1, 350)\n")
 
     def test_setup_nodata_columns(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.setup_nodata_columns
@@ -507,13 +506,18 @@ class TestShowComparisonGui:
     def test_init_tree(self, monkeypatch, capsys):
         """unittest for ShowComparisonGui.init_tree
         """
+        def mock_get():
+            print('called Comparer.get_titles')
+            return 'left_title', 'right_title'
         monkeypatch.setattr(testee.qtw.QTreeWidget, 'clear', mockqtw.MockTreeWidget.clear)
         monkeypatch.setattr(testee.qtw.QTreeWidget, 'setHeaderLabels',
                             mockqtw.MockTreeWidget.setHeaderLabels)
         testobj = self.setup_testobj(monkeypatch, capsys)
-        testobj.init_tree('caption', 'left_title', 'right_title')
+        testobj.parent = types.SimpleNamespace(get_titles=mock_get)
+        testobj.init_tree('caption')  # , 'left_title', 'right_title')
         assert capsys.readouterr().out == (
                 "called Tree.clear\n"
+                "called Comparer.get_titles\n"
                 "called Tree.setHeaderLabels with arg `['caption', 'left_title', 'right_title']`\n")
 
     def test_build_header(self, monkeypatch, capsys):

@@ -65,7 +65,7 @@ def gen_next(gen):
 def refresh_txtcompare(comparer):
     """(re)do the text compare (visually)
     """
-    comparer.gui.init_tree('Text in both files', comparer.parent.lhs_path, comparer.parent.rhs_path)
+    comparer.gui.init_tree('Text in both files')  # , comparer.parent.lhs_path, comparer.parent.rhs_path)
     for x in comparer.parent.data:
         bvalue, lvalue, rvalue = x
         rightonly = leftonly = difference = False

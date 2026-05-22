@@ -57,7 +57,7 @@ class MainWindow(qtw.QMainWindow):
         self.win = self.master.showcomp.gui
         self.setCentralWidget(self.win)
         self.show()
-        mld = self.master.get_input.check_input()
+        mld = self.master.inputgetter.check_input()
         if mld:
             qtw.QMessageBox.critical(self, self.master.apptitel, mld)
             self.master.open()
@@ -99,13 +99,15 @@ class MainWindow(qtw.QMainWindow):
         self.close()
 
 
-def show_dialog(parent, dlg):
+def show_dialog(master, parent):
     """show a dialog and return the result
 
     parent argument is voor compatibiliteit met wx versie
     """
-    dlg.update_typeselector()
-    ok = dlg.exec()
+    # dlg.update_typeselector()
+    master.gui.update_typeselector()
+    # ok = dlg.exec()
+    ok = master.gui.exec()
     return ok == qtw.QDialog.DialogCode.Accepted
 
 
@@ -208,7 +210,7 @@ class ShowComparisonGui(qtw.QTreeWidget):
     """
     def __init__(self, parent):
         self.parent = parent
-        super().__init__(parent)
+        super().__init__(parent.gui)
         self.setColumnCount(3)
         #  hoef ik de kleuren hier niet in te stellen?
         hdr = self.header()
@@ -235,9 +237,10 @@ class ShowComparisonGui(qtw.QTreeWidget):
         # no extra action needed
 
     # API methods to be called from the specific refresh functions
-    def init_tree(self, caption, left_title, right_title):
+    def init_tree(self, caption, *args):  # left_title, right_title):
         "setup empty tree with given titles"
         self.clear()
+        left_title, right_title = self.parent.get_titles(*args)
         self.setHeaderLabels([caption, left_title, right_title])
 
     def build_header(self, section):

@@ -1,7 +1,6 @@
 """unittests for ./src/xml_comp.py
 """
 import types
-import textwrap
 import pytest
 from src import xml_comp as testee
 
@@ -246,12 +245,10 @@ def test_refresh_xmlcompare(capsys, expected_output):
             self.parent = types.SimpleNamespace()
     comparer = MockComparer()
     assert capsys.readouterr().out == "called Comparer.__init__\ncalled ComparerGui.__init__\n"
-    comparer.parent.lhs_path = 'old file'
-    comparer.parent.rhs_path = 'new file'
     comparer.parent.data = []
     testee.refresh_xmlcompare(comparer)
     assert capsys.readouterr().out == (
-            "called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')\n")
+            "called ComparerGui.init_tree with args ('Element/Attribute',)\n")
     comparer.parent.data = [
             (([('top', 0)], ''), '', ''),
             (([('top', 0), ('daaro', 0)], ''), '', ''),
@@ -268,6 +265,7 @@ def test_refresh_xmlcompare(capsys, expected_output):
             (([('top', 0), ('dit', 0)], 'attr5'), None, 'zzz')]
     testee.refresh_xmlcompare(comparer)
     assert capsys.readouterr().out == expected_output['refresh']
+
 
 compare_output = """\
 called sort_xmldata with arg 'left'
@@ -289,7 +287,7 @@ called gen_next from left side returning ('', (False, [('top', 0), ('dit', 0)], 
 called gen_next from left side returning ('EOF', (True, '', '', ''))
 """
 refresh_output = """\
-called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')
+called ComparerGui.init_tree with args ('Element/Attribute',)
 called ComparerGui.build_header with arg <> top
 called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 1, '')
 called ComparerGui.set_node_text with args (<Item "header for '<> top'">, 2, '')

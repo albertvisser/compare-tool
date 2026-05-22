@@ -54,7 +54,7 @@ def test_get_next_level_data(monkeypatch, capsys):
            [(1, '<body>'), '', ''],
            [(1, '<body>'), 'class', 'body'],
            [(2, '<p>'), '', ''],
-           [(3, '(text)'), '', 'text'] ]
+           [(3, '(text)'), '', 'text']]
 
     el = '<div id="one" class="this that"><div id="two"><p>something</p><p>more</p></div></div>'
     assert testee.get_next_level_data(testee.bs.BeautifulSoup(el, 'lxml')) == [
@@ -182,8 +182,6 @@ def test_refresh_htmlcompare(monkeypatch, capsys):
             self.parent = types.SimpleNamespace()
     comparer = MockComparer()
     assert capsys.readouterr().out == "called Comparer.__init__\ncalled ComparerGui.__init__\n"
-    comparer.parent.lhs_path = 'old file'
-    comparer.parent.rhs_path = 'new file'
     comparer.parent.data = [
            [((0, '<html>'), ''), '', ''],
            [((0, '<html>)'), 'lang'), '', 'en'],
@@ -196,7 +194,7 @@ def test_refresh_htmlcompare(monkeypatch, capsys):
            [((3, '(text)'), ''), '', 'text']]
     testee.refresh_htmlcompare(comparer)
     assert capsys.readouterr().out == textwrap.dedent("""\
-            called ComparerGui.init_tree with args ('Element/Attribute', 'old file', 'new file')
+            called ComparerGui.init_tree with args ('Element/Attribute',)
             called ComparerGui.build_header with arg <html>
             called ComparerGui.build_child with args ("header for '<html>'", ' lang')
             called ComparerGui.set_node_text with args ("child for ' lang'", 2, 'en')

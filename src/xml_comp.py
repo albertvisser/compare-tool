@@ -155,7 +155,7 @@ def gen_next(gen):
 def refresh_xmlcompare(comparer):
     """(re)do the XML compare (visually)
      """
-    comparer.gui.init_tree('Element/Attribute', comparer.parent.lhs_path, comparer.parent.rhs_path)
+    comparer.gui.init_tree('Element/Attribute')  # , comparer.parent.lhs_path, comparer.parent.rhs_path)
     current_elems = []
     rightonly = leftonly = difference = False
     # print(comparer.parent.data)
@@ -209,6 +209,7 @@ def refresh_xmlcompare(comparer):
     if comparer.parent.data:
         # comparer.gui.colorize_header(header, rightonly, leftonly, difference)
         colorize_headers(comparer, header, rightonly, leftonly, difference)
+
 
 def colorize_headers(comparer, header, rightonly, leftonly, difference):
     """propagate colours upwards
