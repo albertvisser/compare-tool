@@ -34,7 +34,7 @@ class TestMainWindow:
         monkeypatch.setattr(testee.wx.Frame, '__init__', mockwx.MockFrame.__init__)
         monkeypatch.setattr(testee.MainWindow, 'setup_menu', mock_setup)
         master = types.SimpleNamespace(apptitel='xxx')
-        testobj = testee.MainWindow(master)
+        testee.MainWindow(master)
         assert capsys.readouterr().out == (
                 "called app.__init__ with args ()\n"
                 "called frame.__init__ with args"

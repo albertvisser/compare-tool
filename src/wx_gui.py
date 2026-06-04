@@ -146,7 +146,7 @@ class AskOpenFilesGui(wx.Dialog):
     def create_fileselector_grid(self, linedefs):
         "build a grid for the file selector widgets"
         gbox = wx.FlexGridSizer(cols=2, vgap=0, hgap=4)
-        for ix, linedef in enumerate(linedefs):
+        for linedef in linedefs:
             caption, selector = linedef
             text = wx.StaticText(self, label=caption)  # , size=(60, -1))
             gbox.Add(text, 0, wx.ALL | wx.ALIGN_CENTER_VERTICAL, 5)
