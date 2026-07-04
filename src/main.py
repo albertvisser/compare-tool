@@ -163,14 +163,16 @@ def get_input_paths(fileargs):
                 print('excessive filename arguments truncated')
         else:
             if repofile := is_tracked_file(fileargs[0]):
-                repodir, repofile = repofile
+                repodir, repofile, is_git_repo = repofile
                 tmploc = pathlib.Path(f'{TMPROOT}/{repodir.name}/{repofile}')
                 tmploc.parent.mkdir(parents=True, exist_ok=True)
                 with tmploc.open('w') as f_out:
+                    if is_git_repo:
+                        command = ['git', 'show', f'master:{repofile}']
+                    else:
+                        command = ['hg', 'cat', repofile]
                     try:
-                        subprocess.run(['git', 'show', f'master:{repofile}'],  # capture_output=True,
-                                       stdout=f_out,
-                                       cwd=repodir.expanduser(),
+                        subprocess.run(command, stdout=f_out, cwd=repodir.expanduser(),
                                        check=True)
                     except subprocess.CalledProcessError:
                         raise ValueError(f'{fileargs[0]} is not a tracked file in a repository')
@@ -194,13 +196,14 @@ def is_tracked_file(filename):
     # walk up the path to check for a gt repo
     for parent in path.parents:
         for pth in parent.iterdir():
-            if pth.name == '.git' and pth.is_dir():
+            if pth.name in ('.git', '.hg') and pth.is_dir():
                 repodir = parent
                 repofile = path.relative_to(parent)
+                is_git_repo = pth.name == '.git'
                 break
         if repodir:
             break
-    return (repodir, str(repofile)) if repodir else ()
+    return (repodir, str(repofile), is_git_repo) if repodir else ()
 
 
 def do_compare(leftpath, rightpath, selectiontype):

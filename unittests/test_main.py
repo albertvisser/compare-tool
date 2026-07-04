@@ -10,10 +10,13 @@ def test_get_input_paths(monkeypatch, capsys):
     """
     def mock_is(*args):
         print('called is_tracked_file with args', args)
-        return (testee.pathlib.Path('qqq/xxx'), 'yyy')
+        return (testee.pathlib.Path('qqq/xxx'), 'yyy', True)
     def mock_is_not(*args):
         print('called is_tracked_file with args', args)
         return ()
+    def mock_is_2(*args):
+        print('called is_tracked_file with args', args)
+        return (testee.pathlib.Path('qqq/xxx'), 'yyy', False)
     def mock_run(*args, **kwargs):
         print('called subprocess.run with args', args, kwargs)
     def mock_run_2(*args, **kwargs):
@@ -38,6 +41,16 @@ def test_get_input_paths(monkeypatch, capsys):
             " mode='w' encoding='UTF-8'>,"
             f" 'cwd': {testee.pathlib.Path('qqq/xxx')!r},"
             " 'check': True}\n")
+    monkeypatch.setattr(testee, 'is_tracked_file', mock_is_2)
+    assert testee.get_input_paths(['left']) == ('/tmp/compare-tool/xxx/yyy', 'left')
+    assert capsys.readouterr().out == (
+            "called is_tracked_file with args ('left',)\n"
+            "called subprocess.run with args (['hg', 'cat', 'yyy'],)"
+            " {'stdout': <_io.TextIOWrapper name='/tmp/compare-tool/xxx/yyy'"
+            " mode='w' encoding='UTF-8'>,"
+            f" 'cwd': {testee.pathlib.Path('qqq/xxx')!r},"
+            " 'check': True}\n")
+    monkeypatch.setattr(testee, 'is_tracked_file', mock_is)
     monkeypatch.setattr(testee.subprocess, 'run', mock_run_2)
     with pytest.raises(ValueError) as exc:
         testee.get_input_paths(['left'])
@@ -75,12 +88,17 @@ def test_is_tracked_file(monkeypatch, capsys, tmp_path):
     (tmp_path / 'path' / 'to' / 'xxx').touch()
     (tmp_path / 'path' / 'to' / 'yyy').touch()
     assert testee.is_tracked_file(f'{tmp_path}/path/to/filename') == ()
-    assert capsys.readouterr().out == ("")
+    assert capsys.readouterr().out == ""
     (tmp_path / 'path' / '.git').unlink()
     (tmp_path / 'path' / '.git').mkdir()
     assert testee.is_tracked_file(f'{tmp_path}/path/to/filename') == (tmp_path / 'path',
-                                                                      'to/filename')
-    assert capsys.readouterr().out == ("")
+                                                                      'to/filename', True)
+    assert capsys.readouterr().out == ""
+    (tmp_path / 'path' / '.git').rmdir()
+    (tmp_path / 'path' / '.hg').mkdir()
+    assert testee.is_tracked_file(f'{tmp_path}/path/to/filename') == (tmp_path / 'path',
+                                                                      'to/filename', False)
+    assert capsys.readouterr().out == ""
 
 
 def test_do_compare(monkeypatch, capsys):
